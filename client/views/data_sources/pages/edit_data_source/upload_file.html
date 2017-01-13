@@ -1,0 +1,45 @@
+<!--
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<div class="ibox upload-file">
+    <div class="ibox-content">
+        <div class="row">
+            <div class="col-md-12">
+                <img src="img/databases/csv.png" class="upload-csv-image">
+                <h1>Upload CSV File</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="upload-button-container" ng-show="!file">
+                    <input type="file" name="csvUploadFile" id="csvUploadFile" class="upload-input" fileread="file" />
+                    <label class="btn btn-primary" for="csvUploadFile">Choose a file</label>
+                </div>
+
+                <div class="upload-button-container" ng-show="file">
+                    <button class="btn btn-primary" ng-click="upload()" >Upload</button>
+                    <span>{{file.name}}</span>
+                    <span class="badge badge-danger" ng-click="file=null">X</span>
+                </div>
+
+                <uib-progressbar ng-if="uploading" max="bytesTotal" value="bytesUploaded" type="success"><b>{{bytesUploaded / (1024*1024) | number:2}}mb / {{bytesTotal / (1024*1024) | number:2}}mb</b></uib-progressbar>
+            </div>
+        </div>
+    </div>
+</div>

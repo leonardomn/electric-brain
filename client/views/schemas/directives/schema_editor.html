@@ -1,0 +1,55 @@
+<!--
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<div class="row database-fields" ng-if="schema">
+    <div class="{{fieldListSize}}">
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="ibox">
+                    <div class="ibox-title">
+                        <h5>{{title}}</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <div ui-tree id="tree-root" class="schema-tree" data-drag-enabled="false">
+                            <ol ui-tree-nodes ng-model="schema">
+                                <li ng-repeat="field in schema.properties" ng-show="!showOnlyIncluded || field.configuration.included" ui-tree-node eb-schema-editor-field="field" mode="{{mode}}" selected-field="$parent.$parent.$parent.$parent.selectedField"></li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div ng-transclude></div>
+    </div>
+
+    <div class="col-md-4" ng-if="selectedField && showFieldDetails">
+        <eb-schema-field-details field="selectedField"></eb-schema-field-details>
+    </div>
+
+    <div class="col-md-8" ng-if="selectedField && mode=='configure_neural_network'">
+        <eb-schema-field-neural-network-configuration field="selectedField"></eb-schema-field-neural-network-configuration>
+    </div>
+
+    <div class="col-md-8" ng-if="selectedField && mode=='configure_interpretation'">
+        <eb-schema-interpretation-configuration field="selectedField"></eb-schema-interpretation-configuration>
+    </div>
+
+    <div class="col-md-8" ng-if="selectedField && mode=='results'">
+        <eb-schema-field-results field="selectedField"></eb-schema-field-results>
+    </div>
+</div>

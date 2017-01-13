@@ -1,0 +1,81 @@
+/*
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+.model-progress-summary h2.model-title
+{
+    cursor: pointer;
+}
+
+.model-progress-summary h2.model-title:hover
+{
+    text-decoration: underline;
+}
+
+.model-progress-summary .widget
+{
+
+}
+
+.model-progress-summary .widget.accuracy-graph
+{
+    position: relative;
+    background-color: #c3ddec;
+    padding: 0;
+}
+
+.model-progress-summary .widget.accuracy-graph .flot-chart
+{
+    height: 280px;
+}
+
+.model-progress-summary .graph-loading-overlay
+{
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(50% - 15px);
+    width: 100%;
+    text-align: center;
+    color: #0086d1;
+}
+
+.model-progress-summary .step-header
+{
+    float: left;
+    margin-top: 0px;
+    margin-bottom: 5px;
+}
+
+.model-accuracy-column
+{
+    padding-left: 20px;
+    padding-right: 20px;
+    cursor: pointer;
+}
+
+.model-progress-column
+{
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+.model-progress-column .widget
+{
+    padding-left: 40px;
+    padding-right: 40px;
+}

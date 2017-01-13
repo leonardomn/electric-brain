@@ -1,0 +1,68 @@
+<!--
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<div class="wrapper wrapper-content dashboard">
+    <div class="row" ng-if="models.length > 0">
+        <h1>Models in progress</h1>
+        <div class="col-xs-10 col-xs-offset-1">
+            <div class="row" ng-repeat="model in models">
+                <eb-model-progress-summary model="model"></eb-model-progress-summary>
+            </div>
+        </div>
+    </div>
+    <div class="row" ng-if="models.length === 0">
+        <div class="col-xs-8 col-xs-offset-2 empty-dashboard">
+            <h2 class="text-center">Dashboard Empty</h2>
+            <br/>
+            <div class="jumbotron">
+                <div class="row">
+                    <a ui-sref="new_data_source.select_database_type">
+                        <div class="col-xs-4 new-data-source-column">
+                            <div class="icon-container">
+                                <i class="fa fa-plus-square-o"></i>
+                            </div>
+                            <br/>
+                            <br/>
+                            <h3>Create a new data source</h3>
+                        </div>
+                    </a>
+                    <a href="https://electricbrain.atlassian.net/wiki/display/EB/Tutorial+-+Text+Classification">
+                        <div class="col-xs-4 read-tutorial-column">
+                                <div class="icon-container">
+                                    <i class="fa fa-list"></i>
+                                </div>
+                                <br/>
+                                <br/>
+                                <h3>Read a tutorial</h3>
+                        </div>
+                    </a>
+                    <a href="https://electricbrain.atlassian.net/wiki/spaces/EB">
+                        <div class="col-xs-4 check-documentation-column">
+                            <div class="icon-container">
+                                <i class="fa fa-file-text-o"></i>
+                            </div>
+                            <br/>
+                            <br/>
+                            <h3>Check out documentation</h3>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

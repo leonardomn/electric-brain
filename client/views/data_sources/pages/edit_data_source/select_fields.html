@@ -1,0 +1,39 @@
+<!--
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<div class="row database-fields">
+    <div class="col-md-12">
+        <eb-schema-editor ng-if="dataSource.dataSchema" schema="dataSource.dataSchema" mode="filter" show-field-details="true">
+            <div class="row">
+                <div class="col-xs-12">
+                    <div class="pull-right">
+                        <eb-loader-button on-click="onSaveClicked()" title="Save"></eb-loader-button>
+                        <eb-loader-button ng-if="$stateParams.id != 'new'" on-click="onDeleteClicked()" title="Delete" confirm="true" confirm-title="Warning!" confirm-message="Deleting this data source will erase all of your progress. Are you sure you want to delete?"></eb-loader-button>
+                        <div class="btn btn-primary" ui-sref="edit_architecture">
+                            <span>Continue to architecture</span>
+                            <i class="fa fa-arrow-circle-right"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </eb-schema-editor>
+    </div>
+    <div class="col-md-6">
+
+    </div>
+</div>

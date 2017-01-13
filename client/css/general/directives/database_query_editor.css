@@ -1,0 +1,52 @@
+/*
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/**
+  * Inspired by / copied from https://github.com/mfauveau/angular-query-builder by Matthieu Fauveau
+  *
+  * License can be found in the licenses directory in the root of the Electric Brain folder
+  */
+
+.database-query-editor .group
+{
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 5px;
+    border: solid 1px #666;
+}
+
+.database-query-editor .group-conditions
+{
+    margin-left: 20px;
+}
+
+.database-query-editor .alert-group
+{
+    margin-top: 10px;
+    margin-bottom: 10px;
+    border-color: rgb(192, 152, 83);
+    border-color: rgb(251, 238, 213);
+    border-color: rgb(220, 200, 150);
+}
+
+.database-query-editor .condition, .group
+{
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+

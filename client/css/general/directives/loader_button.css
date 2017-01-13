@@ -1,0 +1,148 @@
+/*
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+.loader-button.btn
+{
+    display: inline-block;
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-right: 6px;
+}
+
+.loader-button-text
+{
+    display: inline-block;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    padding-right: 7px;
+}
+
+.loader-button .loader-container
+{
+    position: relative;
+    display: inline-block;
+    height: 28px;
+    width: 28px;
+    margin-top: 1px;
+    margin-bottom: -8px;
+    overflow: hidden;
+}
+
+.loader-container.ng-hide
+{
+    width: 0;
+}
+
+.loader-container.ng-hide-add,
+.loader-container.ng-hide-remove
+{
+    transition: all linear 0.100s;
+}
+
+.loader-button img
+{
+    display: block;
+    position: absolute;
+    opacity: 1;
+}
+
+.loader-button img.ng-hide
+{
+    opacity: 0;
+}
+
+.loader-button img.ng-hide-remove
+{
+    transition: all linear 0.250s;
+}
+
+.loader-button img.ng-hide-add
+{
+    transition: all linear 0.150s;
+}
+
+.loader-button .loader-button-checkmark
+{
+    display: block;
+    position: absolute;
+    left: 5px;
+    top: 4px;
+    opacity: 1;
+}
+
+.loader-button .loader-button-checkmark.ng-hide
+{
+    opacity: 0;
+}
+
+.loader-button .loader-button-checkmark.ng-hide-add,
+.loader-button .loader-button-checkmark.ng-hide-remove
+{
+    transition: all linear 0.150s;
+}
+
+.loader-button .loader-button-checkmark i
+{
+    position: relative;
+    color: white;
+    font-size: 20px;
+}
+
+.loader-button .loader-button-checkmark i.fa-times
+{
+    top: 1px;
+    left: 1px;
+}
+
+.loader-button-confirmation .modal-dialog
+{
+    width: 450px;
+    text-align: center;
+    margin-top: 240px;
+}
+
+.loader-button-confirmation .modal-content
+{
+    background-color: #f54263;
+    color: white;
+}
+.loader-button-confirmation .modal-content span
+{
+
+}
+
+.loader-button-confirmation .modal-body
+{
+    padding-bottom: 10px;
+}
+
+.loader-button-confirmation .btn
+{
+    color: white;
+    padding-left: 30px;
+    padding-right: 30px;
+    border-color: white;
+    background-color: #f54263;
+}
+
+.loader-button-confirmation .btn:hover
+{
+    color: #f54263;
+    border-color: white;
+    background-color: white;
+}

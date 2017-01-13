@@ -1,0 +1,9 @@
+# This is a sample build configuration for Javascript.
+# Only use spaces to indent your .yml configuration.
+# -----
+# You can specify a custom docker image from Dockerhub as your build environment.
+pipelines:
+  default:
+    - step:
+        script:
+          - echo "It's Pipelines, baby!"

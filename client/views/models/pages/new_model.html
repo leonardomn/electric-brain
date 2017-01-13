@@ -1,0 +1,51 @@
+<!--
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<div class="wrapper wrapper-content">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="ibox float-e-margins">
+                <div class="ibox-content">
+                    <h2>Name?</h2>
+                    <div class="form-group">
+                        <div class="col-md-12">
+                            <input style="background-image: url(&quot;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAASCAYAAABSO15qAAAAAXNSR0IArs4c6QAAALZJREFUOBFjYKAANDQ0rGWiQD9IqzgL0BQ3IKMXiB8AcSKQ/waIrYDsKUD8Fir2pKmpSf/fv3+zgPxfzMzMSbW1tbeBbAaQC+b+//9fB4h9gOwikCAQTAPyDYHYBciuBQkANfcB+WZAbPP37992kBgIUOoFBiZGRsYkIL4ExJvZ2NhAXmFgYmLKBPLPAfFuFhaWJpAYEBQC+SeA+BDQC5UQIQpJYFgdodQLLyh0w6j20RCgUggAAEREPpKMfaEsAAAAAElFTkSuQmCC&quot;); background-repeat: no-repeat; background-attachment: scroll; background-size: 16px 18px; background-position: 98% 50%;" placeholder="Name" class="form-control" type="text" ng-model="model.name">
+                        </div>
+                    </div>
+                    <br/>
+                    <br/>
+                    <h2>Which architecture should we train a model for?</h2>
+                    <br/>
+                    <eb-architecture-list selected-architecture="model.architecture" on-architecture-clicked="onArchitectureClicked" show-radio-selection="true"></eb-architecture-list>
+                    <br/>
+                    <br/>
+                    <div ng-if="model.architecture">
+                        <h2>Query?</h2>
+                        <br/>
+                        <eb-database-query-editor query="model.architecture.dataSource.query" schema="model.architecture.dataSource.dataSchema"></eb-database-query-editor>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row" ng-if="model.architecture">
+        <div class="col-xs-12">
+            <button class="btn btn-primary" ng-click="onTrainModelClicked()">Train Model</button>
+        </div>
+    </div>
+</div>

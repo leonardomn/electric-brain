@@ -1,0 +1,30 @@
+{
+  "parserOptions": {
+    "ecmaVersion": 6,
+    "sourceType": "script",
+    "ecmaFeatures": {
+      "jsx": false
+    }
+  },
+  "rules": {
+    "no-magic-numbers": ["off", {}],
+    "no-console": ["off", {}]
+  },
+  "env": {
+    "node": false,
+    "browser": true
+  },
+  "globals": {
+    "angular": true,
+    "$": true,
+    "_": true,
+    "flat": true,
+    "schemaUtilities": true,
+    "transformationUtilities": true,
+    "shared": true,
+    "io": true,
+    "moment": true,
+    "NgTableParams": true,
+    "tus": true
+  }
+}

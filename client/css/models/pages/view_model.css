@@ -1,0 +1,73 @@
+/*
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+.vertical-timeline-block
+{
+    position: relative;
+}
+
+.model-step-label
+{
+    position: relative;
+    top: 6px;
+}
+
+.model-step-background-block
+{
+    position: absolute;
+    left: 0;
+    top: 20px;
+    right: 0;
+    bottom: 0;
+    background-color: #f3f3f4;
+}
+
+.model-step-block
+{
+    opacity: 0.5;
+}
+
+.model-step-block.complete
+{
+    opacity: 1;
+}
+
+.model-step-block.complete
+{
+    opacity: 1;
+}
+
+.model-step-block.in_progress
+{
+    opacity: 1;
+}
+
+.model-step-block.waiting
+{
+    opacity: 0.5;
+}
+
+.view-model .task-log.ace_editor
+{
+    height: 500px;
+}
+
+.training-charts .tab-content
+{
+    width: 100%;
+}

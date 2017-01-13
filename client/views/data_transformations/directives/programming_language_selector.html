@@ -1,0 +1,38 @@
+<!--
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<div class="programming-language-selector">
+    <ui-select ng-model="$parent.language"
+               theme="bootstrap"
+               reset-search-input="false"
+               style="width: 300px;"
+               title="Select a programming language">
+        <ui-select-match placeholder="select a programming language..">
+            <div class="selected-programming-language">
+                <img ng-show="$select.selected.icon" ng-src="{{$select.selected.icon}}">
+                <span>{{$select.selected.title}}</span>
+            </div>
+        </ui-select-match>
+        <ui-select-choices repeat="method in programmingLanguages | filter: $select.search track by $index">
+            <div class="programming-language-option">
+                <img ng-show="method.icon" ng-src="{{method.icon}}">
+                <span class="code-transformation-language-name" ng-bind="method.title"></span>
+            </div>
+        </ui-select-choices>
+    </ui-select>
+</div>

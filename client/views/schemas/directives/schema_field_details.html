@@ -1,0 +1,89 @@
+<!--
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<div class="row schema-field-details">
+    <div class="col-xs-12">
+        <div class="ibox">
+            <div class="ibox-title">
+                <h5>{{field.title}}</h5>
+            </div>
+            <div class="ibox-content">
+                <h3>Type</h3>
+                {{field.type.join(", ")}}
+                <br/>
+                <div>
+                    <!-- If we have cardinality information for this field, display it -->
+                    <div ng-if="field.metadata.total > 0">
+                        <h3>Cardinality</h3>
+                        <p>{{(field.metadata.cardinality * 100).toFixed(2)}}%</p>
+                        <span>{{field.metadata.distinct}}&nbsp;/&nbsp;{{field.metadata.total}}</span>
+                        <br/>
+                    </div>
+                    <!-- If this field is a number field, show its number histogram -->
+                    <div ng-if="field.isNumber">
+                        <h3>Histogram</h3>
+                        <eb-number-histogram ng-model="field.metadata.numberHistogram"></eb-number-histogram>
+                    </div>
+                    <!-- Show a value histogram if the field is a string its cardinality is less then 0.75,-->
+                    <!-- meaning at least a some values are shared. The cutoff is somewhat arbitrary-->
+                    <div ng-if="field.isString && field.metadata.cardinality < 0.75">
+                        <h3>Histogram</h3>
+                        <eb-value-histogram ng-model="field.metadata.valueHistogram"></eb-value-histogram>
+                    </div>
+                    <!-- If the field is an array, show the array length histogram -->
+                    <div ng-if="field.isArray">
+                        <h3>Length Histogram</h3>
+                        <eb-number-histogram ng-model="field.metadata.arrayLengthHistogram"></eb-number-histogram>
+                    </div>
+
+                    <!-- If the field is binary data, show a histogram on the mime type-->
+                    <div ng-if="field.isBinary">
+                        <h3>File Type</h3>
+                        <eb-value-histogram ng-model="field.metadata.binaryMimeTypeHistogram" height="200"></eb-value-histogram>
+                    </div>
+
+                    <!-- If the field is an image, then show the image width and image height histograms -->
+                    <div ng-if="field.metadata.binaryHasImage">
+                        <div class="row">
+                            <div class="col-xs-6">
+                                <h3>Image Width</h3>
+                                <eb-number-histogram ng-model="field.metadata.imageWidthHistogram" height="100"></eb-number-histogram>
+                            </div>
+                            <div class="col-xs-6">
+                                <h3>Image Height</h3>
+                                <eb-number-histogram ng-model="field.metadata.imageHeightHistogram" height="100"></eb-number-histogram>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Show some examples of the field -->
+                    <div ng-if="field.metadata.examples.length > 0">
+                        <h3>Examples</h3>
+                        <div class="schema-field-examples">
+                            <div ng-repeat="example in field.metadata.examples.slice(0, 10)" class="schema-details-example-value">
+                                <span ng-if="field.isString || field.isNumber || field.isBoolean" class="label label-default">{{example | json}}</span>
+                                <span ng-if="field.isBinary"><img src="data:image/png;base64, {{example}}"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <br/>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

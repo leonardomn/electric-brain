@@ -1,0 +1,55 @@
+<!--
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<div class="wrapper wrapper-content edit-data-source">
+    <div class="row">
+        <div class="steps clearfix">
+            <ul>
+                <li ui-sref-active="current">
+                    <a ui-sref=".select_database_type" class="btn-default">
+                        <span><i class="fa fa-check-circle"></i></span>
+                        <span>Data Source</span>
+                    </a>
+                </li>
+                <li ui-sref-active="current" ng-class="{disabled: !dataSource.type}">
+                    <a ng-show="dataSource.type" ui-sref=".upload_file" class="btn-default">
+                        <span ng-show="dataSource.database || dataSource.file"><i class="fa fa-check-circle"></i></span>
+                        <span>Select / Upload</span>
+                    </a>
+                    <a ng-show="!dataSource.type" class="btn-default">
+                        <span>Select / Upload</span>
+                    </a>
+                </li>
+                <li ui-sref-active="current" ng-class="{disabled: !(dataSource.database || dataSource.file)}">
+                    <a ng-show="dataSource.database || dataSource.file" ui-sref=".select_fields" class="btn-default">
+                        <span ng-show="dataSource.dataSchema"><i class="fa fa-check-circle"></i></span>
+                        <span>Select Fields</span>
+                    </a>
+                    <a ng-show="!(dataSource.database || dataSource.file)" class="btn-default">
+                        <span>Select Fields</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <div class="row">
+        <div>
+            <ui-view></ui-view>
+        </div>
+    </div>
+</div>

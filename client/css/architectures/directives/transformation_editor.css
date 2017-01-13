@@ -1,0 +1,89 @@
+/*
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+.transformation-editor .content-container
+{
+    width: 100%;
+}
+
+.transformation-editor .ibox-title
+{
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+}
+
+.transformation-editor .enabled-block
+{
+    flex-grow: 0;
+    margin-left: 20px;
+}
+
+.transformation-editor .method-picker
+{
+    flex-grow: 0;
+    margin-left: 20px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.transformation-editor .preview-button
+{
+    flex-grow: 0;
+    margin-left: 20px;
+}
+
+.transformation-editor .method-picker label
+{
+    display: block;
+    vertical-align: top;
+    padding-right: 10px;
+    flex-grow: 0;
+}
+
+.transformation-editor .method-picker eb-programming-language-selector
+{
+    flex-grow: 1;
+}
+
+.transformation-editor .method-picker .ui-select-container
+{
+
+}
+
+
+.transformation-editor .content-container .ace_editor
+{
+    height: 600px;
+}
+
+.transformation-editor .method-picker hr
+{
+    padding: 0px;
+    margin: 0px;
+}
+
+.code-transformation-language-name
+{
+    margin-left: 15px;
+}

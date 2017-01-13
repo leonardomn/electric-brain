@@ -1,0 +1,50 @@
+<!--
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<div ui-tree-handle class="tree-node tree-node-content" ng-click="toggleFieldSubSchema(field, this)" ng-class="{selected: field == selectedField, included: field.metadata.included}">
+    <div class="sub-properties-chevron">
+        <a class="btn btn-success btn-xs" ng-if="field.type.includes('object') || field.type.includes('array')" data-nodrag>
+            <span class="fa" ng-class="{'fa-chevron-right': field.open, 'fa-chevron-down': !field.open}"></span>
+        </a>
+    </div>
+    <div class="property-information">
+        <span><span>{</span>{{field.type[0]}}<span>}</span></span>
+        <span>{{field.title}}</span>
+    </div>
+    <div class="property-value" ng-if="field.type.includes('string')">
+        <input type="text" ng-model="$parent.$parent.$parent.object[field.variableName]">
+    </div>
+    <div class="property-value" ng-if="field.type.includes('number')">
+        <input type="number" ng-model="$parent.$parent.$parent.object[field.variableName]">
+    </div>
+    <div class="property-value" ng-if="field.type.includes('boolean')">
+        <input type="checkbox" ng-model="$parent.$parent.$parent.object[field.variableName]">
+    </div>
+</div>
+<div ng-if="field.type.includes('object')">
+    <ol ui-tree-nodes="" ng-model="field.properties" ng-class="{hidden: !field.open}">
+        <li ng-repeat="field in field.properties" ui-tree-node eb-object-builder-field="field" object="$parent.$parent.$parent.object[field.variableName]">
+        </li>
+    </ol>
+</div>
+<div ng-if="field.type.includes('array') && field.items.type.includes('object')">
+    <ol ui-tree-nodes="" ng-model="field.items.properties" ng-class="{hidden: !field.open}">
+        <li ng-repeat="field in field.items.properties" ui-tree-node eb-object-builder-field="field" object="$parent.$parent.$parent.object[field.variableName]">
+        </li>
+    </ol>
+</div>

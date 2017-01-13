@@ -1,0 +1,101 @@
+require('torch')
+require('nn')
+
+{{ var topLevelOutputFields = it.outputSchema.topLevelFields; }}
+{{ var hasFixedTensor = topLevelOutputFields.length > 0 ? 1 : 0; }}
+{{ var topLevelOutputSequences = it.outputSchema.topLevelSequences; }}
+
+{{~topLevelOutputSequences:outputSequence:outputSequenceIndex}}
+    {{= it.criterionTemplate({criterionName: outputSequence.variableName + "Criterion", outputSchema: outputSequence.items, criterionTemplate: it.criterionTemplate}) }}
+{{~}}
+
+local {{=it.criterionName}}, parent = torch.class('nn.{{=it.criterionName}}', 'nn.Criterion')
+
+function {{=it.criterionName}}:__init(trainingScript)
+    parent.__init(self)
+
+    -- Create a criterion for each field on the output
+    self.criterions = {}
+    self.sequenceCriterions = {}
+    {{~topLevelOutputSequences:outputSequence:outputSequenceIndex}}
+        self.sequenceCriterions.{{=outputSequence.machineVariableName}} = nn.SequencerCriterion(nn.{{=outputSequence.machineVariableName}}Criterion())
+    {{~}}
+    {{~topLevelOutputFields:outputField:outputFieldIndex}}
+        {{? outputField.enum }}
+            local fieldCriterion = nn.ClassNLLCriterion()
+            self.criterions.{{=outputField.machineVariableName}} = fieldCriterion
+        {{?}}
+        {{? !outputField.enum }}
+            local fieldCriterion = nn.MSECriterion()
+            self.criterions.{{=outputField.machineVariableName}} = fieldCriterion
+        {{?}}
+    {{~}}
+
+    self.output = 0
+    self.gradInput = {}
+end
+
+
+function {{=it.criterionName}}:updateOutput(input, target)
+   self.output = 0
+
+
+   {{ var tensorPos = 1; }}
+   {{~topLevelOutputFields:outputField:outputFieldIndex}}
+   for n=1,input[1]:size()[2] do
+        local inputTensor_{{=outputField.machineVariableName}} = input[1][1][n]:narrow(1, {{=tensorPos}}, {{=outputField.tensorSize}})
+
+        {{? outputField.enum }}
+        local targetTensor_{{=outputField.machineVariableName}} = target[1][1][n]:narrow(1, {{=tensorPos}}, {{=outputField.tensorSize}}):nonzero()[1]
+        {{?}}
+        {{? !outputField.enum }}
+        local targetTensor_{{=outputField.machineVariableName}} = target[1][1][n]:narrow(1, {{=tensorPos}}, {{=outputField.tensorSize}})
+        {{?}}
+
+        self.output = self.output + self.criterions.{{=outputField.machineVariableName}}:updateOutput(inputTensor_{{=outputField.machineVariableName}}, targetTensor_{{=outputField.machineVariableName}}:double())
+        {{ tensorPos += outputField.tensorSize; }}
+   end
+   {{~}}
+   {{~topLevelOutputSequences:outputSequence:outputSequenceIndex}}
+       self.output = self.output + self.sequenceCriterions.{{=outputSequence.machineVariableName}}:updateOutput(input[{{=outputSequenceIndex + 1 + hasFixedTensor}}], target[{{=outputSequenceIndex + 1 + hasFixedTensor}}])
+   {{~}}
+   return self.output
+end
+
+
+function {{=it.criterionName}}:updateGradInput(input, target)
+   self.gradInput = {
+        {{?hasFixedTensor}}
+        torch.zeros(input[1]:size())
+        {{?}}
+   }
+   {{ var tensorPos = 1; }}
+   {{~topLevelOutputFields:outputField:outputFieldIndex}}
+   for n=1,input[1]:size()[2] do
+       local inputTensor_{{=outputField.machineVariableName}} = input[1][1][n]:narrow(1, {{=tensorPos}}, {{=outputField.tensorSize}})
+
+       {{? outputField.enum }}
+       local targetTensor_{{=outputField.machineVariableName}} = target[1][1][n]:narrow(1, {{=tensorPos}}, {{=outputField.tensorSize}}):nonzero()[1]
+       {{?}}
+       {{? !outputField.enum }}
+       local targetTensor_{{=outputField.machineVariableName}} = target[1][1][n]:narrow(1, {{=tensorPos}}, {{=outputField.tensorSize}})
+       {{?}}
+
+       local gradInput_{{=outputField.machineVariableName}} = self.criterions.{{=outputField.machineVariableName}}:updateGradInput(inputTensor_{{=outputField.machineVariableName}}, targetTensor_{{=outputField.machineVariableName}}:double())
+
+       self.gradInput[1][1][n]:narrow(1, {{=tensorPos}}, {{=outputField.tensorSize}}):copy(gradInput_{{=outputField.machineVariableName}})
+       {{ tensorPos += outputField.tensorSize; }}
+   end
+   {{~}}
+   {{~topLevelOutputSequences:outputSequence:outputSequenceIndex}}
+       self.gradInput[{{=outputSequenceIndex + 1 + hasFixedTensor}}] = self.sequenceCriterions.{{=outputSequence.machineVariableName}}:updateGradInput(input[{{=outputSequenceIndex + 1 + hasFixedTensor}}], target[{{=outputSequenceIndex + 1 + hasFixedTensor}}])
+   {{~}}
+
+   return self.gradInput
+end
+
+
+function {{=it.criterionName}}:type(type, tensorCache)
+   self.gradInput = {}
+   return parent.type(self, type, tensorCache)
+end

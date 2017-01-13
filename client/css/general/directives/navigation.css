@@ -1,0 +1,95 @@
+/*
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+.navigation-menu-group-header
+{
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+
+.navigation-menu-group-header span
+{
+    padding-left: 15px;
+    padding-right: 15px;
+    font-weight: bold;
+    color: rgb(112, 112, 112);
+}
+
+.navbar .dropdown-menu li a:hover, body.eb.top-navigation .navbar-nav .dropdown-menu > .active > a:hover
+{
+    background-color: #0086d1;
+    color: white;
+    border-radius: 0px;
+}
+
+.navbar .dropdown-menu a
+{
+
+}
+
+.navbar .dropdown-menu .divider
+{
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+
+.navbar-brand
+{
+    width: 70px;
+    position: relative;
+}
+
+.navbar-logo
+{
+    position: absolute;
+    opacity: 1;
+}
+
+.navbar-logo.ng-hide-add, .navbar-logo.ng-hide-remove
+{
+    transition: all linear 0.5s;
+}
+
+.navbar-logo.ng-hide
+{
+    opacity: 0;
+}
+
+
+.navbar-loader
+{
+    position: relative;
+    top: 4px;
+    opacity: 1;
+}
+
+.navbar-loader.ng-hide-add, .navbar-loader.ng-hide-remove
+{
+    transition: all linear 0.5s;
+}
+
+
+.navbar-loader.ng-hide
+{
+    opacity: 0;
+}
+
+.navbar-loader .sk-spinner .sk-cube
+{
+    background-color: #ffffff;
+}

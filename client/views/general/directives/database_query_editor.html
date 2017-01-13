@@ -1,0 +1,43 @@
+<!--
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<div class="alert alert-warning alert-group">
+    <div class="form-inline">
+        <select ng-options="o.name as o.name for o in operators" ng-model="query.operator" class="form-control input-sm"></select>
+        <button style="margin-left: 5px" ng-click="addCondition()" class="btn btn-sm btn-success"><span class="glyphicon glyphicon-plus-sign"></span> Add Condition</button>
+        <button style="margin-left: 5px" ng-click="addSubQuery()" class="btn btn-sm btn-success"><span class="glyphicon glyphicon-plus-sign"></span> Add Group</button>
+        <button style="margin-left: 5px" ng-click="removeSubQuery()" class="btn btn-sm btn-danger" ng-if="depth > 1"><span class="glyphicon glyphicon-minus-sign"></span> Remove Group</button>
+    </div>
+    <div class="group-conditions">
+        <div ng-repeat="rule in query.rules | orderBy:'index'" class="condition">
+            <div ng-if="rule.query">
+                <eb-database-query-editor schema="schema" query="rule.query" depth="{{depth + 1}}"></eb-database-query-editor>
+            </div>
+            <div ng-if="!rule.query">
+                <div class="form-inline">
+                    <select ng-options="field as field.title for field in fields" ng-model="rule.field" class="form-control input-sm"></select>
+                    <select style="margin-left: 5px" ng-options="c.name as c.name for c in conditions" ng-model="rule.condition" class="form-control input-sm"></select>
+                    <input style="margin-left: 5px" type="text" ng-model="rule.data" class="form-control input-lg" ng-if="rule.field.metadata.cardinality > 0.5"/>
+                    <select style="margin-left: 5px" ng-options="value.value as value.value for value in rule.field.metadata.valueHistogram.values" ng-model="rule.data" class="form-control input-lg" ng-if="rule.field.metadata.cardinality <= 0.5"></select>
+                    <button style="margin-left: 5px" ng-click="removeCondition($index)" class="btn btn-sm btn-danger"><span class="glyphicon glyphicon-minus-sign"></span></button>
+                    {{}}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

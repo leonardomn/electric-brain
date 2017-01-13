@@ -1,0 +1,56 @@
+<!--
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<div class="data-transformation-method-list-container">
+    <h3>Transformation</h3>
+    <hr />
+    <ul class="data-transformation-method-list">
+        <li ng-click="transformationType='code'" ng-class="{active: transformationType=='code'}">
+            <br/>
+            <i class="fa fa-code"></i>
+            <br/>
+            <span>Code</span>
+        </li>
+        <li ng-click="transformationType='string'" ng-class="{active: transformationType=='string'}">
+            <br/>
+            <i class="fa fa-file-text"></i>
+            <br/>
+            <span>String</span>
+        </li>
+        <li ng-click="transformationType='number'" ng-class="{active: transformationType=='number'}">
+            <br/>
+            <i>#</i>
+            <br/>
+            <span>Number</span>
+        </li>
+        <li ng-click="transformationType='enum'" ng-class="{active: transformationType=='enum'}">
+            <br/>
+            <i class="fa fa-ellipsis-v"></i>
+            <br/>
+            <span>Enum</span>
+        </li>
+    </ul>
+</div>
+
+<!-- the reason for inconsistency between ng-if and ng-show below is because the code-transformation contains an entire ACE editor, so
+     we don't want to force that to load by default. -->
+<eb-code-transformation transformation="field.configuration.transformation" ng-if="transformationType=='code'"></eb-code-transformation>
+<eb-string-transformation transformation="field.configuration.transformation" ng-if="transformationType=='string'"></eb-string-transformation>
+<eb-number-transformation transformation="field.configuration.transformation" ng-if="transformationType=='number'"></eb-number-transformation>
+<eb-enum-transformation transformation="field.configuration.transformation" ng-if="transformationType=='enum'"></eb-enum-transformation>
+<eb-boolean-transformation transformation="field.configuration.transformation" ng-if="transformationType=='boolean'"></eb-boolean-transformation>

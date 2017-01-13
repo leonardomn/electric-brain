@@ -1,0 +1,101 @@
+/*
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+.dashboard h1
+{
+    font-weight: bold;
+}
+
+.dashboard h2
+{
+    font-weight: bold;
+}
+
+.dashboard h3
+{
+    font-weight: normal;
+}
+
+.new-data-source-button
+{
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}
+.dashboard .empty-dashboard
+{
+    text-align: center;
+    margin-top: 100px;
+}
+
+.dashboard .jumbotron
+{
+    padding-bottom: 20px;
+    background-color: #dfdfdf;
+}
+
+.dashboard .empty-dashboard .icon-container
+{
+    margin-left: auto;
+    margin-right: auto;
+    display: table;
+}
+
+.dashboard .empty-dashboard i
+{
+    font-size: 40px;
+}
+
+.dashboard .empty-dashboard a
+{
+    color: #676a6c;
+}
+
+.dashboard .new-data-source-column,
+.dashboard .read-tutorial-column,
+.dashboard .check-documentation-column
+{
+    padding-top: 35px;
+    padding-bottom: 35px;
+    padding-left: 25px;
+    padding-right: 25px;
+    cursor: pointer;
+    height: 195px;
+}
+
+.dashboard .new-data-source-column:hover,
+.dashboard .read-tutorial-column:hover,
+.dashboard .check-documentation-column:hover
+{
+    text-decoration: underline;
+}
+
+.dashboard .new-data-source-column
+{
+    border-right: 2px solid #d4d4d4;
+}
+
+.dashboard .read-tutorial-column
+{
+    border-right: 2px solid #d4d4d4;
+}
+
+.dashboard .check-documentation-column
+{
+
+}

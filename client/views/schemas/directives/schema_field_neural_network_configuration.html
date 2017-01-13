@@ -1,0 +1,246 @@
+<!--
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<div class="row schema-field-configuration">
+    <div class="col-xs-12">
+        <div class="ibox">
+            <div class="ibox-title">
+                <h5>{{field.title}}</h5>
+            </div>
+            <div class="ibox-content">
+                <div  ng-if="field.isArray">
+                    <h3>Sequence</h3>
+
+                    <div class="table-responsive">
+                        <table class="table table-stripped table-bordered">
+
+                            <thead>
+                                <tr>
+                                    <th>
+                                        Layer
+                                    </th>
+                                    <th>
+                                        Type
+                                    </th>
+                                    <th>
+                                        Internal Size
+                                    </th>
+                                    <th>
+                                        Bidirectional
+                                    </th>
+                                    <th>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="layer in field.configuration.neuralNetwork.sequence.layers">
+                                    <td class="sequence-layer-configuration-input">
+                                        {{$index + 1}}
+                                    </td>
+                                    <td class="sequence-layer-configuration-input">
+                                        <select class="form-control" ng-model="layer.type">
+                                            <option value="lstm">LSTM</option>
+                                            <option value="gru">GRU</option>
+                                        </select>
+                                    </td>
+                                    <td class="sequence-layer-configuration-input">
+                                        <input type="number" class="form-control" placeholder="100" ng-model="layer.internalSize">
+                                    </td>
+                                    <td class="sequence-layer-configuration-input">
+                                        <input type="checkbox" class="form-control" ng-model="layer.bidirectional">
+                                    </td>
+                                    <td class="sequence-layer-configuration-input">
+                                        <button class="btn btn-default remove-sequence-layer">
+                                            <i class="fa fa-minus-square"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td class="sequence-layer-configuration-input">
+                                    </td>
+                                    <td class="sequence-layer-configuration-input">
+                                    </td>
+                                    <td class="sequence-layer-configuration-input">
+                                    </td>
+                                    <td class="sequence-layer-configuration-input">
+                                    </td>
+                                    <td class="sequence-layer-configuration-input">
+                                        <button class="btn btn-default add-new-sequence-layer">
+                                            <i class="fa fa-plus-square"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+
+                        </table>
+                    </div>
+                </div>
+
+                <div ng-if="field.isString">
+                    <h3> String </h3>
+
+                    {{field.configuration.neuralNetwork.string.mode}}
+
+                    <select class="form-control" ng-model="field.configuration.neuralNetwork.string.mode">
+                        <option value="classification">classification</option>
+                        <option value="sequence">sequence</option>
+                    </select>
+
+                </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                <div  ng-if="field.metadata.binaryHasImage">
+                    <h3>Image</h3>
+
+                    <div class="table-responsive convolutional-layer-configuration">
+                        <table class="table table-stripped table-bordered">
+
+                            <thead>
+                                <tr>
+                                    <th>
+                                        Layer
+                                    </th>
+                                    <th>
+                                        Input
+                                    </th>
+                                    <th>
+                                        Conv Kernel
+                                    </th>
+                                    <th>
+                                        Conv Step
+                                    </th>
+                                    <th>
+                                        Conv Padding
+                                    </th>
+                                    <th>
+                                        Num Kernels
+                                    </th>
+                                    <th>
+                                        Conv output
+                                    </th>
+                                    <th>
+                                        Pool Kernel
+                                    </th>
+                                    <th>
+                                        Pool Step
+                                    </th>
+                                    <th>
+                                        Pool Padding
+                                    </th>
+                                    <th>
+                                        Output
+                                    </th>
+                                    <th>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="layer in field.configuration.neuralNetwork.image.layers">
+                                    <td class="convolutional-layer-configuration-input">
+                                        {{$index + 1}}
+                                    </td>
+                                    <td class="convolutional-layer-configuration-input">
+                                        {{layer.inputWidth || 0}} x {{layer.inputHeight || 0}}
+                                    </td>
+                                    <td class="convolutional-layer-configuration-input">
+                                        <input type="number" min="2" max="{{layer._maxConvolutionalKernelSize}}" ng-model="layer.convolutionKernelSize">
+                                    </td>
+                                    <td class="convolutional-layer-configuration-input">
+                                        <input type="number" min="1" max="{{layer._maxConvolutionalKernelSize}}" ng-model="layer.convolutionStepSize">
+                                    </td>
+                                    <td class="convolutional-layer-configuration-input">
+                                        <input type="number" min="0"  max="{{layer.convolutionKernelSize}}" ng-model="layer.convolutionPadSize">
+                                    </td>
+                                    <td class="convolutional-layer-configuration-input">
+                                        <input type="number" min="1" ng-model="layer.numKernels">
+                                    </td>
+                                    <td class="convolutional-layer-configuration-input">
+                                        {{layer.convolutionOutputWidth || 0}} x {{layer.convolutionOutputHeight || 0}}
+                                    </td>
+                                    <td class="convolutional-layer-configuration-input">
+                                        <input type="number" min="1" max="{{layer._maxPoolingKernelSize}}" ng-model="layer.poolingKernelSize">
+                                    </td>
+                                    <td class="convolutional-layer-configuration-input">
+                                        <input type="number" min="1" max="{{layer._maxPoolingKernelSize}}" ng-model="layer.poolingStepSize">
+                                    </td>
+                                    <td class="convolutional-layer-configuration-input">
+                                        <input type="number" min="0" max="{{layer.poolingKernelSize}}" ng-model="layer.poolingPadSize">
+                                    </td>
+                                    <td class="convolutional-layer-configuration-input">
+                                        {{layer.outputWidth || 0}} x {{layer.outputHeight || 0}}
+                                    </td>
+                                    <td class="convolutional-layer-configuration-input">
+                                        <button class="btn btn-default remove-sequence-layer">
+                                            <i class="fa fa-minus-square"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td class="convolutional-layer-configuration-input">
+                                    </td>
+                                    <td class="convolutional-layer-configuration-input">
+                                    </td>
+                                    <td class="convolutional-layer-configuration-input">
+                                    </td>
+                                    <td class="convolutional-layer-configuration-input">
+                                    </td>
+                                    <td class="convolutional-layer-configuration-input">
+                                    </td>
+                                    <td class="convolutional-layer-configuration-input">
+                                    </td>
+                                    <td class="convolutional-layer-configuration-input">
+                                    </td>
+                                    <td class="convolutional-layer-configuration-input">
+                                    </td>
+                                    <td class="convolutional-layer-configuration-input">
+                                    </td>
+                                    <td class="convolutional-layer-configuration-input">
+                                    </td>
+                                    <td class="convolutional-layer-configuration-input">
+                                    </td>
+                                    <td class="convolutional-layer-configuration-input">
+                                        <button class="btn btn-default add-new-sequence-layer">
+                                            <i class="fa fa-plus-square"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

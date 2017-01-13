@@ -1,0 +1,56 @@
+/*
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+.design-architecture .architecture-diagram-container
+{
+
+}
+
+
+.design-architecture .architecture-diagram
+{
+    width: calc(100% - 600px);
+}
+
+
+.design-architecture .table > tbody > tr > td.convolutional-layer-configuration-input,
+.design-architecture .table > tbody > tr > td.sequence-layer-configuration-input
+{
+    padding-top: 6px;
+    padding-bottom: 6px;
+    padding-left: 6px;
+    padding-right: 6px;
+}
+
+.design-architecture .table > tbody > tr > td.convolutional-layer-configuration-input input,
+.design-architecture .table > tbody > tr > td.sequence-layer-configuration-input input
+{
+    background-color: #FFFFFF;
+    background-image: none;
+    border: 0;
+    color: inherit;
+    display: block;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    padding-left: 6px;
+    padding-right: 0px;
+    transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s;
+    width: 100%;
+    height: 100%;
+    font-size: 14px;
+}

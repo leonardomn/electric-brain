@@ -1,0 +1,165 @@
+<!--
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<div class="wrapper wrapper-content view-model" ng-if="model">
+    <div class="row">
+        <div class="col-md-4">
+            <div id="vertical-timeline" class="vertical-container light-timeline no-margins">
+                <div class="vertical-timeline-block model-step-block {{model.codeGeneration.status}}">
+                    <div class="vertical-timeline-icon navy-bg">
+                        <span class="model-step-label">1</span>
+                    </div>
+
+                    <div class="vertical-timeline-content">
+                        <h2>Generate the neural network code</h2>
+
+                        <div ng-show="model.codeGeneration.status !== 'waiting'">
+                            <p>Total Files: {{model.codeGeneration.totalFiles}}</p>
+                            <uib-progressbar max="100" value="model.codeGeneration.percentageComplete"><span style="color:white; white-space:nowrap;">{{model.codeGeneration.percentageComplete | number:1}}&percnt;</span></uib-progressbar>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="vertical-timeline-block model-step-block {{model.dataScanning.status}}">
+                    <div class="vertical-timeline-icon lazur-bg">
+                        <span class="model-step-label">2</span>
+                    </div>
+
+                    <div class="vertical-timeline-content">
+                        <h2>Scan the data</h2>
+                        <div ng-show="model.dataScanning.status !== 'waiting'">
+                            <p>Scanned {{model.dataScanning.scannedObjects}} / {{model.dataScanning.totalObjects}}</p>
+                            <p ng-if="model.dataScanning.timeToLoadEntry > 0">Estimated time remaining: {{(model.dataScanning.timeToLoadEntry * (model.dataScanning.totalObjects - model.dataScanning.scannedObjects) / 1000) | number:2}} seconds</p>
+
+                            <uib-progressbar max="100" value="model.dataScanning.percentageComplete"><span style="color:white; white-space:nowrap;">{{model.dataScanning.percentageComplete | number:1}}&percnt;</span></uib-progressbar>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="vertical-timeline-block model-step-block {{model.training.status}}">
+                    <div class="vertical-timeline-icon yellow-bg">
+                        <span class="model-step-label">3</span>
+                    </div>
+
+                    <div class="vertical-timeline-content">
+                        <h2>Train the network</h2>
+                        <div ng-show="model.training.status !== 'waiting'">
+                            <p>Completed {{model.training.completedIterations}} / {{model.training.totalIterations}}</p>
+                            <p>Loss {{model.training.currentLoss | number:3}}</p>
+                            <p>Accuracy {{(model.training.currentAccuracy * 100) | number:1}}</p>
+                            <p>Time per 1000 iterations: {{model.training.currentTimePerIteration | number:1}} seconds</p>
+
+                            <uib-progressbar max="100" value="model.training.percentageComplete"><span style="color:white; white-space:nowrap;">{{model.training.percentageComplete | number:1}}&percnt;</span></uib-progressbar>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="vertical-timeline-block model-step-block {{model.testing.status}}">
+                    <div class="model-step-background-block"></div>
+                    <div class="vertical-timeline-icon navy-bg">
+                        <span class="model-step-label">4</span>
+                    </div>
+
+                    <div class="vertical-timeline-content">
+                        <h2>Test the network</h2>
+
+                        <div ng-show="model.testing.status !== 'waiting'">
+                            <p>Completed {{model.testing.completedObjects}} / {{model.testing.totalObjects}}</p>
+                            <p>Accuracy {{(model.testing.accuracy * 100) | number:1}}</p>
+
+                            <uib-progressbar max="100" value="model.testing.percentageComplete"><span style="color:white; white-space:nowrap;">{{model.testing.percentageComplete | number:1}}&percnt;</span></uib-progressbar>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <uib-tabset active="activeTab">
+                <uib-tab index="0" heading="Code">
+                    <div class="ibox float-e-margins">
+                        <div class="ibox-content">
+                            <eb-architecture-file-browser architecture="model.architecture"></eb-architecture-file-browser>
+                        </div>
+                    </div>
+                </uib-tab>
+                <uib-tab index="1" heading="Data">
+                    <div class="ibox float-e-margins">
+                        <div class="ibox-content">
+                            <eb-data-browser eb-data-source="model.architecture.dataSource" eb-object-clicked="objectClicked"></eb-data-browser>
+                        </div>
+                    </div>
+                </uib-tab>
+                <uib-tab index="2" heading="Logs">
+                    <div class="ibox float-e-margins">
+                        <div class="ibox-content">
+                            <div class="task-log" ui-ace="{ onLoad : aceLoaded }" readonly></div>
+                        </div>
+                    </div>
+                </uib-tab>
+                <uib-tab index="3" heading="Training" ng-if="model.training.status !='waiting'" select="reflowCharts()">
+                    <div class="training-charts">
+                        <uib-tabset active="activeTrainingChart">
+                            <uib-tab index="0" heading="Accuracy" select="reflowCharts()">
+                                <highchart id="accuracyChart" config="accuracyChartConfig"></highchart>
+                            </uib-tab>
+                            <uib-tab index="1" heading="Loss" select="reflowCharts()">
+                                <highchart id="lossChart" config="lossChartConfig"></highchart>
+                            </uib-tab>
+                        </uib-tabset>
+                    </div>
+                </uib-tab>
+                <uib-tab index="4" heading="Results" ng-if="model.training.status !='waiting'">
+                    <eb-schema-editor
+                            title="Results"
+                            schema="model.architecture.outputSchema"
+                            mode="results"
+                            show-field-details="false"
+                            show-only-included="true">
+                    </eb-schema-editor>
+                </uib-tab>
+                <!--<uib-tab index="5" heading="Download" ng-if="model.training.status !='waiting'">-->
+                    <!--<h1>Select programming language for bundle</h1>-->
+                    <!--<br/>-->
+                    <!--<br/>-->
+                    <!--<eb-programming-language-selector ng-model="downloadLanguage"></eb-programming-language-selector>-->
+                    <!--<br/>-->
+                    <!--<br/>-->
+                    <!--<a ng-show="downloadLanguage" href="/api/models/{{model._id}}/bundle/{{downloadLanguage}}">Download bundle</a>-->
+                <!--</uib-tab>-->
+                <uib-tab index="5" heading="API" ng-if="model.training.status !='waiting'">
+                    <h1>API</h1>
+                    <br/>
+                    <br/>
+                    <h2>Endpoint</h2>
+                    <p>/api/models/{{model._id}}/process</p>
+                    <br/>
+                    <div swagger-ui input-type="json" input="modelAPISpec"></div>
+                </uib-tab>
+                <uib-tab index="6" heading="Test" ng-if="model.training.status !='waiting'">
+                    <h1>Test your model</h1>
+                    <br/>
+                    <eb-object-builder schema="testInputSchema" object="$parent.testObject"></eb-object-builder>
+                    <br>
+                    <button class="btn btn-primary" ng-click="testModel()">Test Model</button>
+                    <br>
+                    <pre ng-show="testResult">{{testResult}}</pre>
+                </uib-tab>
+            </uib-tabset>
+        </div>
+    </div>
+</div>

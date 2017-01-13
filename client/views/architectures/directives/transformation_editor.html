@@ -1,0 +1,50 @@
+<!--
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<div class="row transformation-editor">
+    <div class="col-md-12">
+        <div class="ibox float-e-margins">
+            <div class="ibox-title">
+                <div class="enabled-block">
+                    <label>Enabled</label>
+                    <input ng-model="transformationEnabled" type="checkbox">
+                </div>
+
+                <div class="method-picker" ng-show="transformationEnabled">
+                    <label>Language</label>
+                    <eb-programming-language-selector ng-model="transformationLanguage"></eb-programming-language-selector>
+                    <div style="clear:both"></div>
+                    <hr />
+                </div>
+
+                <div class="preview-button" ng-show="transformationEnabled && transformationLanguage">
+                    <button class="btn btn-primary" ng-click="onPreviewClicked()">Preview</button>
+                </div>
+            </div>
+            <div class="ibox-content">
+                <div class="content-container">
+                    <div class="options" ng-show="transformationEnabled && transformationLanguage">
+                        <div ui-ace="editorOptions" ng-model="architecture.inputTransformations[0].code"></div>
+                    </div>
+
+                    <div style="clear:both">&nbsp;</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

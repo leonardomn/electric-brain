@@ -1,0 +1,120 @@
+/*
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+
+.data-transformation-method-list-container
+{
+    width: 18%;
+    float: left;
+    border-right: 1px solid #eee;
+}
+
+.data-transformation-method-list-container h3
+{
+    padding-top: 10px;
+    text-align: center;
+}
+
+.data-transformation-method-list-container hr
+{
+    padding: 0;
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
+.data-transformation-method-list
+{
+    padding: 0px;
+}
+
+.data-transformation-method-list li
+{
+    list-style: none;
+    height: 100px;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.data-transformation-method-list li i
+{
+    font-size: 25px;
+    font-style: normal;
+}
+
+.data-transformation-method-list li span
+{
+    font-size: 15px;
+}
+
+.data-transformation-method-list li:hover
+{
+    background-color: #eee;
+}
+
+.data-transformation-method-list li.active
+{
+    background-color: #eee;
+}
+
+.data-transformation-content-container
+{
+    width: 82%;
+}
+
+.data-transformation-enabled
+{
+
+}
+
+.data-transformation-method-picker
+{
+    padding: 10px;
+}
+
+.data-transformation-method-picker label
+{
+    display: block;
+    float: left;
+    vertical-align: top;
+    margin-top: 4px;
+    padding-right: 10px;
+}
+
+.data-transformation-method-picker .ui-select-container
+{
+    float: left;
+}
+
+
+.data-transformation-content-container .ace_editor
+{
+    height: 600px;
+}
+
+.data-transformation-method-picker hr
+{
+    padding: 0px;
+    margin: 0px;
+}
+
+.code-transformation-language-name
+{
+    margin-left: 15px;
+}

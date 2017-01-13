@@ -1,0 +1,7 @@
+.idea
+build
+client/bower_components
+client/build
+.bower
+
+

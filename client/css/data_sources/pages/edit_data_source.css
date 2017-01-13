@@ -1,0 +1,307 @@
+/*
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+.edit-data-source
+{
+    position: relative;
+}
+
+
+
+.edit-data-source  .steps
+{
+    position: relative;
+    display: block;
+    width: 100%;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.edit-data-source.vertical > .steps
+{
+    display: inline;
+    float: left;
+    width: 30%;
+}
+
+.edit-data-source  .steps ul
+{
+    list-style-type: none;
+    padding-left: 0px;
+}
+
+.edit-data-source  .steps .number
+{
+    font-size: 1.429em;
+}
+
+.edit-data-source  .steps > ul > li
+{
+    width: 33%;
+}
+
+.edit-data-source  .steps > ul > li i
+{
+    color: #0086d1;
+    font-size: 16px;
+}
+
+.edit-data-source  .steps > ul > li.current i
+{
+    display: none;
+}
+
+.edit-data-source  .steps > ul > li,
+.edit-data-source  .actions > ul > li
+{
+    float: left;
+}
+
+.edit-data-source.vertical > .steps > ul > li
+{
+    float: none;
+    width: 100%;
+}
+
+.edit-data-source  .steps a,
+.edit-data-source  .steps a:hover,
+.edit-data-source  .steps a:active
+{
+    display: block;
+    width: auto;
+    padding: 1em 0.5em;
+    text-decoration: none;
+}
+
+
+
+.edit-data-source  .steps li:first-child a,
+.edit-data-source  .steps li:first-child a:hover,
+.edit-data-source  .steps li:first-child a:active
+{
+    -webkit-border-bottom-left-radius: 5px;
+    -moz-border-radius-bottomleft: 5px;
+    border-bottom-left-radius: 5px;
+
+    -webkit-border-top-left-radius: 5px;
+    -moz-border-radius-topleft: 5px;
+    border-top-left-radius: 5px;
+}
+
+
+
+.edit-data-source  .steps li:last-child a,
+.edit-data-source  .steps li:last-child a:hover,
+.edit-data-source  .steps li:last-child a:active
+{
+    -webkit-border-bottom-right-radius: 5px;
+    -moz-border-radius-bottomright: 5px;
+    border-bottom-right-radius: 5px;
+
+    -webkit-border-top-right-radius: 5px;
+    -moz-border-radius-topright: 5px;
+    border-top-right-radius: 5px;
+}
+
+.edit-data-source  .steps .disabled a,
+.edit-data-source  .steps .disabled a:hover,
+.edit-data-source  .steps .disabled a:active
+{
+    background: #eee;
+    color: #aaa;
+    cursor: default;
+}
+
+.edit-data-source  .steps .current a,
+.edit-data-source  .steps .current a:hover,
+.edit-data-source  .steps .current a:active
+{
+    background: #2184be;
+    color: #fff;
+    cursor: default;
+}
+
+.edit-data-source  .steps .done a,
+.edit-data-source  .steps .done a:hover,
+.edit-data-source  .steps .done a:active
+{
+    background: #9dc8e2;
+    color: #fff;
+}
+
+.edit-data-source  .steps .error a,
+.edit-data-source  .steps .error a:hover,
+.edit-data-source  .steps .error a:active
+{
+    background: #ff3111;
+    color: #fff;
+}
+
+
+
+/*
+   This transition is for when a database-type is selected
+*/
+.database-type.selected {
+    transition: all 0.5s linear;
+}
+
+
+
+.database-configuration.ng-hide-add, .database-configuration.ng-hide-remove {
+    transition: all linear 0.5s;
+}
+
+.database-configuration.ng-hide {
+    opacity: 0;
+}
+.database-tables table tbody tr.selected {
+    background: #eeeeee;
+}
+
+.database-fields.ng-hide-add, .database-fields.ng-hide-remove {
+    transition: all linear 0.5s;
+}
+
+.database-fields.ng-hide {
+    opacity: 0;
+}
+
+
+
+.btn {
+    margin-right: 8px;
+}
+
+/* --- Tree --- */
+.angular-ui-tree-handle
+{
+    background: #f8faff;
+    border: 1px solid #dae2ea;
+    color: #7c9eb2;
+    padding: 10px 10px;
+}
+
+.angular-ui-tree-handle:hover
+{
+    color: #438eb9;
+    background: #f4f6f7;
+    border-color: #dce2e8;
+}
+
+.angular-ui-tree-placeholder
+{
+    background: #f0f9ff;
+    border: 2px dashed #bed2db;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+tr.angular-ui-tree-empty
+{
+    height:100px
+}
+
+
+.schema-tree .tree-node
+{
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    margin: 10px;
+    border: 1px solid #dae2ea;
+    background: #f8faff;
+    color: #7c9eb2;
+    opacity: 0.75;
+    cursor: pointer;
+}
+
+.tree-node.included
+{
+    opacity: 1.0;
+}
+
+.tree-node.selected
+{
+    margin: 9px;
+    background: #f0f4ff;
+    border-width: 2px;
+}
+
+.tree-node .checked-icon
+{
+    font-size: 32px;
+}
+
+.tree-node .sub-properties-chevron
+{
+    flex-basis: 32px;
+    flex-grow: 0;
+    align-self: flex-start;
+}
+
+.tree-node .property-information
+{
+    align-self: flex-start;
+    flex-grow: 1;
+}
+
+.tree-node .property-information .badge
+{
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+.tree-node .property-information .property-description
+{
+    padding-left: 20px;
+}
+
+.tree-node .property-checked-icon
+{
+    align-self: flex-start;
+    flex-basis: 32px;
+    flex-grow: 0;
+}
+
+.nodrop
+{
+    background-color: #f2dede;
+}
+
+.tree-handle
+{
+    padding: 10px;
+    background: #428bca;
+    color: #FFF;
+    margin-right: 10px;
+}
+
+.angular-ui-tree-handle:hover
+{
+}
+
+.angular-ui-tree-placeholder
+{
+    background: #f0f9ff;
+    border: 2px dashed #bed2db;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}

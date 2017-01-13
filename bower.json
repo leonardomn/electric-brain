@@ -1,0 +1,42 @@
+{
+  "name": "electric-brain",
+  "description": "The amazing Analytical Machine!",
+  "version": "0.0.1",
+  "homepage": "https://bitbucket.org/electricbrain/electric-brain",
+  "license": "Proprietary",
+  "private": true,
+  "dependencies": {
+    "angular": "1.5.7",
+    "angular-animate": "1.5.7",
+    "angular-bootstrap": "1.3.3",
+    "angular-flot": "^0.0.16",
+    "angular-spinner": "^0.8.1",
+    "angular-ui-ace": "bower",
+    "angular-ui-router": "^0.3.1",
+    "angular-ui-select": "^0.18.1",
+    "angular-ui-tree": "^2.16.0",
+    "bootstrap": "^3.3.6",
+    "Flot": "flot#^0.8.3",
+    "font-awesome": "fontawesome#^4.6.3",
+    "jquery": "^3.1.0",
+    "jquery-ui": "^1.12.0",
+    "moment": "^2.15.0",
+    "oclazyload": "ocLazyLoad#^1.0.9",
+    "spin.js": "^2.3.2",
+    "underscore": "^1.8.3",
+    "ng-table": "^1.0.0",
+    "highcharts-ng": "^0.0.12",
+    "highcharts": "^4.2.6",
+    "angular-ez-plus": "^1.2.0",
+    "SpinKit": "spinkit#^1.2.5",
+    "colorjs": "^1.0.1",
+    "angular-swagger-ui": "^0.3.3",
+    "bluebird": "^3.4.6"
+  },
+  "possible_deprecations": {},
+  "resolutions": {
+    "jquery": "^3.1.0",
+    "angular": "1.5.7",
+    "angular-animate": "1.5.7"
+  }
+}
