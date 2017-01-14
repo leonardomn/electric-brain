@@ -19,14 +19,15 @@
 "use strict";
 
 const
-    AdmZip = require('adm-zip'),
     async = require('async'),
+    childProcess = require('child_process'),
     EBModelBundler = require('./EBModelBundler'),
     EBTorchProcess = require('../architecture/EBTorchProcess'),
     fs = require('fs'),
     models = require('../../../shared/models/models'),
     mongodb = require('mongodb'),
-    path = require('path');
+    path = require('path'),
+    temp = require('temp');
 
 /**
  * This class is used for bundling up the model for deployment in NodeJS servers
@@ -61,8 +62,9 @@ class EBNodeBundler
         });
 
         self.trainingProcess = new EBTorchProcess(new models.EBArchitecture(model.architecture));
-        const zip = new AdmZip();
-        
+
+        const zipFile = temp.path({suffix: '.zip'});
+
         async.series([
             // Generate the code
             function generateCode(next)
@@ -83,29 +85,43 @@ class EBNodeBundler
                         return next();
                     });
             },
-            // Add the files to the zip file
+            // Create a zip file with all the files
             function createZipFile(next)
             {
-                fs.readdir(self.trainingProcess.scriptFolder, function(err, files)
+                childProcess.exec(`zip -r ${zipFile} ${self.trainingProcess.scriptFolder}`, (err) =>
                 {
                     if (err)
                     {
                         return next(err);
                     }
 
-                    files.forEach((file) => zip.addLocalFile(path.join(self.trainingProcess.scriptFolder, file)));
-
-                    return next(null, zip.toBuffer());
+                    return next();
                 });
             }
-        ], function(err)
+        ], (err, buffer) =>
         {
             if (err)
             {
                 return callback(err);
             }
-            
-            return callback(null, zip.toBuffer());
+
+            fs.readFile(zipFile, (err, buffer) =>
+            {
+                if (err)
+                {
+                    return callback(err);
+                }
+
+                fs.unlink(zipFile, (err) =>
+                {
+                    if (err)
+                    {
+                        return callback(err);
+                    }
+
+                    return callback(null, buffer);
+                });
+            });
         });
     }
 }
