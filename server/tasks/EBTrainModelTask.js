@@ -56,8 +56,11 @@ class EBTrainModelTask {
         this.rollingAverageTimePerIteration = new EBRollingAverage(100);
         this.rollingAverageTimeToLoad100Entries = new EBRollingAverage(100);
         this.lastFrontendUpdateTime = null;
+        this.lastDatabaseUpdateTime = null;
         this.isFrontendUpdateScheduled = null;
+        this.isDatabaseUpdateScheduled = null;
         this.frontendUpdateInterval = 2500;
+        this.databaseUpdateInterval = 5000;
         this.numberOfObjectsToSample = 1000000;
         this.model = null;
 
@@ -221,21 +224,38 @@ class EBTrainModelTask {
             }, frontendUpdateDelay);
         }
 
-        self.model[stepName] = result;
-        self.models.updateOne({_id: self.model._id}, {
-            $set: {
-                [stepName]: result,
-                architecture: self.model.architecture
-            }
-        }, (err) =>
+        if (!self.isDatabaseUpdateScheduled)
         {
-            if (err)
+            self.isDatabaseUpdateScheduled = true;
+            let databaseUpdateDelay = 0;
+            if (self.lastDatabaseUpdateTime)
             {
-                return callback(err);
+                databaseUpdateDelay = Math.max(0, self.databaseUpdateInterval - (Date.now() - self.lastDatabaseUpdateTime.getTime()));
             }
 
-            return callback();
-        });
+            setTimeout(() =>
+            {
+                self.isDatabaseUpdateScheduled = false;
+                self.lastDatabaseUpdateTime = new Date();
+
+
+                self.model[stepName] = result;
+                self.models.updateOne({_id: self.model._id}, {
+                    $set: {
+                        [stepName]: result,
+                        architecture: self.model.architecture
+                    }
+                }, (err) =>
+                {
+                    if (err)
+                    {
+                        console.error(err);
+                    }
+                });
+            }, databaseUpdateDelay);
+        }
+
+        return callback();
     }
 
     /**
@@ -744,7 +764,7 @@ class EBTrainModelTask {
             {
                 if (fieldSchema.isField && fieldSchema.configuration.included)
                 {
-                    if (EBTorchTransformer.processAsEnumeration(fieldSchema))
+                    if (fieldSchema.configuration.neuralNetwork.string.mode === 'classification')
                     {
                         totalClassifications += 1;
                         if (values[0] === values[1])
