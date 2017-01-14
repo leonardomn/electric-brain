@@ -53,8 +53,8 @@ class EBTrainModelTask {
         this.trainingBatchSize = 16;
         this.testingBatchSize = 4;
         this.rollingAverageAccuracy = new EBRollingAverage(100);
-        this.rollingAverageTimePerIteration = new EBRollingAverage(100);
-        this.rollingAverageTimeToLoad100Entries = new EBRollingAverage(100);
+        this.rollingAverageTimePerIteration = new EBRollingAverage(1000);
+        this.rollingAverageTimeToLoad100Entries = new EBRollingAverage(1000);
         this.lastFrontendUpdateTime = null;
         this.lastDatabaseUpdateTime = null;
         this.isFrontendUpdateScheduled = null;
