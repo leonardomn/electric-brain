@@ -47,7 +47,7 @@ class EBTorchProcess
         self.processes = [];
         self.allLoadedEntries = [];
         self.testingSet = {};
-        self.numProcesses = 4;
+        self.numProcesses = 1;
     }
 
 
