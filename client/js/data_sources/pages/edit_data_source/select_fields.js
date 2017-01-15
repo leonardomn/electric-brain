@@ -36,6 +36,10 @@ angular.module('eb').controller('EBDataSourceSelectFieldsController', function E
         const promise = EBDataSourceService.getCollectionSchema($scope.dataSource).success(function(body)
         {
             $scope.dataSource.dataSchema = body.dataSchema;
+            $scope.dataSource.dataSchema.walk(function(field)
+            {
+                field.setIncluded(true);
+            });
         });
         EBLoaderService.showLoaderWith('page', promise);
     }
