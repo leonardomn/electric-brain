@@ -151,7 +151,7 @@ class EBFieldMetadata
         {
             self.binaryHasImage = false;
         }
-        
+
         if (rawFieldMetadata.examples)
         {
             self.examples = rawFieldMetadata.examples;
@@ -159,6 +159,15 @@ class EBFieldMetadata
         else
         {
             self.examples = [];
+        }
+
+        if (rawFieldMetadata.string)
+        {
+            self.string = rawFieldMetadata.string;
+        }
+        else
+        {
+            self.string = {fieldType: {}};
         }
     }
 
@@ -199,7 +208,17 @@ class EBFieldMetadata
                         average: {"type": "number"},
                         max: {"type": "number"}
                     }
+                },
+                string: {
+                    "type": "object",
+                    "properties": {
+                        fieldType: {
+                            "type": "object",
+                            "additionalProperties": {"type": "number"}
+                        }
+                    }
                 }
+
             }
         };
     }

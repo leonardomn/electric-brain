@@ -85,10 +85,29 @@ class EBNodeBundler
                         return next();
                     });
             },
+            // Write the JSON of the model object
+            function writeModelJSON(next)
+            {
+                const jsonData = JSON.stringify(model, null, 4);
+                fs.writeFile(path.join(self.trainingProcess.scriptFolder, 'model.json'), jsonData, next);
+            },
+            // Write electric brain bundle file
+            function writeEBBundle(next)
+            {
+                fs.readFile(path.join(__dirname, '..', '..', '..', 'build', 'ebbundle.js'), (err, buffer) =>
+                {
+                    if (err)
+                    {
+                        return next(err);
+                    }
+
+                    fs.writeFile(path.join(self.trainingProcess.scriptFolder, 'ebbundle.js'), buffer, next);
+                });
+            },
             // Create a zip file with all the files
             function createZipFile(next)
             {
-                childProcess.exec(`zip -r ${zipFile} ${self.trainingProcess.scriptFolder}`, (err) =>
+                childProcess.exec(`zip -r ${zipFile} *`, {cwd: self.trainingProcess.scriptFolder}, (err) =>
                 {
                     if (err)
                     {

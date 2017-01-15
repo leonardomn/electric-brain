@@ -37,12 +37,13 @@ class EBTorchProcess
      * Creates the process object for the given EBArchitecture object.
      *
      * @param {EBArchitecture} architecture The architecture object that we are creating the torch process for.
+     * @param {string} [scriptFolder] Optional directory where the script files should be written
      */
-    constructor(architecture)
+    constructor(architecture, scriptFolder)
     {
         const self = this;
         self.architecture = architecture;
-        self.scriptFolder = null;
+        self.scriptFolder = scriptFolder || null;
         self.scriptFile = null;
         self.processes = [];
         self.allLoadedEntries = [];
@@ -361,7 +362,7 @@ class EBTorchProcess
         {
             if (processBatch.samples.length === 0)
             {
-                return next({objects: []});
+                return next(null, {objects: []});
             }
 
             const message = {

@@ -71,6 +71,12 @@
                         </div>
                     </div>
 
+                    <!-- If this field is a string field, show its field type-->
+                    <div ng-if="field.isString">
+                        <h3>Field Type</h3>
+                        <pre>{{field.metadata.string.fieldType}}</pre>
+                    </div>
+
                     <!-- Show some examples of the field -->
                     <div ng-if="field.metadata.examples.length > 0">
                         <h3>Examples</h3>

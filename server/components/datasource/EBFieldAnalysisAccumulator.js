@@ -49,13 +49,15 @@ class EBFieldAnalysisAccumulator
 {
     /**
      * This creates an empty accumulator.
+     *
+     * @param {FieldTypeModel} fieldTypeModel an instantiation of the field type model
      */
-    constructor()
+    constructor(fieldTypeModel)
     {
         const self = this;
 
         this.metadata = new EBFieldMetadata();
-
+        this.fieldTypeModel = fieldTypeModel;
 
         if (!self[_numberValues])
         {
@@ -156,8 +158,32 @@ class EBFieldAnalysisAccumulator
                     }
 
                     self[_fingerprints].add(fingerprint32(value));
+
+                    if (keepForExample)
+                    {
+                        self.fieldTypeModel.processData([{value: value}]).then((results) =>
+                        {
+                            const type = results[0].condensedType;
+                            
+                            if (!self.metadata.string.fieldType[type])
+                            {
+                                self.metadata.string.fieldType[type] = 0;
+                            }
+
+                            self.metadata.string.fieldType[type] += 1;
+                            
+                            return next();
+                        }, (err) => next(err));
+                    }
+                    else
+                    {
+                        return next();
+                    }
                 }
-                return next();
+                else
+                {
+                    return next();
+                }
             },
             function analyzeNumber(next)
             {

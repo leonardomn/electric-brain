@@ -20,7 +20,9 @@
 const
     async = require('async'),
     EBFieldAnalysisAccumulator = require("./EBFieldAnalysisAccumulator"),
+    FieldTypeModel = require('../../../build/models/fieldtype/ebbundle').EBBundleScript,
     models = require('../../../shared/models/models'),
+    path = require('path'),
     underscore = require('underscore');
 
 /**
@@ -40,6 +42,9 @@ class EBSchemaDetector
         self.fieldAccumulators = new Map();
         self.objectsAccumulated = 0;
         self.knownValueEnumCutOff = 250;
+
+        self.fieldType = new FieldTypeModel(path.join(__dirname, '../../../build/models/fieldtype'));
+        self.fieldTypeStartPromise = self.fieldType.startModelProcess();
     }
 
 
@@ -57,66 +62,69 @@ class EBSchemaDetector
     {
         const self = this;
 
-        /**
-         * This function is used internally to recurse through a JSON object
-         *
-         * @param {string} rootVariablePath The variablePath leading from the root of the object down to this field
-         * @param {anything} value The value being analyzed
-         * @param {function(err)} callback The callback after recursion
-         */
-        function recurse(rootVariablePath, value, callback)
+        self.fieldTypeStartPromise.then(() =>
         {
-            if (!self.fieldAccumulators.has(rootVariablePath))
+            /**
+             * This function is used internally to recurse through a JSON object
+             *
+             * @param {string} rootVariablePath The variablePath leading from the root of the object down to this field
+             * @param {anything} value The value being analyzed
+             * @param {function(err)} callback The callback after recursion
+             */
+            function recurse(rootVariablePath, value, callback)
             {
-                self.fieldAccumulators.set(rootVariablePath, new EBFieldAnalysisAccumulator({}));
-            }
+                if (!self.fieldAccumulators.has(rootVariablePath))
+                {
+                    self.fieldAccumulators.set(rootVariablePath, new EBFieldAnalysisAccumulator(self.fieldType));
+                }
 
-            if (underscore.isArray(value))
-            {
-                async.eachSeries(value, function(arrayValue, next)
+                if (underscore.isArray(value))
                 {
-                    recurse(`${rootVariablePath}.[]`, arrayValue, next);
-                }, function(err)
-                {
-                    if (err)
+                    async.eachSeries(value, function(arrayValue, next)
                     {
-                        return callback(err);
-                    }
-
-                    self.fieldAccumulators.get(rootVariablePath).accumulateValue(value, false, callback);
-                });
-            }
-            else if (value instanceof Buffer)
-            {
-                self.fieldAccumulators.get(rootVariablePath).accumulateValue(value, keepForExample, callback);
-            }
-            else if (underscore.isObject(value))
-            {
-                const fields = Object.keys(value);
-                async.eachSeries(fields, function(field, next)
-                {
-                    let variablePath = (rootVariablePath ? `${rootVariablePath}.` : "");
-                    variablePath += field;
-                    recurse(variablePath, value[field], next);
-                }, function(err)
-                {
-                    if (err)
+                        recurse(`${rootVariablePath}.[]`, arrayValue, next);
+                    }, function(err)
                     {
-                        return callback(err);
-                    }
+                        if (err)
+                        {
+                            return callback(err);
+                        }
 
-                    self.fieldAccumulators.get(rootVariablePath).accumulateValue(value, false, callback);
-                });
+                        self.fieldAccumulators.get(rootVariablePath).accumulateValue(value, false, callback);
+                    });
+                }
+                else if (value instanceof Buffer)
+                {
+                    self.fieldAccumulators.get(rootVariablePath).accumulateValue(value, keepForExample, callback);
+                }
+                else if (underscore.isObject(value))
+                {
+                    const fields = Object.keys(value);
+                    async.eachSeries(fields, function(field, next)
+                    {
+                        let variablePath = (rootVariablePath ? `${rootVariablePath}.` : "");
+                        variablePath += field;
+                        recurse(variablePath, value[field], next);
+                    }, function(err)
+                    {
+                        if (err)
+                        {
+                            return callback(err);
+                        }
+
+                        self.fieldAccumulators.get(rootVariablePath).accumulateValue(value, false, callback);
+                    });
+                }
+                else
+                {
+                    self.fieldAccumulators.get(rootVariablePath).accumulateValue(value, keepForExample, callback);
+                }
             }
-            else
-            {
-                self.fieldAccumulators.get(rootVariablePath).accumulateValue(value, keepForExample, callback);
-            }
-        }
 
-        self.objectsAccumulated += 1;
+            self.objectsAccumulated += 1;
 
-        recurse("", object, callback);
+            recurse("", object, callback);
+        }, (err) => callback(err));
     }
 
 
