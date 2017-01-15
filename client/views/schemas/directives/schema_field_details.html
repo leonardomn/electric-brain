@@ -18,6 +18,28 @@
 
 <div class="row schema-field-details">
     <div class="col-xs-12">
+        <div class="ibox" ng-if="field.isString || field.isNumber">
+            <div class="ibox-title">
+                <h5>Interpetation</h5>
+            </div>
+            <div class="ibox-content">
+                <select ng-model="field.metadata.interpretation">
+                    <option value="base32">base32</option>
+                    <option value="base64">base64</option>
+                    <option value="boolean">boolean</option>
+                    <option value="date">date</option>
+                    <option value="datetime">datetime</option>
+                    <option value="hex">hex</option>
+                    <option value="mstimestamp">mstimestamp</option>
+                    <option value="number">number</option>
+                    <option value="text">text</option>
+                    <option value="time">time</option>
+                    <option value="unixtimestamp">unixtimestamp</option>
+                </select>
+            </div>
+        </div>
+
+
         <div class="ibox">
             <div class="ibox-title">
                 <h5>{{field.title}}</h5>
@@ -69,12 +91,6 @@
                                 <eb-number-histogram ng-model="field.metadata.imageHeightHistogram" height="100"></eb-number-histogram>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- If this field is a string field, show its field type-->
-                    <div ng-if="field.isString">
-                        <h3>Field Type</h3>
-                        <pre>{{field.metadata.string.fieldType}}</pre>
                     </div>
 
                     <!-- Show some examples of the field -->

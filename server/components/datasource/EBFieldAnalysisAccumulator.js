@@ -37,6 +37,7 @@ const _binaryMimeTypes = Symbol("_binaryMimeTypes");
 const _imageWidths = Symbol("_imageWidths");
 const _imageHeights = Symbol("_imageHeights");
 const _fingerprints = Symbol("_fingerprints");
+const _fieldInterpretations = Symbol("_fieldInterpretations");
 
 // This needs to be moved to a configuration file of some sort
 const maxStringLengthForHistogram = 250;
@@ -50,14 +51,14 @@ class EBFieldAnalysisAccumulator
     /**
      * This creates an empty accumulator.
      *
-     * @param {FieldTypeModel} fieldTypeModel an instantiation of the field type model
+     * @param {fieldInterpretationModel} fieldInterpretationModel an instantiation of the field interpretation model
      */
-    constructor(fieldTypeModel)
+    constructor(fieldInterpretationModel)
     {
         const self = this;
 
         this.metadata = new EBFieldMetadata();
-        this.fieldTypeModel = fieldTypeModel;
+        this.fieldInterpretationModel = fieldInterpretationModel;
 
         if (!self[_numberValues])
         {
@@ -94,7 +95,10 @@ class EBFieldAnalysisAccumulator
             self[_imageHeights] = [];
         }
 
-
+        if (!self[_fieldInterpretations])
+        {
+            self[_fieldInterpretations] = {};
+        }
     }
 
     /**
@@ -161,16 +165,16 @@ class EBFieldAnalysisAccumulator
 
                     if (keepForExample)
                     {
-                        self.fieldTypeModel.processData([{value: value}]).then((results) =>
+                        self.fieldInterpretationModel.processData([{value: value}]).then((results) =>
                         {
                             const type = results[0].condensedType;
                             
-                            if (!self.metadata.string.fieldType[type])
+                            if (!self[_fieldInterpretations][type])
                             {
-                                self.metadata.string.fieldType[type] = 0;
+                                self[_fieldInterpretations][type] = 0;
                             }
 
-                            self.metadata.string.fieldType[type] += 1;
+                            self[_fieldInterpretations][type] += 1;
                             
                             return next();
                         }, (err) => next(err));
@@ -389,48 +393,19 @@ class EBFieldAnalysisAccumulator
             self.metadata.imageWidthHistogram = new EBNumberHistogram();
             self.metadata.imageHeightHistogram = new EBNumberHistogram();
         }
-    }
-
-
-    /**
-     * Returns a JSON-Schema schema for EBFieldAnalysisAccumulator
-     *
-     * @returns {object} The JSON-Schema that can be used for validating this model object
-     */
-    static schema()
-    {
-        return {
-            "id": "EBFieldAnalysisAccumulator",
-            "type": "object",
-            "properties": {
-                _id: {},
-                variableName: {"type": "string"},
-                variablePath: {"type": "string"},
-                types: {
-                    "type": "array",
-                    "items": {"type": "string"}
-                },
-                cardinality: {"type": "number"},
-                distinct: {"type": "number"},
-                total: {"type": "number"},
-                valueHistogram: EBValueHistogram.schema(),
-                numberHistogram: EBNumberHistogram.schema(),
-                arrayLengthHistogram: EBNumberHistogram.schema(),
-                binaryHasImage: {"type": "boolean"},
-                binaryMimeTypeHistogram: EBValueHistogram.schema(),
-                imageWidthHistogram: EBNumberHistogram.schema(),
-                imageHeightHistogram: EBNumberHistogram.schema(),
-                examples: {"type": "array"},
-                number: {
-                    "type": "object",
-                    "properties": {
-                        min: {"type": "number"},
-                        average: {"type": "number"},
-                        max: {"type": "number"}
-                    }
-                }
-            }
-        };
+        
+        if (self.metadata.types.indexOf('string') !== -1)
+        {
+            self.metadata.interpretation = underscore.max(underscore.pairs(self[_fieldInterpretations]), (pair) => pair[1])[0];
+        }
+        else if (self.metadata.types.indexOf('number') !== -1)
+        {
+            self.metadata.interpretation = 'number';
+        }
+        else
+        {
+            self.metadata.interpretation = null;
+        }
     }
 }
 

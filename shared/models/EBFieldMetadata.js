@@ -161,13 +161,13 @@ class EBFieldMetadata
             self.examples = [];
         }
 
-        if (rawFieldMetadata.string)
+        if (rawFieldMetadata.interpretation)
         {
-            self.string = rawFieldMetadata.string;
+            self.interpretation = rawFieldMetadata.interpretation;
         }
         else
         {
-            self.string = {fieldType: {}};
+            self.interpretation = null;
         }
     }
 
@@ -209,16 +209,23 @@ class EBFieldMetadata
                         max: {"type": "number"}
                     }
                 },
-                string: {
-                    "type": "object",
-                    "properties": {
-                        fieldType: {
-                            "type": "object",
-                            "additionalProperties": {"type": "number"}
-                        }
-                    }
+                interpretation: {
+                    "type": ["string", "null"],
+                    "enum": [
+                        "base32",
+                        "base64",
+                        "boolean",
+                        "date",
+                        "datetime",
+                        "hex",
+                        "mstimestamp",
+                        "number",
+                        "text",
+                        "time",
+                        "unixtimestamp",
+                        null
+                    ]
                 }
-
             }
         };
     }
