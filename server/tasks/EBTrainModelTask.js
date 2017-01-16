@@ -53,6 +53,7 @@ class EBTrainModelTask {
         this.trainingBatchSize = 16;
         this.testingBatchSize = 4;
         this.rollingAverageAccuracy = new EBRollingAverage(100);
+        this.rollingAverageTrainingaccuracy = new EBRollingAverage(100);
         this.rollingAverageTimePerIteration = new EBRollingAverage(100);
         this.rollingAverageTimeToLoad100Entries = new EBRollingAverage(100);
         this.lastFrontendUpdateTime = null;
@@ -437,6 +438,7 @@ class EBTrainModelTask {
                             self.updateStepResult('dataScanning', dataScanningResults, next);
                         });
                     }
+
                     else
                     {
                         return Promise.resolve(null);
@@ -605,46 +607,74 @@ class EBTrainModelTask {
                                     lastIterationTime = new Date();
                                     self.rollingAverageTimePerIteration.accumulate(timeTaken);
                                     trainingResult.currentTimePerIteration = self.rollingAverageTimePerIteration.average;
+                                    //console.log(trainingResult)
+                                    const trainingAccuracies = [];
+                                    let index = 0;
 
-                                    async.mapSeries(sample, (object, next) =>
+                                    console.log(sample)
+                                    console.log(result.objects)
+                                    async.eachSeries(underscore.zip(sample,result.objects), (zippedObjects, next) =>
                                     {
-                                        this.trainingProcess.removeObject(object.id, next);
+                                        const expected = zippedObjects[0];
+                                        const actual = zippedObjects[1];
+
+
+
+                                        console.log(zippedObjects)
+
+                                        self.getAccuracyFromOutput(expected.output, actual).then((trainingAccuracy) =>
+                                        {
+                                            console.log(expected.output)
+                                            console.log(actual)
+                                            trainingAccuracies.push(trainingAccuracy);
+                                            console.log(trainingAccuracies)
+                                            return next();
+                                        }, (err) => next(err));
+
                                     }, (err) =>
                                     {
-                                        if (err)
-                                        {
+                                        if (err) {
                                             return next(err);
                                         }
 
-                                        self.testIteration((err, accuracy) =>
+
+                                        async.mapSeries(sample, (object, next) =>
                                         {
-                                            if (err)
-                                            {
+                                            this.trainingProcess.removeObject(object.id, next);
+                                        }, (err) => {
+                                            if (err) {
                                                 return next(err);
                                             }
 
-                                            self.rollingAverageAccuracy.accumulate(accuracy);
-                                            trainingResult.currentAccuracy = self.rollingAverageAccuracy.average;
-                                            trainingResult.iterations.push({
-                                                loss: result.loss,
-                                                accuracy: self.rollingAverageAccuracy.average
-                                            });
-
-                                            self.updateStepResult('training', trainingResult, (err) =>
-                                            {
-                                                if (err)
-                                                {
+                                            self.testIteration((err, accuracy) => {
+                                                if (err) {
                                                     return next(err);
                                                 }
 
-                                                if ((trainingResult.completedIterations % saveFrequency) === 0)
-                                                {
-                                                    self.saveTorchModelFile(next);
-                                                }
-                                                else
-                                                {
-                                                    return next();
-                                                }
+                                                const trainingAccuracy = math.mean(trainingAccuracies);
+                                                self.rollingAverageAccuracy.accumulate(accuracy);
+                                                self.rollingAverageTrainingaccuracy.accumulate(trainingAccuracy * 100);
+                                                trainingResult.currentAccuracy = self.rollingAverageAccuracy.average;
+                                                trainingResult.iterations.push({
+                                                    loss: result.loss,
+                                                    accuracy: self.rollingAverageAccuracy.average,
+                                                    trainingAccuracy: self.rollingAverageTrainingaccuracy.average
+                                                });
+
+                                                console.log(trainingResult.iterations);
+
+                                                self.updateStepResult('training', trainingResult, (err) => {
+                                                    if (err) {
+                                                        return next(err);
+                                                    }
+
+                                                    if ((trainingResult.completedIterations % saveFrequency) === 0) {
+                                                        self.saveTorchModelFile(next);
+                                                    }
+                                                    else {
+                                                        return next();
+                                                    }
+                                                });
                                             });
                                         });
                                     });
@@ -764,7 +794,7 @@ class EBTrainModelTask {
             {
                 if (fieldSchema.isField && fieldSchema.configuration.included)
                 {
-                    if (fieldSchema.configuration.neuralNetwork.string.mode === 'classification')
+                    if (fieldSchema.isString)
                     {
                         totalClassifications += 1;
                         if (values[0] === values[1])

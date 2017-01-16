@@ -47,7 +47,7 @@ class EBTorchProcess
         self.processes = [];
         self.allLoadedEntries = [];
         self.testingSet = {};
-        self.numProcesses = 4;
+        self.numProcesses = 1;
     }
 
 
@@ -432,6 +432,8 @@ class EBTorchProcess
                 return callback(err);
             }
 
+            console.log(JSON.stringify(results));
+
             async.map(this.processes, (process, next) =>
             {
                 // Choose a bunch of random samples from the set that we have
@@ -447,7 +449,20 @@ class EBTorchProcess
                 // Combine all the losses together
                 const losses = underscore.pluck(results, "loss");
                 const loss = math.mean(losses);
-                return callback(null, {loss});
+
+                const allResults = {};
+                results.forEach((processResults) =>
+                {
+                    processResults.objects.forEach((object) =>
+                    {
+                        allResults[object.id] = object;
+                    });
+                });
+
+                return callback(null, {
+                    loss: loss,
+                    objects: batch.map((id) => allResults[id])
+                });
             });
         });
     }

@@ -34,11 +34,13 @@ angular.module('eb').controller('EBViewModelController', function EBViewModelCon
         if (!$scope.model.training.iterations)
         {
             $scope.accuracyChartConfig.series[0].data = [];
+            $scope.accuracyChartConfig.series[1].data = [];
             $scope.lossChartConfig.series[0].data = [];
             return;
         }
 
         $scope.accuracyChartConfig.series[0].data = EBModelService.computeChartDataForModel($scope.model, 'accuracy');
+        $scope.accuracyChartConfig.series[1].data = EBModelService.computeChartDataForModel($scope.model, 'trainingAccuracy');
         $scope.lossChartConfig.series[0].data = EBModelService.computeChartDataForModel($scope.model, 'loss');
     };
 
@@ -156,7 +158,12 @@ angular.module('eb').controller('EBViewModelController', function EBViewModelCon
                 max: 100
             }]
         },
-        series: [{data: [], name: "Accuracy"}],
+        series: [{data: [], name: "Accuracy"},
+
+            { data: [], name: "Training Accuracy"
+
+            }],
+
         title: {text: 'Accuracy'},
         xAxis: {title: {text: 'iterations'}},
         size: {height: 600}
