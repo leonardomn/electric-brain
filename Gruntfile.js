@@ -76,7 +76,7 @@ module.exports = function(grunt)
             }
         },
         unzip: {
-            'build/models/fieldtype': 'models/fieldtype.zip'
+            'build/models/fieldinterpretation': 'models/fieldinterpretation.zip'
         },
         uglify: {
             options: {

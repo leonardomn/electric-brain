@@ -20,7 +20,7 @@
 const
     async = require('async'),
     EBFieldAnalysisAccumulator = require("./EBFieldAnalysisAccumulator"),
-    FieldTypeModel = require('../../../build/models/fieldtype/ebbundle').EBBundleScript,
+    FieldInterpretationModel = require('../../../build/models/fieldinterpretation/ebbundle').EBBundleScript,
     models = require('../../../shared/models/models'),
     path = require('path'),
     underscore = require('underscore');
@@ -43,8 +43,8 @@ class EBSchemaDetector
         self.objectsAccumulated = 0;
         self.knownValueEnumCutOff = 250;
 
-        self.fieldType = new FieldTypeModel(path.join(__dirname, '../../../build/models/fieldtype'));
-        self.fieldTypeStartPromise = self.fieldType.startModelProcess();
+        self.fieldIntepretation = new FieldInterpretationModel(path.join(__dirname, '../../../build/models/fieldinterpretation'));
+        self.fieldIntepretationStartPromise = self.fieldIntepretation.startModelProcess();
     }
 
 
@@ -62,7 +62,7 @@ class EBSchemaDetector
     {
         const self = this;
 
-        self.fieldTypeStartPromise.then(() =>
+        self.fieldIntepretationStartPromise.then(() =>
         {
             /**
              * This function is used internally to recurse through a JSON object
@@ -75,7 +75,7 @@ class EBSchemaDetector
             {
                 if (!self.fieldAccumulators.has(rootVariablePath))
                 {
-                    self.fieldAccumulators.set(rootVariablePath, new EBFieldAnalysisAccumulator(self.fieldType));
+                    self.fieldAccumulators.set(rootVariablePath, new EBFieldAnalysisAccumulator(self.fieldIntepretation));
                 }
 
                 if (underscore.isArray(value))
