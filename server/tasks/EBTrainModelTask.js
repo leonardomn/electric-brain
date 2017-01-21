@@ -21,9 +21,11 @@
 const
     async = require('async'),
     EBCustomTransformationProcess = require('../components/architecture/EBCustomTransformationProcess'),
-    EBRollingAverage = require("../../shared/components/EBRollingAverage"),
+    EBRollingAverage = require("../../shared/models/EBRollingAverage"),
     EBTorchProcess = require('../components/architecture/EBTorchProcess'),
     EBTorchTransformer = require('../../shared/components/architecture/EBTorchTransformer'),
+    EBPerformanceData = require('../../shared/models/EBPerformanceData'),
+    EBPerformanceTrace = require('../../shared/models/EBPerformanceTrace'),
     models = require("../../shared/models/models"),
     math = require('mathjs'),
     mongodb = require('mongodb'),
@@ -52,9 +54,8 @@ class EBTrainModelTask {
         this.testingSetPortion = 0.3;
         this.trainingBatchSize = 16;
         this.testingBatchSize = 4;
-        this.rollingAverageAccuracy = new EBRollingAverage(100);
-        this.rollingAverageTimePerIteration = new EBRollingAverage(100);
-        this.rollingAverageTimeToLoad100Entries = new EBRollingAverage(100);
+        this.rollingAverageAccuracy = EBRollingAverage.createWithPeriod(100);
+        this.rollingAverageTimeToLoad100Entries = EBRollingAverage.createWithPeriod(100);
         this.lastFrontendUpdateTime = null;
         this.lastDatabaseUpdateTime = null;
         this.isFrontendUpdateScheduled = null;
@@ -546,7 +547,8 @@ class EBTrainModelTask {
             currentLoss: 0,
             currentAccuracy: 0,
             currentTimePerIteration: 0,
-            iterations: []
+            iterations: [],
+            performance: new EBPerformanceData()
         };
 
         let lastIterationTime = new Date();
@@ -576,8 +578,11 @@ class EBTrainModelTask {
                     },
                     (next) =>
                     {
+                        const performanceTrace = new EBPerformanceTrace();
+
                         this.fetchTrainingBatch().then((sample) =>
                         {
+                            performanceTrace.addTrace('fetch-batch');
                             async.mapSeries(sample, (object, next) =>
                             {
                                 this.loadObject(object.id, object.input, object.output, next);
@@ -588,6 +593,8 @@ class EBTrainModelTask {
                                     return next(err);
                                 }
 
+                                performanceTrace.addTrace('load-object');
+
                                 self.trainingProcess.executeTrainingIteration(underscore.pluck(sample, "id"), (err, result) =>
                                 {
                                     if (err)
@@ -595,16 +602,15 @@ class EBTrainModelTask {
                                         return next(err);
                                     }
 
+                                    performanceTrace.addTrace('training-iteration');
+
                                     // At the end of each iteration, update the current training results
                                     trainingResult.completedIterations += 1;
                                     trainingResult.percentageComplete = (trainingResult.completedIterations * 100) / trainingResult.totalIterations;
                                     trainingResult.currentLoss = result.loss;
 
-                                    // Calculate the time taken for this iteration
-                                    const timeTaken = new Date().getTime() - lastIterationTime.getTime();
-                                    lastIterationTime = new Date();
-                                    self.rollingAverageTimePerIteration.accumulate(timeTaken);
-                                    trainingResult.currentTimePerIteration = self.rollingAverageTimePerIteration.average;
+                                    // Update the time per iteration
+                                    trainingResult.currentTimePerIteration = trainingResult.performance.total();
 
                                     async.mapSeries(sample, (object, next) =>
                                     {
@@ -616,12 +622,16 @@ class EBTrainModelTask {
                                             return next(err);
                                         }
 
+                                        performanceTrace.addTrace('remove-object');
+
                                         self.testIteration((err, accuracy) =>
                                         {
                                             if (err)
                                             {
                                                 return next(err);
                                             }
+
+                                            performanceTrace.addTrace('testing-iteration');
 
                                             self.rollingAverageAccuracy.accumulate(accuracy);
                                             trainingResult.currentAccuracy = self.rollingAverageAccuracy.average;
@@ -636,6 +646,9 @@ class EBTrainModelTask {
                                                 {
                                                     return next(err);
                                                 }
+
+                                                performanceTrace.addTrace('save-to-db');
+                                                trainingResult.performance.accumulate(performanceTrace);
 
                                                 if ((trainingResult.completedIterations % saveFrequency) === 0)
                                                 {

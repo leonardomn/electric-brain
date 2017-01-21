@@ -18,7 +18,8 @@
 
 "use strict";
 
-const EBArchitecture = require("./EBArchitecture");
+const EBArchitecture = require("./EBArchitecture"),
+    EBPerformanceData = require("./EBPerformanceData");
 
 /**
  * This class represents a trained model in our system, or one that is in the process of being trained.
@@ -165,7 +166,8 @@ class EBModel
                                     "loss": {type: "number"}
                                 }
                             }
-                        }
+                        },
+                        "performance": EBPerformanceData.schema()
                     }
                 },
                 "testing": {
