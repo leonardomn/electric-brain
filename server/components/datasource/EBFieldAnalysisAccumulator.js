@@ -20,15 +20,13 @@
 
 const
     async = require('async'),
+    crypto = require('crypto'),
     fileType = require('file-type'),
-    jshashes = require('jshashes'),
     EBFieldMetadata = require("../../../shared/models/EBFieldMetadata"),
     EBNumberHistogram = require('../../../shared/models/EBNumberHistogram'),
     EBValueHistogram = require("../../../shared/models/EBValueHistogram"),
-    jimp = require("jimp"),
+    sharp = require("sharp"),
     underscore = require('underscore');
-
-const SHA1 = new jshashes.SHA1();
 
 const _stringValues = Symbol("_stringValues");
 const _numberValues = Symbol("_numberValues");
@@ -120,9 +118,11 @@ class EBFieldAnalysisAccumulator
 
         function fingerprint32(value)
         {
+            const hash = crypto.createHash('sha256');
+            hash.update(value);
             // Create the hash, and obtain 32 bits of entropy, and convert it to a
             // nice, tight integer we can use as a fingerprint
-            return parseInt(`0x${SHA1.hex(value).slice(0, 8)}`);
+            return parseInt(`0x${hash.digest('hex').slice(0, 8)}`);
         }
 
         async.series([
@@ -226,7 +226,7 @@ class EBFieldAnalysisAccumulator
                         self.metadata.types.push('binary');
                     }
 
-                    self[_fingerprints].add(fingerprint32(value.toString('base64')));
+                    self[_fingerprints].add(fingerprint32(value));
 
                     // First, analyze this value
                     const analysis = self.analyzeBinaryData(value, function(err, result)
@@ -322,19 +322,16 @@ class EBFieldAnalysisAccumulator
         // If the data is an image, analyze it further
         if (type.mime.indexOf('image') === 0)
         {
-            result.image = true;
-            jimp.read(value, function (err, image)
+            const image = sharp(value);
+            image.metadata().then(function(metadata)
             {
-                if (err)
-                {
-                    return callback(err);
-                }
+                result.image = true;
 
                 // Get the width and height of the image
-                result.imageWidth = image.bitmap.width;
-                result.imageHeight = image.bitmap.height;
+                result.imageWidth = metadata.width;
+                result.imageHeight = metadata.height;
                 return callback(null, result);
-            });
+            }, (err) => callback(err));
         }
         else
         {
