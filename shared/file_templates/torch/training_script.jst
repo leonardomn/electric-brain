@@ -55,13 +55,14 @@ function TrainingScript.new()
     -- Prepare the parameters
     self.params, self.gradParams = self.module:getParameters()
 
+    -- Optimization state
+    self.optimState = {}
+
     return self
 end
 
 
 function TrainingScript:evaluateTrainingIteration(batch)
-    local optimState = {}
-
     local iteration = function(params)
         --if params_ ~= self.params then
         --    self.params:copy(params_)
@@ -91,13 +92,10 @@ function TrainingScript:evaluateTrainingIteration(batch)
     end
 
     local _ignore, loss
-    _ignore, loss = optim.{{=it.optimizationAlgorithm}}(iteration, self.params, optimState)
+    _ignore, loss = optim.{{=it.optimizationAlgorithm}}(iteration, self.params, self.optimState)
 
     -- Collect gabarge at the end of each iteration - prevents build up of useless memory
     collectgarbage()
-
-    -- Keep track of the training accuracy
-    --table.insert(previousAccuracies, self.lastIterationTrainingAccuracy)
 
     return {
         loss = loss[1]
