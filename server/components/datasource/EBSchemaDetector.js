@@ -20,7 +20,8 @@
 const
     async = require('async'),
     EBFieldAnalysisAccumulator = require("./EBFieldAnalysisAccumulator"),
-    FieldInterpretationModel = require('../../../build/models/fieldinterpretation/ebbundle').EBBundleScript,
+    EBInterpretationDetector = require("./interpretation/EBInterpretationDetector"),
+    FieldTypeModel = require('../../../build/models/fieldtype/ebbundle').EBBundleScript,
     models = require('../../../shared/models/models'),
     path = require('path'),
     underscore = require('underscore');
@@ -40,11 +41,14 @@ class EBSchemaDetector
         const self = this;
 
         self.fieldAccumulators = new Map();
+        self.interpretationChains = new Map();
         self.objectsAccumulated = 0;
         self.knownValueEnumCutOff = 250;
 
-        // self.fieldIntepretation = new FieldInterpretationModel(path.join(__dirname, '../../../build/models/fieldinterpretation'));
-        // self.fieldIntepretationStartPromise = self.fieldIntepretation.startModelProcess();
+        self.fieldType = new FieldTypeModel(path.join(__dirname, '../../../build/models/fieldtype'));
+        self.fieldTypeStartPromise = self.fieldType.startModelProcess();
+
+        self.interpretationDetector = new EBInterpretationDetector();
     }
 
 
@@ -62,8 +66,8 @@ class EBSchemaDetector
     {
         const self = this;
 
-        // self.fieldIntepretationStartPromise.then(() =>
-        // {
+        self.fieldTypeStartPromise.then(() =>
+        {
             /**
              * This function is used internally to recurse through a JSON object
              *
@@ -73,10 +77,41 @@ class EBSchemaDetector
              */
             function recurse(rootVariablePath, value, callback)
             {
+                if (!self.interpretationChains.has(rootVariablePath))
+                {
+                    self.interpretationChains.set(rootVariablePath, new Set());
+                }
+
                 if (!self.fieldAccumulators.has(rootVariablePath))
                 {
-                    self.fieldAccumulators.set(rootVariablePath, new EBFieldAnalysisAccumulator(self.fieldIntepretation));
+                    self.fieldAccumulators.set(rootVariablePath, {});
                 }
+
+                self.interpretationDetector.detectInterpretationChain(value).then((chain) =>
+                {
+                    const chainId = chain.map((chain) => chain.name).join("=>");
+                    const lastInterpretation = chain[chain.length - 1];
+
+                    // Record this interpretation chain for this value
+                    self.interpretationChains.get(rootVariablePath).add(chainId);
+                    //
+                    // // Now record data for this interpretation
+                    if (!self.fieldAccumulators.get(rootVariablePath)[lastInterpretation.name])
+                    {
+                        self.fieldAccumulators.get(rootVariablePath)[lastInterpretation.name] = self.interpretationDetector.getInterpretation(lastInterpretation.name);
+                    }
+
+                    // Put the variable through each the transformation for each interpretation, and on the last
+                    // one, we accumulate it for statistical purposes
+                    let currentValue = null;
+                    Promise.each(chain, (interpretationName) =>
+                    {
+                        const interpretation = self.interpretationDetector.getInterpretation(interpretationName);
+                    });
+
+
+
+                }, (err) => console.error(err));
 
                 if (underscore.isArray(value))
                 {
@@ -124,7 +159,7 @@ class EBSchemaDetector
             self.objectsAccumulated += 1;
 
             recurse("", object, callback);
-        // }, (err) => callback(err));
+        }, (err) => callback(err));
     }
 
 
