@@ -50,7 +50,12 @@ class EBModel
         {
             self.running = false;
         }
-        
+
+        if (!self.parameters)
+        {
+            self.parameters = {batchSize: 16};
+        }
+
         if (!self.codeGeneration)
         {
             self.codeGeneration = {
@@ -118,6 +123,15 @@ class EBModel
                 "name": {type: "string"},
                 "running": {type: "boolean"},
                 "architecture": EBArchitecture.schema(),
+
+                "parameters": {
+                    type: "object",
+                    properties: {
+                        "batchSize": {
+                            type: "number"
+                        }
+                    }
+                },
                 "codeGeneration": {
                     type: "object",
                     properties: {

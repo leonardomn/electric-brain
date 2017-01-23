@@ -1,20 +1,20 @@
 /*
-    Electric Brain is an easy to use platform for machine learning.
-    Copyright (C) 2016 Electric Brain Software Corporation
-    
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-    
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-    
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ Electric Brain is an easy to use platform for machine learning.
+ Copyright (C) 2016 Electric Brain Software Corporation
+
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU Affero General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU Affero General Public License for more details.
+
+ You should have received a copy of the GNU Affero General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 "use strict";
 
@@ -238,13 +238,13 @@ class EBCSVPlugin extends EBDataSourcePlugin
                             async.each(altered, (row, next) =>
                             {
                                 iterator(underscore.omit(row, "_id", "ebCSVFile", "ebRowIndex")).then((value) =>
-                                {
-                                    next();
-                                },
-                                (error) =>
-                                {
-                                    next(error);
-                                });
+                                    {
+                                        next();
+                                    },
+                                    (error) =>
+                                    {
+                                        next(error);
+                                    });
                             }, next);
                         }, (error) => next(error));
                     }, objectsPerGrouping);
@@ -278,7 +278,7 @@ class EBCSVPlugin extends EBDataSourcePlugin
 
             if (query.id)
             {
-                modifiedQuery._id = query.id;
+                modifiedQuery._id = EBCSVPlugin.recursiveCoerceMongoID(query.id);
             }
 
             const queryObject = this.csvRows.find(modifiedQuery);
@@ -290,6 +290,7 @@ class EBCSVPlugin extends EBDataSourcePlugin
 
             return queryObject.toArray().then((rows) =>
             {
+                console.log(rows);
                 return rows.map((row) =>
                 {
                     const newRow = underscore.omit(row, "_id", "ebCSVFile", "ebRowIndex");
@@ -340,10 +341,39 @@ class EBCSVPlugin extends EBDataSourcePlugin
                     });
                 });
             }).then(function success()
+        {
+            const schema = schemaDetector.getSchema();
+            return schema;
+        });
+    }
+
+    /**
+     * This method will convert all of the string values in the Mongo query portion provided into
+     * mongo.ObjectIDs
+     *
+     * @param {object} queryPortion The portion of the query to recursively coerce.
+     */
+    static recursiveCoerceMongoID(queryPortion)
+    {
+        if (underscore.isString(queryPortion))
+        {
+            return new mongodb.ObjectId(queryPortion);
+        }
+        else if (underscore.isArray(queryPortion))
+        {
+            return queryPortion.map((arrayValue) => EBCSVPlugin.recursiveCoerceMongoID(arrayValue));
+        }
+        else if (underscore.isObject(queryPortion))
+        {
+            return underscore.mapObject(queryPortion, function(value)
             {
-                const schema = schemaDetector.getSchema();
-                return schema;
+                return EBCSVPlugin.recursiveCoerceMongoID(value);
             });
+        }
+        else
+        {
+            return queryPortion;
+        }
     }
 }
 

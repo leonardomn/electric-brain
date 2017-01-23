@@ -38,6 +38,9 @@
                         <h2>Query?</h2>
                         <br/>
                         <eb-database-query-editor query="model.architecture.dataSource.query" schema="model.architecture.dataSource.dataSchema"></eb-database-query-editor>
+                        <label> BatchSize:
+                            <input type="number" name="input" ng-model="model.parameters.batchSize" min="1">
+                        </label>
                     </div>
                 </div>
             </div>
