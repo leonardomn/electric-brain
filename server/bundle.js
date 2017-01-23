@@ -18,13 +18,6 @@
 
 "use strict";
 
-
-module.exports = {
-    components: {
-        EBStdioJSONStreamProcess: require("./components/EBStdioJSONStreamProcess"),
-        architecture: {
-            EBCustomTransformationProcess: require("./components/architecture/EBCustomTransformationProcess"),
-            EBTorchProcess: require('./components/architecture/EBTorchProcess')
-        }
-    }
+module.exports = exports = {
+    EBBundleScript: require("./components/EBBundleScript")
 };

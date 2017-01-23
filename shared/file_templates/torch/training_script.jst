@@ -99,9 +99,6 @@ function TrainingScript:evaluateTrainingIteration(batch)
     -- Collect gabarge at the end of each iteration - prevents build up of useless memory
     collectgarbage()
 
-    -- Keep track of the training accuracy
-    --table.insert(previousAccuracies, self.lastIterationTrainingAccuracy)
-
     return {
         loss = loss[1],
         output = self:unwindBatchOutput(batchOutputs)

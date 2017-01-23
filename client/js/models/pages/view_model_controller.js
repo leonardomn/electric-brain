@@ -145,7 +145,7 @@ angular.module('eb').controller('EBViewModelController', function EBViewModelCon
 
     $scope.accuracyChartConfig = {
         options: {
-            chart: {type: 'line'},
+            chart: {type: 'line', zoomType: 'y'},
             tooltip: {
                 style: {
                     padding: 10,
@@ -167,7 +167,7 @@ angular.module('eb').controller('EBViewModelController', function EBViewModelCon
 
     $scope.lossChartConfig = {
         options: {
-            chart: {type: 'line'},
+            chart: {type: 'line', zoomType: 'y'},
             tooltip: {
                 style: {
                     padding: 10,

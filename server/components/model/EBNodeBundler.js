@@ -19,14 +19,15 @@
 "use strict";
 
 const
-    AdmZip = require('adm-zip'),
     async = require('async'),
+    childProcess = require('child_process'),
     EBModelBundler = require('./EBModelBundler'),
     EBTorchProcess = require('../architecture/EBTorchProcess'),
     fs = require('fs'),
     models = require('../../../shared/models/models'),
     mongodb = require('mongodb'),
-    path = require('path');
+    path = require('path'),
+    temp = require('temp');
 
 /**
  * This class is used for bundling up the model for deployment in NodeJS servers
@@ -61,8 +62,9 @@ class EBNodeBundler
         });
 
         self.trainingProcess = new EBTorchProcess(new models.EBArchitecture(model.architecture));
-        const zip = new AdmZip();
-        
+
+        const zipFile = temp.path({suffix: '.zip'});
+
         async.series([
             // Generate the code
             function generateCode(next)
@@ -83,29 +85,62 @@ class EBNodeBundler
                         return next();
                     });
             },
-            // Add the files to the zip file
-            function createZipFile(next)
+            // Write the JSON of the model object
+            function writeModelJSON(next)
             {
-                fs.readdir(self.trainingProcess.scriptFolder, function(err, files)
+                const jsonData = JSON.stringify(model, null, 4);
+                fs.writeFile(path.join(self.trainingProcess.scriptFolder, 'model.json'), jsonData, next);
+            },
+            // Write electric brain bundle file
+            function writeEBBundle(next)
+            {
+                fs.readFile(path.join(__dirname, '..', '..', '..', 'build', 'ebbundle.js'), (err, buffer) =>
                 {
                     if (err)
                     {
                         return next(err);
                     }
 
-                    files.forEach((file) => zip.addLocalFile(path.join(self.trainingProcess.scriptFolder, file)));
+                    fs.writeFile(path.join(self.trainingProcess.scriptFolder, 'ebbundle.js'), buffer, next);
+                });
+            },
+            // Create a zip file with all the files
+            function createZipFile(next)
+            {
+                childProcess.exec(`zip -r ${zipFile} *`, {cwd: self.trainingProcess.scriptFolder}, (err) =>
+                {
+                    if (err)
+                    {
+                        return next(err);
+                    }
 
-                    return next(null, zip.toBuffer());
+                    return next();
                 });
             }
-        ], function(err)
+        ], (err, buffer) =>
         {
             if (err)
             {
                 return callback(err);
             }
-            
-            return callback(null, zip.toBuffer());
+
+            fs.readFile(zipFile, (err, buffer) =>
+            {
+                if (err)
+                {
+                    return callback(err);
+                }
+
+                fs.unlink(zipFile, (err) =>
+                {
+                    if (err)
+                    {
+                        return callback(err);
+                    }
+
+                    return callback(null, buffer);
+                });
+            });
         });
     }
 }

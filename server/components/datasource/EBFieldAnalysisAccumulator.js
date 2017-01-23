@@ -20,15 +20,13 @@
 
 const
     async = require('async'),
+    crypto = require('crypto'),
     fileType = require('file-type'),
-    jshashes = require('jshashes'),
     EBFieldMetadata = require("../../../shared/models/EBFieldMetadata"),
     EBNumberHistogram = require('../../../shared/models/EBNumberHistogram'),
     EBValueHistogram = require("../../../shared/models/EBValueHistogram"),
-    jimp = require("jimp"),
+    sharp = require("sharp"),
     underscore = require('underscore');
-
-const SHA1 = new jshashes.SHA1();
 
 const _stringValues = Symbol("_stringValues");
 const _numberValues = Symbol("_numberValues");
@@ -37,6 +35,7 @@ const _binaryMimeTypes = Symbol("_binaryMimeTypes");
 const _imageWidths = Symbol("_imageWidths");
 const _imageHeights = Symbol("_imageHeights");
 const _fingerprints = Symbol("_fingerprints");
+const _fieldInterpretations = Symbol("_fieldInterpretations");
 
 // This needs to be moved to a configuration file of some sort
 const maxStringLengthForHistogram = 250;
@@ -49,13 +48,15 @@ class EBFieldAnalysisAccumulator
 {
     /**
      * This creates an empty accumulator.
+     *
+     * @param {fieldInterpretationModel} fieldInterpretationModel an instantiation of the field interpretation model
      */
-    constructor()
+    constructor(fieldInterpretationModel)
     {
         const self = this;
 
         this.metadata = new EBFieldMetadata();
-
+        this.fieldInterpretationModel = fieldInterpretationModel;
 
         if (!self[_numberValues])
         {
@@ -92,7 +93,10 @@ class EBFieldAnalysisAccumulator
             self[_imageHeights] = [];
         }
 
-
+        if (!self[_fieldInterpretations])
+        {
+            self[_fieldInterpretations] = {};
+        }
     }
 
     /**
@@ -114,9 +118,11 @@ class EBFieldAnalysisAccumulator
 
         function fingerprint32(value)
         {
+            const hash = crypto.createHash('sha256');
+            hash.update(value);
             // Create the hash, and obtain 32 bits of entropy, and convert it to a
             // nice, tight integer we can use as a fingerprint
-            return parseInt(`0x${SHA1.hex(value).slice(0, 8)}`);
+            return parseInt(`0x${hash.digest('hex').slice(0, 8)}`);
         }
 
         async.series([
@@ -156,8 +162,32 @@ class EBFieldAnalysisAccumulator
                     }
 
                     self[_fingerprints].add(fingerprint32(value));
+
+                    if (keepForExample)
+                    {
+                        self.fieldInterpretationModel.processData([{value: value}]).then((results) =>
+                        {
+                            const type = results[0].condensedType;
+                            
+                            if (!self[_fieldInterpretations][type])
+                            {
+                                self[_fieldInterpretations][type] = 0;
+                            }
+
+                            self[_fieldInterpretations][type] += 1;
+                            
+                            return next();
+                        }, (err) => next(err));
+                    }
+                    else
+                    {
+                        return next();
+                    }
                 }
-                return next();
+                else
+                {
+                    return next();
+                }
             },
             function analyzeNumber(next)
             {
@@ -196,7 +226,7 @@ class EBFieldAnalysisAccumulator
                         self.metadata.types.push('binary');
                     }
 
-                    self[_fingerprints].add(fingerprint32(value.toString('base64')));
+                    self[_fingerprints].add(fingerprint32(value));
 
                     // First, analyze this value
                     const analysis = self.analyzeBinaryData(value, function(err, result)
@@ -292,19 +322,16 @@ class EBFieldAnalysisAccumulator
         // If the data is an image, analyze it further
         if (type.mime.indexOf('image') === 0)
         {
-            result.image = true;
-            jimp.read(value, function (err, image)
+            const image = sharp(value);
+            image.metadata().then(function(metadata)
             {
-                if (err)
-                {
-                    return callback(err);
-                }
+                result.image = true;
 
                 // Get the width and height of the image
-                result.imageWidth = image.bitmap.width;
-                result.imageHeight = image.bitmap.height;
+                result.imageWidth = metadata.width;
+                result.imageHeight = metadata.height;
                 return callback(null, result);
-            });
+            }, (err) => callback(err));
         }
         else
         {
@@ -363,48 +390,19 @@ class EBFieldAnalysisAccumulator
             self.metadata.imageWidthHistogram = new EBNumberHistogram();
             self.metadata.imageHeightHistogram = new EBNumberHistogram();
         }
-    }
-
-
-    /**
-     * Returns a JSON-Schema schema for EBFieldAnalysisAccumulator
-     *
-     * @returns {object} The JSON-Schema that can be used for validating this model object
-     */
-    static schema()
-    {
-        return {
-            "id": "EBFieldAnalysisAccumulator",
-            "type": "object",
-            "properties": {
-                _id: {},
-                variableName: {"type": "string"},
-                variablePath: {"type": "string"},
-                types: {
-                    "type": "array",
-                    "items": {"type": "string"}
-                },
-                cardinality: {"type": "number"},
-                distinct: {"type": "number"},
-                total: {"type": "number"},
-                valueHistogram: EBValueHistogram.schema(),
-                numberHistogram: EBNumberHistogram.schema(),
-                arrayLengthHistogram: EBNumberHistogram.schema(),
-                binaryHasImage: {"type": "boolean"},
-                binaryMimeTypeHistogram: EBValueHistogram.schema(),
-                imageWidthHistogram: EBNumberHistogram.schema(),
-                imageHeightHistogram: EBNumberHistogram.schema(),
-                examples: {"type": "array"},
-                number: {
-                    "type": "object",
-                    "properties": {
-                        min: {"type": "number"},
-                        average: {"type": "number"},
-                        max: {"type": "number"}
-                    }
-                }
-            }
-        };
+        
+        if (self.metadata.types.indexOf('string') !== -1)
+        {
+            self.metadata.interpretation = underscore.max(underscore.pairs(self[_fieldInterpretations]), (pair) => pair[1])[0];
+        }
+        else if (self.metadata.types.indexOf('number') !== -1)
+        {
+            self.metadata.interpretation = 'number';
+        }
+        else
+        {
+            self.metadata.interpretation = null;
+        }
     }
 }
 

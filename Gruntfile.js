@@ -58,6 +58,26 @@ module.exports = function(grunt)
                 }
             }
         },
+        webpack: {
+            bundle: {
+                entry: "./server/bundle.js",
+                target: 'async-node',
+                output: {
+                    path: "build/",
+                    filename: "ebbundle.js",
+                    library: 'eb',
+                    libraryTarget: 'commonjs2'
+                },
+                module: {
+                    loaders: [
+                        { test: /\.json$/, loader: "json-loader" }
+                    ]
+                }
+            }
+        },
+        unzip: {
+            'build/models/fieldinterpretation': 'models/fieldinterpretation.zip'
+        },
         uglify: {
             options: {
                 mangle: false
@@ -125,8 +145,10 @@ module.exports = function(grunt)
     grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-mkdir');
+    grunt.loadNpmTasks('grunt-webpack');
+    grunt.loadNpmTasks('grunt-zip');
 
     // Default task(s).
-    grunt.registerTask('default', ['mkdir:dev', 'dot:torch', 'browserify:dev', 'uglify:dev', 'copy:dev']);
+    grunt.registerTask('default', ['mkdir:dev', 'dot:torch', 'browserify:dev', 'webpack:bundle', 'uglify:dev', 'copy:dev', 'unzip']);
     grunt.registerTask('worker', ['dot:torch']);
 };

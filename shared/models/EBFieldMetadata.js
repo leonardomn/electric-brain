@@ -151,7 +151,7 @@ class EBFieldMetadata
         {
             self.binaryHasImage = false;
         }
-        
+
         if (rawFieldMetadata.examples)
         {
             self.examples = rawFieldMetadata.examples;
@@ -159,6 +159,15 @@ class EBFieldMetadata
         else
         {
             self.examples = [];
+        }
+
+        if (rawFieldMetadata.interpretation)
+        {
+            self.interpretation = rawFieldMetadata.interpretation;
+        }
+        else
+        {
+            self.interpretation = null;
         }
     }
 
@@ -199,6 +208,23 @@ class EBFieldMetadata
                         average: {"type": "number"},
                         max: {"type": "number"}
                     }
+                },
+                interpretation: {
+                    "type": ["string", "null"],
+                    "enum": [
+                        "base32",
+                        "base64",
+                        "boolean",
+                        "date",
+                        "datetime",
+                        "hex",
+                        "mstimestamp",
+                        "number",
+                        "text",
+                        "time",
+                        "unixtimestamp",
+                        null
+                    ]
                 }
             }
         };

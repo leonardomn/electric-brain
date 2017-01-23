@@ -560,7 +560,7 @@ class EBModelAPI extends EBAPIRoot
                         const stream = model.architecture.getObjectTransformationStream();
                         stream.on('data', function(data)
                         {
-                            modelProcess.loadObject("1", "testing", data.input, data.output, next);
+                            modelProcess.loadObject("1", data.input, data.output, next);
                         });
                         stream.end(object);
                     },
@@ -568,13 +568,14 @@ class EBModelAPI extends EBAPIRoot
                     function(next)
                     {
                         // Process the provided object
-                        modelProcess.processObject("1", function(err, result)
+                        modelProcess.processObjects(["1"], function(err, results)
                         {
                             if (err)
                             {
                                 return next(err);
                             }
-
+                            
+                            const result = results[0];
                             model.architecture.convertNetworkOutputObject(result, function(err, output)
                             {
                                 if (err)
