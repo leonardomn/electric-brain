@@ -238,7 +238,6 @@ function TrainingScript:enterTrainingLoop()
                 local batch = self:prepareBatch(command.samples)
                 local results = self:evaluateTrainingIteration(batch)
 
-
                 local convertedResults = {}
                 for n = 1,#results.output do
                     local id = command.samples[n]

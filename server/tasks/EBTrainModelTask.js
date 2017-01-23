@@ -1,20 +1,20 @@
 /*
-    Electric Brain is an easy to use platform for machine learning.
-    Copyright (C) 2016 Electric Brain Software Corporation
+ Electric Brain is an easy to use platform for machine learning.
+ Copyright (C) 2016 Electric Brain Software Corporation
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU Affero General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU Affero General Public License for more details.
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ You should have received a copy of the GNU Affero General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 "use strict";
 
@@ -203,7 +203,7 @@ class EBTrainModelTask {
     updateStepResult(stepName, result, callback)
     {
         const self = this;
-        
+
         if (!self.isFrontendUpdateScheduled)
         {
             self.isFrontendUpdateScheduled = true;
@@ -217,7 +217,7 @@ class EBTrainModelTask {
             {
                 self.isFrontendUpdateScheduled = false;
                 self.lastFrontendUpdateTime = new Date();
-                
+
                 self.socketio.to('general').emit(`model-${self.model._id.toString()}`, {
                     event: 'update',
                     model: self.model
@@ -529,7 +529,6 @@ class EBTrainModelTask {
     }
 
 
-
     /**
      * This method runs the core training routine
      *
@@ -607,47 +606,38 @@ class EBTrainModelTask {
                                     lastIterationTime = new Date();
                                     self.rollingAverageTimePerIteration.accumulate(timeTaken);
                                     trainingResult.currentTimePerIteration = self.rollingAverageTimePerIteration.average;
-                                    //console.log(trainingResult)
                                     const trainingAccuracies = [];
                                     let index = 0;
-
-                                    console.log(sample)
-                                    console.log(result.objects)
-                                    async.eachSeries(underscore.zip(sample,result.objects), (zippedObjects, next) =>
+                                    async.eachSeries(underscore.zip(sample, result.objects), (zippedObjects, next) =>
                                     {
                                         const expected = zippedObjects[0];
                                         const actual = zippedObjects[1];
-
-
-
-                                        console.log(zippedObjects)
-
                                         self.getAccuracyFromOutput(expected.output, actual).then((trainingAccuracy) =>
                                         {
-                                            console.log(expected.output)
-                                            console.log(actual)
                                             trainingAccuracies.push(trainingAccuracy);
-                                            console.log(trainingAccuracies)
                                             return next();
                                         }, (err) => next(err));
-
                                     }, (err) =>
                                     {
-                                        if (err) {
+                                        if (err)
+                                        {
                                             return next(err);
                                         }
-
 
                                         async.mapSeries(sample, (object, next) =>
                                         {
                                             this.trainingProcess.removeObject(object.id, next);
-                                        }, (err) => {
-                                            if (err) {
+                                        }, (err) =>
+                                        {
+                                            if (err)
+                                            {
                                                 return next(err);
                                             }
 
-                                            self.testIteration((err, accuracy) => {
-                                                if (err) {
+                                            self.testIteration((err, accuracy) =>
+                                            {
+                                                if (err)
+                                                {
                                                     return next(err);
                                                 }
 
@@ -661,17 +651,19 @@ class EBTrainModelTask {
                                                     trainingAccuracy: self.rollingAverageTrainingaccuracy.average
                                                 });
 
-                                                console.log(trainingResult.iterations);
-
-                                                self.updateStepResult('training', trainingResult, (err) => {
-                                                    if (err) {
+                                                self.updateStepResult('training', trainingResult, (err) =>
+                                                {
+                                                    if (err)
+                                                    {
                                                         return next(err);
                                                     }
 
-                                                    if ((trainingResult.completedIterations % saveFrequency) === 0) {
+                                                    if ((trainingResult.completedIterations % saveFrequency) === 0)
+                                                    {
                                                         self.saveTorchModelFile(next);
                                                     }
-                                                    else {
+                                                    else
+                                                    {
                                                         return next();
                                                     }
                                                 });
@@ -987,12 +979,10 @@ class EBTrainModelTask {
                 return callback(err);
             }
 
-            stream.pipe(self.gridFS.openUploadStream(`model-${self.model._id}.t7`)).
-            on('error', (error) =>
+            stream.pipe(self.gridFS.openUploadStream(`model-${self.model._id}.t7`)).on('error', (error) =>
             {
                 return callback(error);
-            }).
-            on('finish', () =>
+            }).on('finish', () =>
             {
 
                 return callback();

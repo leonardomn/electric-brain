@@ -47,7 +47,7 @@ class EBTorchProcess
         self.processes = [];
         self.allLoadedEntries = [];
         self.testingSet = {};
-        self.numProcesses = 1;
+        self.numProcesses = 4;
     }
 
 
@@ -431,8 +431,6 @@ class EBTorchProcess
             {
                 return callback(err);
             }
-
-            console.log(JSON.stringify(results));
 
             async.map(this.processes, (process, next) =>
             {
