@@ -269,7 +269,7 @@ class EBTorchNeuralNetwork
     {
         const modules = [];
         let previousLayerInputNode = imageInputNode;
-        let lastLayerChannels = 1;
+        let lastLayerChannels = 3;
         configuration.image.layers.forEach(function(layer, index)
         {
             const convolutionalArguments = [lastLayerChannels, layer.numKernels, layer.convolutionKernelSize, layer.convolutionKernelSize, layer.convolutionStepSize, layer.convolutionStepSize, layer.convolutionPadSize, layer.convolutionPadSize];
@@ -288,10 +288,12 @@ class EBTorchNeuralNetwork
         // Lastly, reshape for output
         const outputSize = lastLayer.numKernels * lastLayer.outputWidth * lastLayer.outputHeight;
         const convolutionalStack = new EBTorchNode(new EBTorchModule("nn.Sequential", [], modules), imageInputNode, `${name}_convolutionalStack`);
-        const reshape = new EBTorchNode(new EBTorchModule("nn.Unsqueeze", [outputSize]), convolutionalStack, `${name}_reshape`);
+        const reshape = new EBTorchNode(new EBTorchModule("nn.Reshape", [outputSize]), convolutionalStack, `${name}_reshape`);
+
+        const unsqueeze = new EBTorchNode(new EBTorchModule("nn.Unsqueeze", [1]), reshape, `${name}_unsqueeze`);
 
         return {
-            outputNode: reshape,
+            outputNode: unsqueeze,
             outputSize: outputSize
         };
     }

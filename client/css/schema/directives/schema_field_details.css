@@ -27,13 +27,13 @@
     padding: 0;
 }
 
-.schema-field-details div.schema-field-examples div.schema-details-example-value
+.schema-field-details div.schema-details-example-value
 {
     padding: 10px;
     flex-grow: 0;
 }
 
-.schema-field-details ul.schema-field-examples div.schema-details-example-value img
+.schema-field-details div.schema-details-example-value img
 {
     max-width: 60px;
     max-height: 60px;

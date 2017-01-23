@@ -45,10 +45,11 @@
 
 {{~ topLevelFields:field:index}}
     {{? field.isBinary }}
-        local decoded{{=it.depth}}_{{=field.machineVariableName}} = mime.unb64(data{{=it.depth}}["{{=field.variablePathFrom(it.schema).replace(".", "").replace(/\./g, "\"][\"")}}"]
-        local bytes{{=it.depth}}_{{=field.machineVariableName}} = torch.ByteStorage()
-        bytes{{=it.depth}}_{{=field.machineVariableName}}:string(decoded{{=it.depth}}_{{=field.machineVariableName}})
-        local tensor{{=it.depth}}_{{=field.machineVariableName}} = torch.ByteTensor(bytes{{=it.depth}}_{{=field.machineVariableName}})
-        transformed{{=it.depth}}[{{=index+1+hasFixedTensor+topLevelSequences.length}}] = image.decompress(tensor{{=it.depth}}_{{=field.machineVariableName}})
+        for k,v in pairs(samples{{=it.depth}}) do
+            print(samples{{=it.depth}}[k][{{=index+1+hasFixedTensor+topLevelSequences.length}}])
+            local imageTensor = samples{{=it.depth}}[k][{{=index+1+hasFixedTensor+topLevelSequences.length}}]
+            local numChannels, height, width = imageTensor:size(1), imageTensor:size(2), imageTensor:size(3)
+            table.insert(batch{{=it.depth}}, imageTensor:view(1, numChannels, height, width))
+        end
     {{?}}
 {{~}}

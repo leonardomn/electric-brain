@@ -400,8 +400,7 @@ class EBArchitectureAPI extends EBAPIRoot
                         try
                         {
                             const filteredObject = filterFunction(object);
-                            transformStream.write(filteredObject);
-                            return next();
+                            transformStream.write(filteredObject, next);
                         }
                         catch (err)
                         {
