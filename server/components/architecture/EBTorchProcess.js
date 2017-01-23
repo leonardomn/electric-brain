@@ -448,7 +448,20 @@ class EBTorchProcess
                 // Combine all the losses together
                 const losses = underscore.pluck(results, "loss");
                 const loss = math.mean(losses);
-                return callback(null, {loss});
+
+                const allResults = {};
+                results.forEach((processResults) =>
+                {
+                    processResults.objects.forEach((object) =>
+                    {
+                        allResults[object.id] = object;
+                    });
+                });
+
+                return callback(null, {
+                    loss: loss,
+                    objects: batch.map((id) => allResults[id])
+                });
             });
         });
     }

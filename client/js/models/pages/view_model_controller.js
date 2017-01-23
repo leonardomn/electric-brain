@@ -1,20 +1,20 @@
 /*
-    Electric Brain is an easy to use platform for machine learning.
-    Copyright (C) 2016 Electric Brain Software Corporation
-    
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-    
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-    
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ Electric Brain is an easy to use platform for machine learning.
+ Copyright (C) 2016 Electric Brain Software Corporation
+
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU Affero General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU Affero General Public License for more details.
+
+ You should have received a copy of the GNU Affero General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 
 "use strict";
@@ -34,17 +34,19 @@ angular.module('eb').controller('EBViewModelController', function EBViewModelCon
         if (!$scope.model.training.iterations)
         {
             $scope.accuracyChartConfig.series[0].data = [];
+            $scope.accuracyChartConfig.series[1].data = [];
             $scope.lossChartConfig.series[0].data = [];
             return;
         }
 
         $scope.accuracyChartConfig.series[0].data = EBModelService.computeChartDataForModel($scope.model, 'accuracy');
+        $scope.accuracyChartConfig.series[1].data = EBModelService.computeChartDataForModel($scope.model, 'trainingAccuracy');
         $scope.lossChartConfig.series[0].data = EBModelService.computeChartDataForModel($scope.model, 'loss');
     };
 
     $scope.getModel = function getModel()
     {
-        const promise = EBModelService.getModel($stateParams.id).success(function(model)
+        const promise = EBModelService.getModel($stateParams.id).success(function (model)
         {
             $scope.model = model;
 
@@ -66,14 +68,14 @@ angular.module('eb').controller('EBViewModelController', function EBViewModelCon
     };
 
     let aceEditor = null;
-    $scope.aceLoaded = function(_editor)
+    $scope.aceLoaded = function (_editor)
     {
         aceEditor = _editor;
     };
 
-    let socketEventHandler = function(data)
+    let socketEventHandler = function (data)
     {
-        $timeout(function()
+        $timeout(function ()
         {
             if (data.event === 'log')
             {
@@ -90,7 +92,7 @@ angular.module('eb').controller('EBViewModelController', function EBViewModelCon
                 // If we just started training, flip over to the graph
                 if (data.model.training.status === 'in_progress' && $scope.model.training.status !== 'in_progress')
                 {
-                    $timeout(function()
+                    $timeout(function ()
                     {
                         $scope.activeTab = 3;
                     }, 250);
@@ -112,7 +114,7 @@ angular.module('eb').controller('EBViewModelController', function EBViewModelCon
         EBSocketService.socket.removeListener(`model-${$stateParams.id}`, socketEventHandler);
     }
 
-    $scope.$on('$destroy', function()
+    $scope.$on('$destroy', function ()
     {
         clearEventHandler();
     });
@@ -127,7 +129,7 @@ angular.module('eb').controller('EBViewModelController', function EBViewModelCon
             $state.go('dashboard');
         });
     };
-    
+
     $scope.objectClicked = function objectClicked(object)
     {
         EBViewTransformedObjectDialog.open($scope.model, object);
@@ -135,7 +137,7 @@ angular.module('eb').controller('EBViewModelController', function EBViewModelCon
 
     $scope.reflowCharts = function reflowCharts()
     {
-        $timeout(function()
+        $timeout(function ()
         {
             $scope.$broadcast('highchartsng.reflow');
         }, 10);
@@ -156,7 +158,8 @@ angular.module('eb').controller('EBViewModelController', function EBViewModelCon
                 max: 100
             }]
         },
-        series: [{data: [], name: "Accuracy"}],
+        series: [{data: [], name: "Accuracy"},
+            {data: [], name: "Training Accuracy"}],
         title: {text: 'Accuracy'},
         xAxis: {title: {text: 'iterations'}},
         size: {height: 600}
@@ -225,7 +228,7 @@ angular.module('eb').controller('EBViewModelController', function EBViewModelCon
     $scope.testObject = {};
     $scope.testModel = function testModel()
     {
-        EBModelService.processObjectWithModel($scope.model, $scope.testObject).then(function(response)
+        EBModelService.processObjectWithModel($scope.model, $scope.testObject).then(function (response)
         {
             $scope.testResult = response.data;
         });

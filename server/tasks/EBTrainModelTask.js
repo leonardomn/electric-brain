@@ -1,20 +1,20 @@
 /*
-    Electric Brain is an easy to use platform for machine learning.
-    Copyright (C) 2016 Electric Brain Software Corporation
+ Electric Brain is an easy to use platform for machine learning.
+ Copyright (C) 2016 Electric Brain Software Corporation
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU Affero General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU Affero General Public License for more details.
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ You should have received a copy of the GNU Affero General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 "use strict";
 
@@ -55,6 +55,7 @@ class EBTrainModelTask {
         this.trainingBatchSize = 16;
         this.testingBatchSize = 4;
         this.rollingAverageAccuracy = EBRollingAverage.createWithPeriod(100);
+        this.rollingAverageTrainingaccuracy = EBRollingAverage.createWithPeriod(100);
         this.rollingAverageTimeToLoad100Entries = EBRollingAverage.createWithPeriod(100);
         this.lastFrontendUpdateTime = null;
         this.lastDatabaseUpdateTime = null;
@@ -203,7 +204,7 @@ class EBTrainModelTask {
     updateStepResult(stepName, result, callback)
     {
         const self = this;
-        
+
         if (!self.isFrontendUpdateScheduled)
         {
             self.isFrontendUpdateScheduled = true;
@@ -217,7 +218,7 @@ class EBTrainModelTask {
             {
                 self.isFrontendUpdateScheduled = false;
                 self.lastFrontendUpdateTime = new Date();
-                
+
                 self.socketio.to('general').emit(`model-${self.model._id.toString()}`, {
                     event: 'update',
                     model: self.model
@@ -438,6 +439,7 @@ class EBTrainModelTask {
                             self.updateStepResult('dataScanning', dataScanningResults, next);
                         });
                     }
+
                     else
                     {
                         return Promise.resolve(null);
@@ -528,7 +530,6 @@ class EBTrainModelTask {
     }
 
 
-
     /**
      * This method runs the core training routine
      *
@@ -612,9 +613,17 @@ class EBTrainModelTask {
                                     // Update the time per iteration
                                     trainingResult.currentTimePerIteration = trainingResult.performance.total();
 
-                                    async.mapSeries(sample, (object, next) =>
+                                    const trainingAccuracies = [];
+                                    let index = 0;
+                                    async.eachSeries(underscore.zip(sample, result.objects), (zippedObjects, next) =>
                                     {
-                                        this.trainingProcess.removeObject(object.id, next);
+                                        const expected = zippedObjects[0];
+                                        const actual = zippedObjects[1];
+                                        self.getAccuracyFromOutput(expected.output, actual).then((trainingAccuracy) =>
+                                        {
+                                            trainingAccuracies.push(trainingAccuracy);
+                                            return next();
+                                        }, (err) => next(err));
                                     }, (err) =>
                                     {
                                         if (err)
@@ -622,42 +631,55 @@ class EBTrainModelTask {
                                             return next(err);
                                         }
 
-                                        performanceTrace.addTrace('remove-object');
-
-                                        self.testIteration((err, accuracy) =>
+                                        async.mapSeries(sample, (object, next) =>
+                                        {
+                                            this.trainingProcess.removeObject(object.id, next);
+                                        }, (err) =>
                                         {
                                             if (err)
                                             {
                                                 return next(err);
                                             }
 
-                                            performanceTrace.addTrace('testing-iteration');
-
-                                            self.rollingAverageAccuracy.accumulate(accuracy);
-                                            trainingResult.currentAccuracy = self.rollingAverageAccuracy.average;
-                                            trainingResult.iterations.push({
-                                                loss: result.loss,
-                                                accuracy: self.rollingAverageAccuracy.average
-                                            });
-
-                                            self.updateStepResult('training', trainingResult, (err) =>
+                                            performanceTrace.addTrace('remove-object');
+                                            self.testIteration((err, accuracy) =>
                                             {
                                                 if (err)
                                                 {
                                                     return next(err);
                                                 }
 
-                                                performanceTrace.addTrace('save-to-db');
-                                                trainingResult.performance.accumulate(performanceTrace);
+                                                performanceTrace.addTrace('testing-iteration');
 
-                                                if ((trainingResult.completedIterations % saveFrequency) === 0)
+                                                const trainingAccuracy = math.mean(trainingAccuracies);
+                                                self.rollingAverageAccuracy.accumulate(accuracy);
+                                                self.rollingAverageTrainingaccuracy.accumulate(trainingAccuracy * 100);
+                                                trainingResult.currentAccuracy = self.rollingAverageAccuracy.average;
+                                                trainingResult.iterations.push({
+                                                    loss: result.loss,
+                                                    accuracy: self.rollingAverageAccuracy.average,
+                                                    trainingAccuracy: self.rollingAverageTrainingaccuracy.average
+                                                });
+
+                                                self.updateStepResult('training', trainingResult, (err) =>
                                                 {
-                                                    self.saveTorchModelFile(next);
-                                                }
-                                                else
-                                                {
-                                                    return next();
-                                                }
+                                                    if (err)
+                                                    {
+                                                        return next(err);
+                                                    }
+
+                                                    performanceTrace.addTrace('save-to-db');
+                                                    trainingResult.performance.accumulate(performanceTrace);
+
+                                                    if ((trainingResult.completedIterations % saveFrequency) === 0)
+                                                    {
+                                                        self.saveTorchModelFile(next);
+                                                    }
+                                                    else
+                                                    {
+                                                        return next();
+                                                    }
+                                                });
                                             });
                                         });
                                     });
@@ -777,7 +799,7 @@ class EBTrainModelTask {
             {
                 if (fieldSchema.isField && fieldSchema.configuration.included)
                 {
-                    if (fieldSchema.configuration.neuralNetwork.string.mode === 'classification')
+                    if (fieldSchema.isString)
                     {
                         totalClassifications += 1;
                         if (values[0] === values[1])
@@ -970,12 +992,10 @@ class EBTrainModelTask {
                 return callback(err);
             }
 
-            stream.pipe(self.gridFS.openUploadStream(`model-${self.model._id}.t7`)).
-            on('error', (error) =>
+            stream.pipe(self.gridFS.openUploadStream(`model-${self.model._id}.t7`)).on('error', (error) =>
             {
                 return callback(error);
-            }).
-            on('finish', () =>
+            }).on('finish', () =>
             {
 
                 return callback();

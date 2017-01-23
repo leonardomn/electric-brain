@@ -163,6 +163,7 @@ class EBModel
                                 type: "object",
                                 properties: {
                                     "accuracy": {type: "number"},
+                                    "trainingAccuracy" : {type:"number"},
                                     "loss": {type: "number"}
                                 }
                             }

@@ -55,7 +55,7 @@ function TrainingScript.new()
     -- Prepare the parameters
     self.params, self.gradParams = self.module:getParameters()
 
-    -- Optimization state
+    -- Initialization optimization state
     self.optimState = {}
 
     return self
@@ -63,6 +63,8 @@ end
 
 
 function TrainingScript:evaluateTrainingIteration(batch)
+    local batchOutputs
+
     local iteration = function(params)
         --if params_ ~= self.params then
         --    self.params:copy(params_)
@@ -75,7 +77,7 @@ function TrainingScript:evaluateTrainingIteration(batch)
         ------------------- forward pass -------------------
         self.module:training()
 
-        local batchOutputs = self.module:forward(batch.input)
+        batchOutputs = self.module:forward(batch.input)
         loss = loss + self.criterion:forward(batchOutputs, batch.output)
 
         ------------------- backward pass -------------------
@@ -98,7 +100,8 @@ function TrainingScript:evaluateTrainingIteration(batch)
     collectgarbage()
 
     return {
-        loss = loss[1]
+        loss = loss[1],
+        output = self:unwindBatchOutput(batchOutputs)
     }
 end
 
@@ -231,8 +234,24 @@ function TrainingScript:enterTrainingLoop()
                 -- have been previously loaded into memory using the 'store' command'
                 local batch = self:prepareBatch(command.samples)
                 local results = self:evaluateTrainingIteration(batch)
-                results.type = "iterationCompleted"
-                self:sendResponse(results)
+
+                local convertedResults = {}
+                for n = 1,#results.output do
+                    local id = command.samples[n]
+                    local result = results.output[n]
+                    local converted = self:convertOutputOut(result)
+                    converted.id = id
+                    table.insert(convertedResults, converted)
+                end
+
+                local response = {
+                    objects = convertedResults,
+                    type = "iterationCompleted",
+                    loss = results.loss
+
+                    }
+                self:sendResponse(response)
+
             elseif command.type == "store" then
                 -- The store command is used by the manager process to store a specific data entry for
                 -- quick retrieval later. Then data is provided directly inside the JSON object of
@@ -282,6 +301,8 @@ function TrainingScript:enterTrainingLoop()
                     objects = convertedResults
                 }
                 self:sendResponse(response)
+
+
             elseif command.type == "save" then
                 -- The save command causes the process to save the trained model out to disk
                 self.moduleSaveCopy:getParameters():copy(self.params)
