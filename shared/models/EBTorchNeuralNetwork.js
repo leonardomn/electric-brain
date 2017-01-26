@@ -225,9 +225,10 @@ class EBTorchNeuralNetwork
 
         const linearUnit = new EBTorchNode(new EBTorchModule("nn.Sequential", [], [
             new EBTorchModule("nn.Linear", [inputSize, 100]),
-            new EBTorchModule("nn.Tanh", []),
+            new EBTorchModule("nn.Dropout", [0.4]),
+            new EBTorchModule("nn.ReLU", ['true']),
             new EBTorchModule("nn.Linear", [100, 100]),
-            new EBTorchModule("nn.Tanh", []),
+            new EBTorchModule("nn.ReLU", ['true']),
             new EBTorchModule("nn.Linear", [100, computedFixedOutputSize])
         ]), reshapedJoinedTensor, `linearUnit`);
         // Now for any fixed outputs which are enums, we need to add in a log soft max module
@@ -264,6 +265,24 @@ class EBTorchNeuralNetwork
         return fixedOutputNode;
     }
 
+
+
+    static computeConvolutionOutputSize(inputWidth, inputHeight, kernelWidth, kernelHeight, stepWidth, stepHeight, padWidth, padHeight)
+    {
+        return {
+            width: Math.floor(((inputWidth + (2 * padWidth) - kernelWidth) / stepWidth) + 1),
+            height: Math.floor(((inputHeight + (2 * padHeight) - kernelHeight) / stepHeight) + 1)
+        };
+    }
+
+    static computeMaxPoolingOutputSize(width, height, kernelWidth, kernelHeight, stepWidth, stepHeight, padWidth, padHeight)
+    {
+        return {
+            width: Math.floor(((width + (2 * padWidth) - kernelWidth) / stepWidth) + 1),
+            height: Math.floor(((height + (2 * padHeight) - kernelHeight) / stepHeight) + 1)
+        };
+    }
+
     /**
      * Generates a piece of the neural network that processes images
      *
@@ -273,34 +292,56 @@ class EBTorchNeuralNetwork
      */
     static generateImageProcessor(name, configuration, imageInputNode)
     {
-        const modules = [];
-        let previousLayerInputNode = imageInputNode;
-        let lastLayerChannels = 3;
-        configuration.image.layers.forEach(function(layer, index)
-        {
-            const convolutionalArguments = [lastLayerChannels, layer.numKernels, layer.convolutionKernelSize, layer.convolutionKernelSize, layer.convolutionStepSize, layer.convolutionStepSize, layer.convolutionPadSize, layer.convolutionPadSize];
-            const convolutionalLayer = new EBTorchModule('nn.SpatialConvolution', convolutionalArguments);
-            const nonLinearityLayer = new EBTorchModule('nn.Tanh');
-            const poolingArguments = [layer.poolingKernelSize, layer.poolingKernelSize, layer.poolingStepSize, layer.poolingStepSize, layer.poolingPadSize, layer.poolingPadSize];
-            const poolingLayer = new EBTorchModule('nn.SpatialMaxPooling', poolingArguments);
-            modules.push(convolutionalLayer);
-            modules.push(nonLinearityLayer);
-            modules.push(poolingLayer);
-            lastLayerChannels = layer.numKernels;
-        });
+    //     const modules = [];
+    //     let previousLayerInputNode = imageInputNode;
+    //     let lastLayerChannels = 3;
+    //     configuration.image.layers.forEach(function(layer, index)
+    //     {
+    //         const convolutionalArguments = [lastLayerChannels, layer.numKernels, layer.convolutionKernelSize, layer.convolutionKernelSize, layer.convolutionStepSize, layer.convolutionStepSize, layer.convolutionPadSize, layer.convolutionPadSize];
+    //         const convolutionalLayer = new EBTorchModule('nn.SpatialConvolution', convolutionalArguments);
+    //         const nonLinearityLayer = new EBTorchModule('nn.Tanh');
+    //         const poolingArguments = [layer.poolingKernelSize, layer.poolingKernelSize, layer.poolingStepSize, layer.poolingStepSize, layer.poolingPadSize, layer.poolingPadSize];
+    //         const poolingLayer = new EBTorchModule('nn.SpatialMaxPooling', poolingArguments);
+    //         modules.push(convolutionalLayer);
+    //         modules.push(nonLinearityLayer);
+    //         modules.push(poolingLayer);
+    //         lastLayerChannels = layer.numKernels;
+    //     });
 
-        const lastLayer = configuration.image.layers[configuration.image.layers.length - 1];
+        // const lastLayer = configuration.image.layers[configuration.image.layers.length - 1];
+        //
+        // // Lastly, reshape for output
+        // const outputSize = lastLayer.numKernels * lastLayer.outputWidth * lastLayer.outputHeight;
+        // const convolutionalStack = new EBTorchNode(new EBTorchModule("nn.Sequential", [], modules), imageInputNode, `${name}_convolutionalStack`);
+        // const reshape = new EBTorchNode(new EBTorchModule("nn.Reshape", [outputSize]), convolutionalStack, `${name}_reshape`);
 
-        // Lastly, reshape for output
-        const outputSize = lastLayer.numKernels * lastLayer.outputWidth * lastLayer.outputHeight;
-        const convolutionalStack = new EBTorchNode(new EBTorchModule("nn.Sequential", [], modules), imageInputNode, `${name}_convolutionalStack`);
-        const reshape = new EBTorchNode(new EBTorchModule("nn.Reshape", [outputSize]), convolutionalStack, `${name}_reshape`);
+    const layer1Conv = new EBTorchNode(new EBTorchModule('nn.SpatialConvolution', [3, 64, 3,3,1,1,1,1]), imageInputNode, `${name}_layer1Conv`);
+    const layer1BatchNormal = new EBTorchNode(new EBTorchModule('nn.SpatialBatchNormalization', [64, 1e-3]), layer1Conv, `${name}_layer1BatchNormal`);
+    const layer1Relu = new EBTorchNode(new EBTorchModule('nn.ReLU',['true']), layer1BatchNormal,`${name}_layer1Relu` );
+    const layer1Dropout = new EBTorchNode(new EBTorchModule('nn.Dropout',[0.4]), layer1Relu,`${name}_layer1Dropout` );
+    const layer1MaxPooling = new EBTorchNode(new EBTorchModule('nn.SpatialMaxPooling',[2,2,2,2]), layer1Dropout,`${name}_layer1Maxpooling` );
 
-        const unsqueeze = new EBTorchNode(new EBTorchModule("nn.Unsqueeze", [1]), reshape, `${name}_unsqueeze`);
+
+    const layer2Conv = new EBTorchNode(new EBTorchModule('nn.SpatialConvolution', [64, 128, 3,3,1,1,1,1]), layer1MaxPooling, `${name}_layer2Conv`);
+    const layer2BatchNormal = new EBTorchNode(new EBTorchModule('nn.SpatialBatchNormalization', [128, 1e-3]), layer2Conv, `${name}_layer2BatchNormal`);
+    const layer2Relu = new EBTorchNode(new EBTorchModule('nn.ReLU',['true']), layer2BatchNormal,`${name}_layer2Relu` );
+    const layer2Dropout = new EBTorchNode(new EBTorchModule('nn.Dropout',[0.4]), layer2Relu,`${name}_layer2Dropout` );
+    const layer2MaxPooling = new EBTorchNode(new EBTorchModule('nn.SpatialMaxPooling',[2,2,2,2]), layer2Dropout,`${name}_layer2Maxpooling` );
+
+
+    const layer3Conv = new EBTorchNode(new EBTorchModule('nn.SpatialConvolution', [128, 256, 3,3,1,1,1,1]), layer2MaxPooling, `${name}_layer3Conv`);
+    const layer3BatchNormal = new EBTorchNode(new EBTorchModule('nn.SpatialBatchNormalization', [256, 1e-3]), layer3Conv, `${name}_layer3BatchNormal`);
+    const layer3Relu = new EBTorchNode(new EBTorchModule('nn.ReLU',['true']), layer3BatchNormal,`${name}_layer3Relu` );
+    const layer3Dropout = new EBTorchNode(new EBTorchModule('nn.Dropout',[0.4]), layer3Relu,`${name}_layer3Dropout` );
+    const layer3MaxPooling = new EBTorchNode(new EBTorchModule('nn.SpatialMaxPooling',[2,2,2,2]), layer3Dropout,`${name}_layer3Maxpooling` );
+
+    const reshape = new EBTorchNode(new EBTorchModule("nn.Reshape", [256*12*12]), layer3MaxPooling, `${name}_reshape`);
+
+    const unsqueeze = new EBTorchNode(new EBTorchModule("nn.Unsqueeze", [1]), reshape, `${name}_unsqueeze`);
 
         return {
             outputNode: unsqueeze,
-            outputSize: outputSize
+            outputSize: 256*12*12
         };
     }
 
