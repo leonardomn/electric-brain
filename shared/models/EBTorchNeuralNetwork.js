@@ -222,8 +222,14 @@ class EBTorchNeuralNetwork
         }
 
         const reshapedJoinedTensor = new EBTorchNode(new EBTorchModule("nn.Select", [1, 1]), joinedFixedTensorNode, `reshapedJoinedTensor`);
-        const linearUnit = new EBTorchNode(new EBTorchModule("nn.Linear", [inputSize, computedFixedOutputSize]), reshapedJoinedTensor, `linearUnit`);
 
+        const linearUnit = new EBTorchNode(new EBTorchModule("nn.Sequential", [], [
+            new EBTorchModule("nn.Linear", [inputSize, 100]),
+            new EBTorchModule("nn.Tanh", []),
+            new EBTorchModule("nn.Linear", [100, 100]),
+            new EBTorchModule("nn.Tanh", []),
+            new EBTorchModule("nn.Linear", [100, computedFixedOutputSize])
+        ]), reshapedJoinedTensor, `linearUnit`);
         // Now for any fixed outputs which are enums, we need to add in a log soft max module
         let tensorPosition = 1;
         outputFields.forEach(function(field)
