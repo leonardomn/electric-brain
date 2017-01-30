@@ -315,33 +315,68 @@ class EBTorchNeuralNetwork
         // const convolutionalStack = new EBTorchNode(new EBTorchModule("nn.Sequential", [], modules), imageInputNode, `${name}_convolutionalStack`);
         // const reshape = new EBTorchNode(new EBTorchModule("nn.Reshape", [outputSize]), convolutionalStack, `${name}_reshape`);
 
-    const layer1Conv = new EBTorchNode(new EBTorchModule('nn.SpatialConvolution', [3, 64, 3,3,1,1,1,1]), imageInputNode, `${name}_layer1Conv`);
-    const layer1BatchNormal = new EBTorchNode(new EBTorchModule('nn.SpatialBatchNormalization', [64, 1e-3]), layer1Conv, `${name}_layer1BatchNormal`);
-    const layer1Relu = new EBTorchNode(new EBTorchModule('nn.ReLU',['true']), layer1BatchNormal,`${name}_layer1Relu` );
-    const layer1Dropout = new EBTorchNode(new EBTorchModule('nn.Dropout',[0.4]), layer1Relu,`${name}_layer1Dropout` );
-    const layer1MaxPooling = new EBTorchNode(new EBTorchModule('nn.SpatialMaxPooling',[2,2,2,2]), layer1Dropout,`${name}_layer1Maxpooling` );
+   // const layer1Conv = new EBTorchNode(new EBTorchModule('nn.SpatialConvolution', [3, 64, 3,3,1,1,1,1]), imageInputNode, `${name}_layer1Conv`);
+   // const layer1BatchNormal = new EBTorchNode(new EBTorchModule('nn.SpatialBatchNormalization', [64, 1e-3]), layer1Conv, `${name}_layer1BatchNormal`);
+    //const layer1Relu = new EBTorchNode(new EBTorchModule('nn.ReLU',['true']), layer1BatchNormal,`${name}_layer1Relu` );
+    //const layer1Dropout = new EBTorchNode(new EBTorchModule('nn.Dropout',[0.4]), layer1Relu,`${name}_layer1Dropout` );
+    //const layer1MaxPooling = new EBTorchNode(new EBTorchModule('nn.SpatialMaxPooling',[2,2,2,2]), layer1Dropout,`${name}_layer1Maxpooling` );
 
 
-    const layer2Conv = new EBTorchNode(new EBTorchModule('nn.SpatialConvolution', [64, 128, 3,3,1,1,1,1]), layer1MaxPooling, `${name}_layer2Conv`);
-    const layer2BatchNormal = new EBTorchNode(new EBTorchModule('nn.SpatialBatchNormalization', [128, 1e-3]), layer2Conv, `${name}_layer2BatchNormal`);
-    const layer2Relu = new EBTorchNode(new EBTorchModule('nn.ReLU',['true']), layer2BatchNormal,`${name}_layer2Relu` );
-    const layer2Dropout = new EBTorchNode(new EBTorchModule('nn.Dropout',[0.4]), layer2Relu,`${name}_layer2Dropout` );
+
+    const layer1Conv = new EBTorchNode(new EBTorchModule('nn.SpatialConvolution', [3, 32, 3,3,1,1,1,1]), imageInputNode, `${name}_layer1Conv`);
+    const layer1BatchNormal = new EBTorchNode(new EBTorchModule('nn.SpatialBatchNormalization', [32, 1e-3]), layer1Conv, `${name}_layer1BatchNormal`);
+    const layer1Relu = new EBTorchNode(new EBTorchModule('nn.ReLU',['true']), layer1BatchNormal ,`${name}_layer1Relu` );
+    const layer2Conv = new EBTorchNode(new EBTorchModule('nn.SpatialConvolution', [32, 32, 3,3,1,1,1,1]), layer1Relu, `${name}_layer2Conv`);
+    const layer2BatchNormal = new EBTorchNode(new EBTorchModule('nn.SpatialBatchNormalization', [32, 1e-3]), layer2Conv, `${name}_layer2BatchNormal`);
+    const layer2Relu = new EBTorchNode(new EBTorchModule('nn.ReLU',['true']), layer2BatchNormal ,`${name}_layer2Relu` );
+    const layer1Dropout = new EBTorchNode(new EBTorchModule('nn.Dropout',[0.4]), layer2Relu,`${name}_layer2Dropout` );
+    const layer1MaxPooling = new EBTorchNode(new EBTorchModule('nn.SpatialMaxPooling',[2,2,2,2]), layer1Dropout ,`${name}_layer1Maxpooling` );
+
+    const layer3Conv = new EBTorchNode(new EBTorchModule('nn.SpatialConvolution', [32, 64, 3,3,1,1,1,1]), layer1MaxPooling, `${name}_layer3Conv`);
+    const layer3BatchNormal = new EBTorchNode(new EBTorchModule('nn.SpatialBatchNormalization', [64, 1e-3]), layer3Conv, `${name}_layer3BatchNormal`);
+    const layer3Relu = new EBTorchNode(new EBTorchModule('nn.ReLU',['true']), layer3BatchNormal ,`${name}_layer3Relu` );
+    const layer4Conv = new EBTorchNode(new EBTorchModule('nn.SpatialConvolution', [64, 64 , 3,3,1,1,1,1]), layer3Relu, `${name}_layer4Conv`);
+    const layer4BatchNormal = new EBTorchNode(new EBTorchModule('nn.SpatialBatchNormalization', [64, 1e-3]), layer4Conv, `${name}_layer4BatchNormal`);
+    const layer4Relu = new EBTorchNode(new EBTorchModule('nn.ReLU',['true']), layer4BatchNormal ,`${name}_layer4Relu` );
+    const layer2Dropout = new EBTorchNode(new EBTorchModule('nn.Dropout',[0.4]), layer4Relu,`${name}_layer4Dropout` );
     const layer2MaxPooling = new EBTorchNode(new EBTorchModule('nn.SpatialMaxPooling',[2,2,2,2]), layer2Dropout,`${name}_layer2Maxpooling` );
 
-
-    const layer3Conv = new EBTorchNode(new EBTorchModule('nn.SpatialConvolution', [128, 256, 3,3,1,1,1,1]), layer2MaxPooling, `${name}_layer3Conv`);
-    const layer3BatchNormal = new EBTorchNode(new EBTorchModule('nn.SpatialBatchNormalization', [256, 1e-3]), layer3Conv, `${name}_layer3BatchNormal`);
-    const layer3Relu = new EBTorchNode(new EBTorchModule('nn.ReLU',['true']), layer3BatchNormal,`${name}_layer3Relu` );
-    const layer3Dropout = new EBTorchNode(new EBTorchModule('nn.Dropout',[0.4]), layer3Relu,`${name}_layer3Dropout` );
+    const layer5Conv = new EBTorchNode(new EBTorchModule('nn.SpatialConvolution', [64, 128, 3,3,1,1,1,1]), layer2MaxPooling, `${name}_layer5Conv`);
+    const layer5BatchNormal = new EBTorchNode(new EBTorchModule('nn.SpatialBatchNormalization', [128, 1e-3]), layer5Conv, `${name}_layer5BatchNormal`);
+    const layer5Relu = new EBTorchNode(new EBTorchModule('nn.ReLU',['true']), layer5BatchNormal ,`${name}_layer5Relu` );
+    const layer6Conv = new EBTorchNode(new EBTorchModule('nn.SpatialConvolution', [128, 128, 3,3,1,1,1,1]), layer5Relu, `${name}_layer6Conv`);
+    const layer6BatchNormal = new EBTorchNode(new EBTorchModule('nn.SpatialBatchNormalization', [128, 1e-3]), layer6Conv, `${name}_layer6BatchNormal`);
+    const layer6Relu = new EBTorchNode(new EBTorchModule('nn.ReLU',['true']), layer6BatchNormal ,`${name}_layer6Relu` );
+    const layer3Dropout = new EBTorchNode(new EBTorchModule('nn.Dropout',[0.4]), layer6Relu,`${name}_layer3Dropout` );
     const layer3MaxPooling = new EBTorchNode(new EBTorchModule('nn.SpatialMaxPooling',[2,2,2,2]), layer3Dropout,`${name}_layer3Maxpooling` );
 
-    const reshape = new EBTorchNode(new EBTorchModule("nn.Reshape", [256*12*12]), layer3MaxPooling, `${name}_reshape`);
+    const layer7Conv = new EBTorchNode(new EBTorchModule('nn.SpatialConvolution', [128, 256, 3,3,1,1,1,1]), layer3MaxPooling, `${name}_layer7Conv`);
+    const layer7BatchNormal = new EBTorchNode(new EBTorchModule('nn.SpatialBatchNormalization', [256, 1e-3]), layer7Conv, `${name}_layer7BatchNormal`);
+    const layer7Relu = new EBTorchNode(new EBTorchModule('nn.ReLU',['true']), layer7BatchNormal ,`${name}_layer7Relu` );
+    const layer8Conv = new EBTorchNode(new EBTorchModule('nn.SpatialConvolution', [256, 256, 3,3,1,1,1,1]), layer7Relu, `${name}_layer8Conv`);
+    const layer8BatchNormal = new EBTorchNode(new EBTorchModule('nn.SpatialBatchNormalization', [256, 1e-3]), layer8Conv, `${name}_layer8BatchNormal`);
+    const layer8Relu = new EBTorchNode(new EBTorchModule('nn.ReLU',['true']), layer8BatchNormal ,`${name}_layer8Relu` );
+    const layer4Dropout = new EBTorchNode(new EBTorchModule('nn.Dropout',[0.4]), layer8Relu,`${name}_layer4Dropout` );
+    const layer4MaxPooling = new EBTorchNode(new EBTorchModule('nn.SpatialMaxPooling',[2,2,2,2]), layer4Dropout,`${name}_layer4Maxpooling` );
+
+    const layer9Conv = new EBTorchNode(new EBTorchModule('nn.SpatialConvolution', [256, 512, 3,3,1,1,1,1]), layer4MaxPooling, `${name}_layer9Conv`);
+    const layer9BatchNormal = new EBTorchNode(new EBTorchModule('nn.SpatialBatchNormalization', [512, 1e-3]), layer9Conv, `${name}_layer9BatchNormal`);
+    const layer9Relu = new EBTorchNode(new EBTorchModule('nn.ReLU',['true']), layer9BatchNormal ,`${name}_layer9Relu` );
+    const layer10Conv = new EBTorchNode(new EBTorchModule('nn.SpatialConvolution', [512, 512, 3,3,1,1,1,1]), layer9Relu, `${name}_layer10Conv`);
+    const layer10BatchNormal = new EBTorchNode(new EBTorchModule('nn.SpatialBatchNormalization', [512, 1e-3]), layer10Conv, `${name}_layer10BatchNormal`);
+    const layer10Relu = new EBTorchNode(new EBTorchModule('nn.ReLU',['true']), layer10BatchNormal,`${name}_layer10Relu` );
+    const layer5Dropout = new EBTorchNode(new EBTorchModule('nn.Dropout',[0.4]), layer10Relu,`${name}_layer5Dropout` );
+    const layer5MaxPooling = new EBTorchNode(new EBTorchModule('nn.SpatialMaxPooling',[2,2,2,2]), layer5Dropout,`${name}_layer5Maxpooling` );
+
+
+
+    const reshape = new EBTorchNode(new EBTorchModule("nn.Reshape", [512*3*3]), layer5MaxPooling, `${name}_reshape`);
 
     const unsqueeze = new EBTorchNode(new EBTorchModule("nn.Unsqueeze", [1]), reshape, `${name}_unsqueeze`);
 
         return {
             outputNode: unsqueeze,
-            outputSize: 256*12*12
+            outputSize: 512*3*3
         };
     }
 
