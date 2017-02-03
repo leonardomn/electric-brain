@@ -21,7 +21,6 @@ const
     async = require('async'),
     EBFieldAnalysisAccumulator = require("./EBFieldAnalysisAccumulator"),
     EBInterpretationDetector = require("./interpretation/EBInterpretationDetector"),
-    FieldInterpretationModel = require('../../../build/models/fieldinterpretation/ebbundle').EBBundleScript,
     models = require('../../../shared/models/models'),
     path = require('path'),
     Promise = require('bluebird'),
@@ -377,8 +376,6 @@ class EBSchemaDetector
 
         const sortedFields = underscore.sortBy(fields, (field) => (field.name));
         const schema = assembleSchema("", sortedFields, 1);
-
-        console.log(schema);
 
         return new models.EBSchema(schema);
     }

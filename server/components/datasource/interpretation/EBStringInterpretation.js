@@ -18,7 +18,11 @@
 
 "use strict";
 
-const EBInterpretationBase = require('./EBInterpretationBase'),
+const
+    EBFieldAnalysisAccumulatorBase = require('./EBFieldAnalysisAccumulatorBase'),
+    EBFieldMetadata = require('../../../../shared/models/EBFieldMetadata'),
+    EBInterpretationBase = require('./EBInterpretationBase'),
+    EBValueHistogram = require('../../../../shared/models/EBValueHistogram'),
     underscore = require('underscore');
 
 /**
@@ -84,7 +88,7 @@ class EBStringInterpretation extends EBInterpretationBase
      */
     transformSchema(schema)
     {
-        return schema;
+        return Promise.resolve(schema);
     }
 
 
@@ -98,7 +102,7 @@ class EBStringInterpretation extends EBInterpretationBase
      */
     transformValue(value)
     {
-        return value.toString()
+        return Promise.resolve(value.toString());
     }
 
 
@@ -113,7 +117,7 @@ class EBStringInterpretation extends EBInterpretationBase
      */
     listStatistics(value)
     {
-        return [];
+        return Promise.resolve([]);
     }
 
 
@@ -131,11 +135,11 @@ class EBStringInterpretation extends EBInterpretationBase
     {
         if (value.length > 50)
         {
-            return value.substr(0, 50) + "...";
+            return Promise.resolve(value.substr(0, 50) + "...");
         }
         else
         {
-            return value;
+            return Promise.resolve(value);
         }
     }
 
@@ -151,7 +155,7 @@ class EBStringInterpretation extends EBInterpretationBase
     createFieldAccumulator()
     {
         // This needs to be moved to a configuration file of some sort
-        const maxLengthForHistogram = 250;
+        const maxStringLengthForHistogram = 250;
 
         // Create a subclass and immediately instantiate it.
         return new (class extends EBFieldAnalysisAccumulatorBase
@@ -177,10 +181,10 @@ class EBStringInterpretation extends EBInterpretationBase
             {
                 const metadata = new EBFieldMetadata();
 
-                self.metadata.types.push('string');
-                self.metadata.valueHistogram = EBValueHistogram.computeHistogram(self[_stringValues]);
+                metadata.types.push('string');
+                metadata.valueHistogram = EBValueHistogram.computeHistogram(this.values);
 
-                Promise.resolve(metadata);
+                return metadata;
             }
         })();
     }

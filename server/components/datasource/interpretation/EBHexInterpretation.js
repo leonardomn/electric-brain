@@ -18,7 +18,10 @@
 
 "use strict";
 
-const EBInterpretationBase = require('./EBInterpretationBase'),
+const
+    EBFieldAnalysisAccumulatorBase = require('./EBFieldAnalysisAccumulatorBase'),
+    EBFieldMetadata = require('../../../../shared/models/EBFieldMetadata'),
+    EBInterpretationBase = require('./EBInterpretationBase'),
     Promise = require('bluebird'),
     underscore = require('underscore');
 
@@ -86,7 +89,7 @@ class EBHexInterpretation extends EBInterpretationBase
      */
     transformSchema(schema)
     {
-        return schema;
+        return Promise.resolve(schema);
     }
 
 
@@ -100,7 +103,7 @@ class EBHexInterpretation extends EBInterpretationBase
      */
     transformValue(value)
     {
-        return new Buffer(`0x${value}`, 'hex');
+        return Promise.resolve(new Buffer(`0x${value}`, 'hex'));
     }
 
 
@@ -115,7 +118,7 @@ class EBHexInterpretation extends EBInterpretationBase
      */
     listStatistics(value)
     {
-        return [];
+        return Promise.resolve([]);
     }
 
 
@@ -133,11 +136,11 @@ class EBHexInterpretation extends EBInterpretationBase
     {
         if (value.length > 50)
         {
-            return value.substr(0, 50) + "...";
+            return Promise.resolve(value.substr(0, 50) + "...");
         }
         else
         {
-            return value;
+            return Promise.resolve(value);
         }
     }
 }

@@ -18,7 +18,10 @@
 
 "use strict";
 
-const EBInterpretationBase = require('./EBInterpretationBase'),
+const
+    EBFieldAnalysisAccumulatorBase = require('./EBFieldAnalysisAccumulatorBase'),
+    EBFieldMetadata = require('../../../../shared/models/EBFieldMetadata'),
+    EBInterpretationBase = require('./EBInterpretationBase'),
     underscore = require('underscore');
 
 /**
@@ -84,7 +87,7 @@ class EBSequenceInterpretation extends EBInterpretationBase
      */
     transformSchema(schema)
     {
-        return schema;
+        return Promise.resolve(schema);
     }
 
 
@@ -98,7 +101,7 @@ class EBSequenceInterpretation extends EBInterpretationBase
      */
     transformValue(value)
     {
-        return value;
+        return Promise.resolve(value);
     }
 
 
@@ -113,7 +116,7 @@ class EBSequenceInterpretation extends EBInterpretationBase
      */
     listStatistics(value)
     {
-        return [];
+        return Promise.resolve([]);
     }
 
 
@@ -162,7 +165,7 @@ class EBSequenceInterpretation extends EBInterpretationBase
                 const metadata = new EBFieldMetadata();
                 self.metadata.types.push('array');
                 self.metadata.arrayLengthHistogram = EBNumberHistogram.computeHistogram(self.arrayLengths);
-                Promise.resolve(metadata);
+                return metadata;
             }
         })();
     }
