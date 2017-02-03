@@ -18,7 +18,10 @@
 
 "use strict";
 
-const EBInterpretationBase = require('./EBInterpretationBase'),
+const
+    EBFieldAnalysisAccumulatorBase = require('./EBFieldAnalysisAccumulatorBase'),
+    EBFieldMetadata = require('../../../../shared/models/EBFieldMetadata'),
+    EBInterpretationBase = require('./EBInterpretationBase'),
     fileType = require('file-type'),
     underscore = require('underscore');
 
@@ -85,7 +88,7 @@ class EBBinaryInterpretation extends EBInterpretationBase
      */
     transformSchema(schema)
     {
-        return schema;
+        return Promise.resolve(schema);
     }
 
 
@@ -99,7 +102,7 @@ class EBBinaryInterpretation extends EBInterpretationBase
      */
     transformValue(value)
     {
-        return value.toString()
+        return Promise.resolve(value);
     }
 
 
@@ -114,7 +117,7 @@ class EBBinaryInterpretation extends EBInterpretationBase
      */
     listStatistics(value)
     {
-        return [];
+        return Promise.resolve([]);
     }
 
 
@@ -132,11 +135,11 @@ class EBBinaryInterpretation extends EBInterpretationBase
     {
         if (value.length > 50)
         {
-            return value.substr(0, 50) + "...";
+            return Promise.resolve(value.substr(0, 50));
         }
         else
         {
-            return value;
+            return Promise.resolve(value);
         }
     }
 
@@ -165,23 +168,23 @@ class EBBinaryInterpretation extends EBInterpretationBase
 
             accumulateValue(value)
             {
-                self[_binaryMimeTypes].add(result.mimeType);
-                if (result.image)
-                {
-                    self.metadata.binaryHasImage = true;
-                    self[_imageWidths].push(result.imageWidth);
-                    self[_imageHeights].push(result.imageHeight);
-                }
+                // self[_binaryMimeTypes].add(result.mimeType);
+                // if (result.image)
+                // {
+                //     self.metadata.binaryHasImage = true;
+                //     self[_imageWidths].push(result.imageWidth);
+                //     self[_imageHeights].push(result.imageHeight);
+                // }
             }
 
             getFieldMetadata()
             {
                 const metadata = new EBFieldMetadata();
 
-                self.metadata.types.push('string');
-                self.metadata.valueHistogram = EBValueHistogram.computeHistogram(self[_stringValues]);
+                metadata.types.push('binary');
+                // metadata.valueHistogram = EBValueHistogram.computeHistogram(self[_stringValues]);
 
-                Promise.resolve(metadata);
+                return metadata;
             }
         })();
     }

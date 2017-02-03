@@ -320,31 +320,50 @@ class EBCSVPlugin extends EBDataSourcePlugin
         return this.sample(maxNumberOfObjectsToSample, dataSource,
             function(object)
             {
-                return new Promise(function(resolve, reject)
+                let keepForSample = false;
+                if (exampleIndexes.indexOf(objectIndex) !== -1)
                 {
-                    let keepForSample = false;
-                    if (exampleIndexes.indexOf(objectIndex) !== -1)
-                    {
-                        keepForSample = true;
-                    }
+                    keepForSample = true;
+                }
 
-                    // Accumulate the converted version of the object
-                    objectIndex += 1;
-                    schemaDetector.accumulateObject(object, keepForSample, function(err)
-                    {
-                        if (err)
-                        {
-                            reject(err);
-                        }
+                // Accumulate the converted version of the object
+                objectIndex += 1;
+                return schemaDetector.accumulateObject(object, keepForSample);
 
-                        resolve(err);
-                    });
-                });
             }).then(function success()
         {
             const schema = schemaDetector.getSchema();
             return schema;
         });
+    }
+
+    /**
+     * This method will convert all of the string values in the Mongo query portion provided into
+     * mongo.ObjectIDs
+     *
+     * @param {object} queryPortion The portion of the query to recursively coerce.
+     */
+    static recursiveCoerceMongoID(queryPortion)
+    {
+        if (underscore.isString(queryPortion))
+        {
+            return new mongodb.ObjectId(queryPortion);
+        }
+        else if (underscore.isArray(queryPortion))
+        {
+            return queryPortion.map((arrayValue) => EBCSVPlugin.recursiveCoerceMongoID(arrayValue));
+        }
+        else if (underscore.isObject(queryPortion))
+        {
+            return underscore.mapObject(queryPortion, function(value)
+            {
+                return EBCSVPlugin.recursiveCoerceMongoID(value);
+            });
+        }
+        else
+        {
+            return queryPortion;
+        }
     }
 
     /**

@@ -377,14 +377,13 @@ class EBArchitectureAPI extends EBAPIRoot
                 transformStream.on('data', function(object)
                 {
                     transformStream.pause();
-                    schemaDetector.accumulateObject(object, false, function(err)
+                    schemaDetector.accumulateObject(object, false).then(() =>
                     {
-                        if (err)
-                        {
-                            throw err;
-                        }
-
                         transformStream.resume();
+                    }, (err) =>
+                    {
+                        console.error(err);
+                        throw err;
                     });
                 });
                 transformStream.on('error', function(error)

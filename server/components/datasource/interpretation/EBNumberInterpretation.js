@@ -20,7 +20,9 @@
 
 const
     EBFieldAnalysisAccumulatorBase = require('./EBFieldAnalysisAccumulatorBase'),
+    EBFieldMetadata = require('../../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./EBInterpretationBase'),
+    EBNumberHistogram = require('../../../../shared/models/EBNumberHistogram'),
     underscore = require('underscore');
 
 /**
@@ -94,7 +96,7 @@ class EBNumberInterpretation extends EBInterpretationBase
      */
     transformSchema(schema)
     {
-        return schema;
+        return Promise.resolve(schema);
     }
 
 
@@ -108,7 +110,7 @@ class EBNumberInterpretation extends EBInterpretationBase
      */
     transformValue(value)
     {
-        return Number(value)
+        return Promise.resolve(Number(value));
     }
 
 
@@ -123,7 +125,7 @@ class EBNumberInterpretation extends EBInterpretationBase
      */
     listStatistics(value)
     {
-        return [];
+        return Promise.resolve([]);
     }
 
 
@@ -141,11 +143,11 @@ class EBNumberInterpretation extends EBInterpretationBase
     {
         if (value.length > 50)
         {
-            return value.substr(0, 50) + "...";
+            return Promise.resolve(value.substr(0, 50) + "...");
         }
         else
         {
-            return value;
+            return Promise.resolve(value);
         }
     }
 
@@ -178,10 +180,10 @@ class EBNumberInterpretation extends EBInterpretationBase
             {
                 const metadata = new EBFieldMetadata();
                 
-                self.metadata.types.push('number');
-                self.metadata.numberHistogram = EBNumberHistogram.computeHistogram(self[_numberValues]);
+                metadata.types.push('number');
+                metadata.numberHistogram = EBNumberHistogram.computeHistogram(this.values);
                 
-                Promise.resolve(metadata);
+                return metadata;
             }
         })();
     }

@@ -18,7 +18,10 @@
 
 "use strict";
 
-const EBInterpretationBase = require('./EBInterpretationBase'),
+const
+    EBFieldAnalysisAccumulatorBase = require('./EBFieldAnalysisAccumulatorBase'),
+    EBFieldMetadata = require('../../../../shared/models/EBFieldMetadata'),
+    EBInterpretationBase = require('./EBInterpretationBase'),
     underscore = require('underscore');
 
 /**
@@ -86,7 +89,7 @@ class EBObjectInterpretation extends EBInterpretationBase
      */
     transformSchema(schema)
     {
-        return schema;
+        return Promise.resolve(schema);
     }
 
 
@@ -100,7 +103,7 @@ class EBObjectInterpretation extends EBInterpretationBase
      */
     transformValue(value)
     {
-        return value;
+        return Promise.resolve(value);
     }
 
 
@@ -115,7 +118,7 @@ class EBObjectInterpretation extends EBInterpretationBase
      */
     listStatistics(value)
     {
-        return [];
+        return Promise.resolve([]);
     }
 
 
@@ -131,7 +134,7 @@ class EBObjectInterpretation extends EBInterpretationBase
      */
     transformExample(value)
     {
-        return value;
+        return Promise.resolve(null);
     }
 
 
@@ -162,9 +165,9 @@ class EBObjectInterpretation extends EBInterpretationBase
             {
                 const metadata = new EBFieldMetadata();
 
-                self.metadata.types.push('object');
+                metadata.types.push('object');
 
-                Promise.resolve(metadata);
+                return metadata;
             }
         })();
     }
