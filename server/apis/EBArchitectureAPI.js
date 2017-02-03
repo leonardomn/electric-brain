@@ -378,14 +378,7 @@ class EBArchitectureAPI extends EBAPIRoot
                 const transformStream = EBCustomTransformationProcess.createCustomTransformationStream(architecture);
                 transformStream.on('data', function(object)
                 {
-                    schemaDetector.accumulateObject(object, false, function(err)
-                    {
-                        if (err)
-                        {
-                            throw err;
-                        }
-
-                    });
+                    schemaDetector.accumulateObject(object, false).then(() => {}, (err) => {throw err});
                 });
                 transformStream.on('error', function(error)
                 {
