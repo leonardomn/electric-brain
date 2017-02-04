@@ -29,9 +29,9 @@ angular.module('eb').directive('ebSequenceInterpretationConfiguration', function
     }
 
     return {
-        templateUrl: "plugins/sequence/views/sequence_interpretation_configuration.html",
+        templateUrl: "/plugins/sequence/views/sequence_interpretation_configuration.html",
         controller,
-        restrict: "E",
+        restrict: "A",
         scope: {
             field: '='
         }

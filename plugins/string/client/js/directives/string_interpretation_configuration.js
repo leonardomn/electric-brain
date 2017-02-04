@@ -29,9 +29,9 @@ angular.module('eb').directive('ebStringInterpretationConfiguration', function e
     }
 
     return {
-        templateUrl: "plugins/string/views/directives/string_interpretation_configuration.html",
+        templateUrl: "/plugins/string/views/directives/string_interpretation_configuration.html",
         controller,
-        restrict: "E",
+        restrict: "A",
         scope: {
             field: '='
         }

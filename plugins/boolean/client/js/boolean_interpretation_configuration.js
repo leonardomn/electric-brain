@@ -29,9 +29,9 @@ angular.module('eb').directive('ebBooleanInterpretationConfiguration', function 
     }
 
     return {
-        templateUrl: "plugins/binary/views/boolean_interpretation_configuration.html",
+        templateUrl: "/plugins/boolean/views/boolean_interpretation_configuration.html",
         controller,
-        restrict: "E",
+        restrict: "A",
         scope: {
             field: '='
         }

@@ -29,9 +29,9 @@ angular.module('eb').directive('ebBinaryInterpretationConfiguration', function e
     }
 
     return {
-        templateUrl: "plugins/binary/views/binary_interpretation_configuration.html",
+        templateUrl: "/plugins/binary/views/binary_interpretation_configuration.html",
         controller,
-        restrict: "E",
+        restrict: "A",
         scope: {
             field: '='
         }

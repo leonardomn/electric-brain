@@ -29,9 +29,9 @@ angular.module('eb').directive('ebObjectInterpretationConfiguration', function e
     }
 
     return {
-        templateUrl: "plugins/object/views/object_interpretation_configuration.html",
+        templateUrl: "/plugins/object/views/object_interpretation_configuration.html",
         controller,
-        restrict: "E",
+        restrict: "A",
         scope: {
             field: '='
         }

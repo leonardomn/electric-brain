@@ -29,9 +29,9 @@ angular.module('eb').directive('ebNumberInterpretationConfiguration', function e
     }
 
     return {
-        templateUrl: "plugins/number/views/number_interpretation_configuration.html",
+        templateUrl: "/plugins/number/views/number_interpretation_configuration.html",
         controller,
-        restrict: "E",
+        restrict: "A",
         scope: {
             field: '='
         }
