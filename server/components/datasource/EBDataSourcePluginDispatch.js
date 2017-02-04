@@ -19,7 +19,8 @@
 "use strict";
 
 const EBDataSourcePlugin = require("./EBDataSourcePlugin"),
-    Promise = require('bluebird');
+    Promise = require('bluebird'),
+    underscore = require('underscore');
 
 /**
  *  This is registers all of the available EBDataSourcePlugins and will dispatch the methods
@@ -33,6 +34,16 @@ class EBDataSourcePluginDispatch
     constructor()
     {
         this.plugins = {};
+    }
+
+    /**
+     * This method returns a list of supported data source plugins
+     *
+     * @return {[EBDataSourcePlugin]} Returns all of the plugin objects
+     */
+    getSupportedDataSources(type, plugin)
+    {
+        return underscore.values(this.plugins);
     }
 
     /**

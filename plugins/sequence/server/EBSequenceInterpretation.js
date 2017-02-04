@@ -19,23 +19,22 @@
 "use strict";
 
 const
-    EBFieldAnalysisAccumulatorBase = require('./EBFieldAnalysisAccumulatorBase'),
-    EBFieldMetadata = require('../../../../shared/models/EBFieldMetadata'),
-    EBInterpretationBase = require('./EBInterpretationBase'),
-    EBNumberHistogram = require('../../../../shared/models/EBNumberHistogram'),
+    EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
+    EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
+    EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
     underscore = require('underscore');
 
 /**
- * The number interpretation is used for all numbers.
+ * The string interpretation is used for all strings.
  */
-class EBNumberInterpretation extends EBInterpretationBase
+class EBSequenceInterpretation extends EBInterpretationBase
 {
     /**
      * Constructor
      */
     constructor()
     {
-        super('number');
+        super('sequence');
     }
 
 
@@ -51,7 +50,7 @@ class EBNumberInterpretation extends EBInterpretationBase
      */
     getUpstreamInterpretations()
     {
-        return ['string'];
+        return [];
     }
 
 
@@ -66,16 +65,8 @@ class EBNumberInterpretation extends EBInterpretationBase
      */
     checkValue(value)
     {
-        // Does it look like a number?
-        if (underscore.isString(value) && /^[+-]?\d+?$/g.test(value))
-        {
-            return Promise.resolve(true);
-        }
-        else if (underscore.isString(value) && /^[+-]?\d+\.\d+$/g.test(value))
-        {
-            return Promise.resolve(true);
-        }
-        else if(underscore.isNumber(value))
+        // Is it an array?
+        if (underscore.isArray(value))
         {
             return Promise.resolve(true);
         }
@@ -110,7 +101,7 @@ class EBNumberInterpretation extends EBInterpretationBase
      */
     transformValue(value)
     {
-        return Promise.resolve(Number(value));
+        return Promise.resolve(value);
     }
 
 
@@ -141,14 +132,7 @@ class EBNumberInterpretation extends EBInterpretationBase
      */
     transformExample(value)
     {
-        if (value.length > 50)
-        {
-            return Promise.resolve(value.substr(0, 50) + "...");
-        }
-        else
-        {
-            return Promise.resolve(value);
-        }
+        return Promise.resolve(null);
     }
 
 
@@ -168,25 +152,23 @@ class EBNumberInterpretation extends EBInterpretationBase
             constructor()
             {
                 super();
-                this.values = [];
+                this.arrayLengths = [];
             }
 
             accumulateValue(value)
             {
-                this.values.push(value);
+                this.arrayLengths.push(value.length);
             }
 
             getFieldMetadata()
             {
                 const metadata = new EBFieldMetadata();
-                
-                metadata.types.push('number');
-                metadata.numberHistogram = EBNumberHistogram.computeHistogram(this.values);
-                
+                self.metadata.types.push('array');
+                self.metadata.arrayLengthHistogram = EBNumberHistogram.computeHistogram(self.arrayLengths);
                 return metadata;
             }
         })();
     }
 }
 
-module.exports = EBNumberInterpretation;
+module.exports = EBSequenceInterpretation;

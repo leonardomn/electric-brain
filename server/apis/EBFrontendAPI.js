@@ -47,16 +47,16 @@ class EBFrontendAPI extends EBAPIRoot
     {
         // Individually serve each of the folders under client
         const folders = ["client"];
-        folders.forEach(function(folder)
+        folders.forEach((folder) =>
         {
             const frontendFolders = fs.readdirSync(path.join(__dirname, '..', '..', folder));
-            frontendFolders.forEach(function(frontendFolderName)
+            frontendFolders.forEach((frontendFolderName) =>
             {
                 const pathString = `/app/${frontendFolderName}`;
                 if(pathString !== "index.html")
                 {
                     expressApplication.use(pathString, express.static(path.join(__dirname, '..', '..', folder, frontendFolderName)));
-                    expressApplication.use(`/app/${frontendFolderName}/*`, function(req, res)
+                    expressApplication.use(`/app/${frontendFolderName}/*`, (req, res) =>
                     {
                         res.status(httpStatus.NOT_FOUND);
                         res.send({});
@@ -64,6 +64,29 @@ class EBFrontendAPI extends EBAPIRoot
                 }
             });
         });
+        
+        this.application.plugins.forEach((plugin) =>
+        {
+            const pluginFolder = path.join(__dirname, '..', '..', 'plugins', plugin.name);
+            if (fs.existsSync(path.join(pluginFolder, 'client')))
+            {
+                const frontendFolders = fs.readdirSync(path.join(pluginFolder, 'client'));
+                frontendFolders.forEach((frontendFolderName) =>
+                {
+                    const pathString = `/plugins/${plugin.name}/${frontendFolderName}`;
+                    if (pathString !== "index.html")
+                    {
+                        expressApplication.use(pathString, express.static(path.join(pluginFolder, 'client', frontendFolderName)));
+                        expressApplication.use(`/plugins/${plugin.name}/${frontendFolderName}/*`, (req, res) =>
+                        {
+                            res.status(httpStatus.NOT_FOUND);
+                            res.send({});
+                        });
+                    }
+                });
+            }
+        });
+        
 
         // Every other path is considered to be the index page of the frontend
         const frontendCode = fs.readFileSync(path.join(__dirname, '..', '..', 'client', 'index.html'));

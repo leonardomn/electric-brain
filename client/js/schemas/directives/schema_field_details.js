@@ -21,7 +21,7 @@
 /**
  * Represents a single field in the schema field details
  */
-angular.module('eb').directive('ebSchemaFieldDetails', function ebSchemaFieldDetails($timeout, EBDataService, EBDataSourceService)
+angular.module('eb').directive('ebSchemaFieldDetails', function ebSchemaFieldDetails($timeout, EBDataSourceService)
 {
     function controller($scope, $element, $attrs)
     {

@@ -96,6 +96,30 @@ class EBDataSourceAPI extends EBAPIRoot
         });
 
         this.registerEndpoint(expressApplication, {
+            "name": "GetSupportedDataSources",
+            "uri": "/data-source-types",
+            "method": "GET",
+            "inputSchema": {},
+            "outputSchema": {
+                "id": "/GetSupportedDataSourcesOutput",
+                "type": "object",
+                "properties": {
+                    "types": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string"},
+                                "icon": {"type": "string"}
+                            }
+                        }
+                    }
+                }
+            },
+            "handler": this.getSupportedDataSources.bind(this)
+        });
+
+        this.registerEndpoint(expressApplication, {
             "name": "CreateDataSource",
             "uri": "/data-sources",
             "method": "POST",
@@ -299,6 +323,29 @@ class EBDataSourceAPI extends EBAPIRoot
     {
         this.uploads.openDownloadStream(new mongodb.ObjectID(req.params.id)).pipe(res);
     }
+
+
+    /**
+     * This endpoint is used to get a list of supported data sources.
+     *
+     * @param {object} req express request object
+     * @param {object} res express response object
+     * @param {function} next express callback
+     */
+    getSupportedDataSources(req, res, next)
+    {
+        const self = this;
+
+        const dataSourceNames = self.application.dataSourcePluginDispatch.getSupportedDataSources();
+
+        return next(null, {types: dataSourceNames.map((dataSource) => {
+            return {
+                name: dataSource.name,
+                icon: dataSource.icon
+            };
+        })});
+    }
+
 
     /**
      * This endpoint attempts to see if there is a database

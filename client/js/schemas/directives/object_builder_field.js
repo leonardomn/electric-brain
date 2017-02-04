@@ -21,7 +21,7 @@
 /**
  * Represents a single field in the schema editor
  */
-angular.module('eb').directive('ebObjectBuilderField', function ebObjectBuilderField($timeout, EBDataService, EBDataSourceService)
+angular.module('eb').directive('ebObjectBuilderField', function ebObjectBuilderField($timeout, EBDataSourceService)
 {
     function controller($scope, $element, $attrs)
     {

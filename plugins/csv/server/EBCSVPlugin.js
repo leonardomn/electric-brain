@@ -21,8 +21,8 @@
 const
     async = require('async'),
     csv = require('fast-csv'),
-    EBDataSourcePlugin = require("./EBDataSourcePlugin"),
-    EBSchemaDetector = require("./EBSchemaDetector"),
+    EBDataSourcePlugin = require("./../../../server/components/datasource/EBDataSourcePlugin"),
+    EBSchemaDetector = require("./../../../server/components/datasource/EBSchemaDetector"),
     mongodb = require('mongodb'),
     Promise = require('bluebird'),
     queryUtilities = require("../../../shared/utilities/query"),
@@ -37,15 +37,37 @@ class EBCSVPlugin extends EBDataSourcePlugin
     /**
      *  The constructor for the EBCSVPlugin
      *
-     * @param {EBApplication} The global EBApplication object.
+     * @param {EBApplication} application The global EBApplication object.
      */
     constructor(application)
     {
         super();
+        this.application = application;
         this.uploads = new mongodb.GridFSBucket(application.db, {bucketName: 'uploads'});
         this.csvRows = application.db.collection("csvRows");
         this.csvMetadata = application.db.collection("csvMetadata");
         this.indexPromise = this.csvRows.createIndex({ebCSVFile: 1, ebRowIndex: 1});
+    }
+    
+    /**
+     * This method returns the machine name for the data source
+     *
+     * @returns {string} A string containing the machine name
+     */
+    get name()
+    {
+        return "csv";
+    }
+    
+    
+    /**
+     * This method returns the URL for the icon of the data source
+     *
+     * @returns {string} A string containing a URL that can be loaded from the frontend API
+     */
+    get icon()
+    {
+        return "/plugins/csv/img/csv.png";
     }
 
 
@@ -305,7 +327,7 @@ class EBCSVPlugin extends EBDataSourcePlugin
     /**
      * This method should sample the data from the data-source and determine what the schema is.
      *
-     * @param {EBDataSource} This should be the EBDataSource object to find the tables with it
+     * @param {EBDataSource} dataSource This should be the EBDataSource object to find the tables with it
      * @returns {Promise} A promise that will resolve to the EBSchema object for this data-source.
      */
     detectSchema(dataSource)
@@ -314,7 +336,7 @@ class EBCSVPlugin extends EBDataSourcePlugin
         const examplesToKeep = 10;
         const exampleIndexes = randomUtilities.getRandomIntegers(maxNumberOfObjectsToSample, examplesToKeep);
 
-        const schemaDetector = new EBSchemaDetector();
+        const schemaDetector = new EBSchemaDetector(this.application);
         let objectIndex = 0;
 
         return this.sample(maxNumberOfObjectsToSample, dataSource,

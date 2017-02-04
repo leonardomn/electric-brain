@@ -19,8 +19,6 @@
 "use strict";
 const
     async = require('async'),
-    EBFieldAnalysisAccumulator = require("./EBFieldAnalysisAccumulator"),
-    EBInterpretationDetector = require("./interpretation/EBInterpretationDetector"),
     models = require('../../../shared/models/models'),
     path = require('path'),
     Promise = require('bluebird'),
@@ -35,14 +33,136 @@ class EBSchemaDetector
 {
     /**
      * Creates a EBSchemaDetector
+     * 
+     * @param {EBApplication} application The global application object.
      */
-    constructor()
+    constructor(application)
     {
         this.fieldAccumulators = new Map();
         this.interpretationChains = new Map();
         this.objectsAccumulated = 0;
 
-        this.interpretationDetector = new EBInterpretationDetector();
+        this.interpretations = [];
+        this.interpretationMap = {};
+        application.plugins.forEach((plugin) =>
+        {
+            underscore.values(plugin.interpretations).forEach((interpretation) =>
+            {
+                const initialized = new interpretation();
+
+                this.interpretations.push(initialized);
+                this.interpretationMap[initialized.name] = initialized;
+            });
+        });
+    }
+
+
+    /**
+     * This method will determine the best interpretation chain for the given value.
+     *
+     * @param {*} value Can be practically anything.
+     * @return {Promise} A promise that that resolves to an array with the sequence of interpretations that this value should go through
+     */
+    detectInterpretationChain(value)
+    {
+        const analyze = (value, currentInterpretation) =>
+        {
+            if (!currentInterpretation)
+            {
+                // Determine the starting interpretation based entirely on the fields type
+                if (underscore.isString(value))
+                {
+                    return Promise.resolve(this.interpretationMap['string']);
+                }
+                else if (underscore.isBoolean(value))
+                {
+                    return Promise.resolve(this.interpretationMap['boolean']);
+                }
+                else if (underscore.isNumber(value))
+                {
+                    return Promise.resolve(this.interpretationMap['number']);
+                }
+                else if (value instanceof Buffer)
+                {
+                    return Promise.resolve(this.interpretationMap['binary']);
+                }
+                else if (underscore.isArray(value))
+                {
+                    return Promise.resolve(this.interpretationMap['sequence']);
+                }
+                else if (underscore.isObject(value))
+                {
+                    return Promise.resolve(this.interpretationMap['object']);
+                }
+                else
+                {
+                    throw new Error("null interpretation here?");
+                }
+            }
+            else
+            {
+                // Find all of the interpretations that are downstream from this one
+                const availableInterpretations = underscore.filter(this.interpretations, (interpretation) =>
+                {
+                    const upstream = interpretation.getUpstreamInterpretations();
+                    return upstream.indexOf(currentInterpretation) !== -1;
+                });
+
+                // Find a suitable interpretation
+                return Promise.map(availableInterpretations, (interpretation) =>
+                {
+                    return interpretation.checkValue(value).then((result) =>
+                    {
+                        return {
+                            result: result,
+                            interpretation: interpretation
+                        }
+                    });
+                }).then((interpretationResults) =>
+                {
+                    // If there are multiple possible interpretations, then perhaps it needs to be automatically detected
+                    // which one to go with
+                    const successfulInterpretations = underscore.filter(interpretationResults, (interpretationResult) =>
+                    {
+                        return interpretationResult.result;
+                    });
+
+                    if (successfulInterpretations.length === 0)
+                    {
+                        return null;
+                    }
+                    else
+                    {
+                        return interpretationResults[0].interpretation;
+                    }
+                });
+            }
+        };
+
+        const recurse = (value, currentInterpretation) =>
+        {
+            // console.log('recursing', value, currentInterpretation);
+            return analyze(value, currentInterpretation).then((interpretation) =>
+            {
+                if (!interpretation)
+                {
+                    return [];
+                }
+                else
+                {
+                    const chain = [interpretation];
+                    const transformed = interpretation.transformValue(value);
+
+                    return recurse(transformed, chain[0].name).then((subChain) =>
+                    {
+                        return chain.concat(subChain);
+                    });
+                }
+            });
+        };
+
+
+        return recurse(value, null);
     }
 
 
@@ -76,7 +196,7 @@ class EBSchemaDetector
                 this.fieldAccumulators.set(rootVariablePath, {});
             }
 
-            return this.interpretationDetector.detectInterpretationChain(value).then((chain) =>
+            return this.detectInterpretationChain(value).then((chain) =>
             {
                 const chainId = chain.map((chain) => chain.name).join("=>");
                 const lastInterpretation = chain[chain.length - 1];
@@ -91,7 +211,7 @@ class EBSchemaDetector
                 // // Now record data for this interpretation
                 if (!this.fieldAccumulators.get(rootVariablePath)[lastInterpretation.name])
                 {
-                    this.fieldAccumulators.get(rootVariablePath)[lastInterpretation.name] = this.interpretationDetector.getInterpretation(lastInterpretation.name).createFieldAccumulator();
+                    this.fieldAccumulators.get(rootVariablePath)[lastInterpretation.name] = this.interpretationMap[lastInterpretation.name].createFieldAccumulator();
                 }
 
                 // Put the variable through the transformation for each interpretation, and on the last
@@ -151,8 +271,6 @@ class EBSchemaDetector
     {
         const fields = [];
 
-        console.log(this.fieldAccumulators.keys());
-
         // First step, we create a flat list of values
         for (const field of this.fieldAccumulators.keys())
         {
@@ -162,10 +280,6 @@ class EBSchemaDetector
             const dominantInterpretation = underscore.max(Object.keys(interpretationChains), (chain) => interpretationChains[chain]);
             const fieldAccumulator = this.fieldAccumulators.get(field)[dominantInterpretation];
             const fieldMetadata = fieldAccumulator.getFieldMetadata();
-
-            console.log(dominantInterpretation);
-            console.log(fieldAccumulator);
-            console.log(fieldMetadata);
 
             // Only include this in fields if its a field
             if (fieldMetadata.types.indexOf('object') === -1 && fieldMetadata.types.indexOf('array') === -1)
@@ -255,8 +369,6 @@ class EBSchemaDetector
 
         const sortedFields = underscore.sortBy(fields, (field) => (field.name));
         const schema = assembleSchema("", sortedFields, 1);
-
-        console.log(schema);
 
         return new models.EBSchema(schema);
     }

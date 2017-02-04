@@ -19,22 +19,22 @@
 "use strict";
 
 const
-    EBFieldAnalysisAccumulatorBase = require('./EBFieldAnalysisAccumulatorBase'),
-    EBFieldMetadata = require('../../../../shared/models/EBFieldMetadata'),
-    EBInterpretationBase = require('./EBInterpretationBase'),
+    EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
+    EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
+    EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
     underscore = require('underscore');
 
 /**
  * The string interpretation is used for all strings.
  */
-class EBSequenceInterpretation extends EBInterpretationBase
+class EBBooleanInterpretation extends EBInterpretationBase
 {
     /**
      * Constructor
      */
     constructor()
     {
-        super('sequence');
+        super('boolean');
     }
 
 
@@ -65,8 +65,18 @@ class EBSequenceInterpretation extends EBInterpretationBase
      */
     checkValue(value)
     {
-        // Is it an array?
-        if (underscore.isArray(value))
+        const acceptableStringValues = [
+            'true',
+            'false'
+        ];
+
+        // Is it a string and its contents look booleanish
+        if (underscore.isString(value) && acceptableStringValues.indexOf(value.toLowerCase()) !== -1)
+        {
+            return Promise.resolve(true);
+        }
+        // Is it directly just a boolean value
+        else if (underscore.isBoolean(value))
         {
             return Promise.resolve(true);
         }
@@ -101,7 +111,7 @@ class EBSequenceInterpretation extends EBInterpretationBase
      */
     transformValue(value)
     {
-        return Promise.resolve(value);
+        return Promise.resolve(value.toString());
     }
 
 
@@ -132,43 +142,8 @@ class EBSequenceInterpretation extends EBInterpretationBase
      */
     transformExample(value)
     {
-        return Promise.resolve(null);
-    }
-
-
-    /**
-     * This method should create a new field accumulator, a subclass of EBFieldAnalysisAccumulatorBase.
-     *
-     * This accumulator can be used to analyze a bunch of values through the lens of this interpretation,
-     * and calculate statistics that the user may use to analyze the situation.
-     *
-     * @return {EBFieldAnalysisAccumulatorBase} An instantiation of a field accumulator.
-     */
-    createFieldAccumulator()
-    {
-        // Create a subclass and immediately instantiate it.
-        return new (class extends EBFieldAnalysisAccumulatorBase
-        {
-            constructor()
-            {
-                super();
-                this.arrayLengths = [];
-            }
-
-            accumulateValue(value)
-            {
-                this.arrayLengths.push(value.length);
-            }
-
-            getFieldMetadata()
-            {
-                const metadata = new EBFieldMetadata();
-                self.metadata.types.push('array');
-                self.metadata.arrayLengthHistogram = EBNumberHistogram.computeHistogram(self.arrayLengths);
-                return metadata;
-            }
-        })();
+        return Promise.resolve(value);
     }
 }
 
-module.exports = EBSequenceInterpretation;
+module.exports = EBBooleanInterpretation;
