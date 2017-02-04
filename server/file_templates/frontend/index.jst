@@ -1,0 +1,78 @@
+<!--
+    Electric Brain is an easy to use platform for machine learning.
+    Copyright (C) 2016 Electric Brain Software Corporation
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<!DOCTYPE html>
+<html ng-app="eb">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+        <base href="/app/">
+
+        <!-- Page title set in pageTitle directive -->
+        <title page-title></title>
+
+        <!-- Load CSS dependencies -->
+        {{~ it.cssDependencies:filename:index}}
+            <link href="{{=filename}}" rel="stylesheet">
+        {{~}}
+    </head>
+
+    <!-- ControllerAs syntax -->
+    <!-- Main controller with several data used in Inspinia theme on different view -->
+    <body class="top-navigation eb">
+
+        <!--<div ng-include="'views/common/footer.html'"></div-->
+
+        <!-- Wrapper-->
+        <div id="wrapper">
+
+            <!-- Navigation -->
+            <eb-navigation-bar></eb-navigation-bar>
+
+            <!-- Page wraper -->
+            <!-- ng-class with current state name give you the ability to extended customization your view -->
+            <div id="page-wrapper" class="eb-background {{="\{\{$state.current.name\}\}"}}">
+
+                <!-- Main loader icon -->
+                <div class="global-loader" ng-show="$root.showPageLoader">
+                    <div class="sk-spinner sk-spinner-chasing-dots">
+                        <div class="sk-dot1"></div>
+                        <div class="sk-dot2"></div>
+                    </div>
+                </div>
+
+                <!-- Main view  -->
+                <div ui-view></div>
+
+                <!-- Footer -->
+                <div ng-include="'views/general/footer.html'"></div>
+
+            </div>
+            <!-- End page wrapper-->
+
+        </div>
+        <!-- End wrapper-->
+
+        <!-- Load JS dependencies -->
+        {{~ it.jsDependencies:filename:index}}
+            <script type="text/javascript" src="{{=filename}}"></script>
+        {{~}}
+    </body>
+</html>
