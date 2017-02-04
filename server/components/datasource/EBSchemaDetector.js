@@ -19,8 +19,6 @@
 "use strict";
 const
     async = require('async'),
-    EBFieldAnalysisAccumulator = require("./EBFieldAnalysisAccumulator"),
-    EBInterpretationDetector = require("./interpretation/EBInterpretationDetector"),
     models = require('../../../shared/models/models'),
     path = require('path'),
     Promise = require('bluebird'),
@@ -296,8 +294,6 @@ class EBSchemaDetector
             }
         }
 
-        console.log(fields);
-
         const getFieldHead = (fieldName) =>
         {
             if (fieldName.indexOf(".") !== -1)
@@ -376,8 +372,6 @@ class EBSchemaDetector
 
         const sortedFields = underscore.sortBy(fields, (field) => (field.name));
         const schema = assembleSchema("", sortedFields, 1);
-
-        console.log(schema);
 
         return new models.EBSchema(schema);
     }
