@@ -474,6 +474,35 @@ class EBCSVPlugin extends EBDataSourcePlugin
             return queryPortion;
         }
     }
+
+    /**
+     * This method will convert all of the string values in the Mongo query portion provided into
+     * mongo.ObjectIDs
+     *
+     * @param {object} queryPortion The portion of the query to recursively coerce.
+     */
+    static recursiveCoerceMongoID(queryPortion)
+    {
+        if (underscore.isString(queryPortion))
+        {
+            return new mongodb.ObjectId(queryPortion);
+        }
+        else if (underscore.isArray(queryPortion))
+        {
+            return queryPortion.map((arrayValue) => EBCSVPlugin.recursiveCoerceMongoID(arrayValue));
+        }
+        else if (underscore.isObject(queryPortion))
+        {
+            return underscore.mapObject(queryPortion, function(value)
+            {
+                return EBCSVPlugin.recursiveCoerceMongoID(value);
+            });
+        }
+        else
+        {
+            return queryPortion;
+        }
+    }
 }
 
 module.exports = EBCSVPlugin;
