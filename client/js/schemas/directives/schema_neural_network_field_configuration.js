@@ -21,7 +21,7 @@
 /**
  * Represents a single field being configured within the neural network
  */
-angular.module('eb').directive('ebSchemaFieldNeuralNetworkConfiguration', function ebSchemaFieldNeuralNetworkConfiguration($timeout, EBDataService, EBDataSourceService)
+angular.module('eb').directive('ebSchemaFieldNeuralNetworkConfiguration', function ebSchemaFieldNeuralNetworkConfiguration($timeout, EBDataSourceService)
 {
     function controller($scope, $element, $attrs)
     {

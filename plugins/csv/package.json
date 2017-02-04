@@ -1,0 +1,7 @@
+{
+  "name": "eb-csv",
+  "description": "This plugin provides the csv datasource",
+  "dependencies": {
+    "bluebird": "^3.4.6"
+  }
+}

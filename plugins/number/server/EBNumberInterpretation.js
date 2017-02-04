@@ -19,23 +19,23 @@
 "use strict";
 
 const
-    EBFieldAnalysisAccumulatorBase = require('./EBFieldAnalysisAccumulatorBase'),
-    EBFieldMetadata = require('../../../../shared/models/EBFieldMetadata'),
-    EBInterpretationBase = require('./EBInterpretationBase'),
-    EBValueHistogram = require('../../../../shared/models/EBValueHistogram'),
+    EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
+    EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
+    EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
+    EBNumberHistogram = require('../../../shared/models/EBNumberHistogram'),
     underscore = require('underscore');
 
 /**
- * The string interpretation is used for all strings.
+ * The number interpretation is used for all numbers.
  */
-class EBStringInterpretation extends EBInterpretationBase
+class EBNumberInterpretation extends EBInterpretationBase
 {
     /**
      * Constructor
      */
     constructor()
     {
-        super('string');
+        super('number');
     }
 
 
@@ -51,7 +51,7 @@ class EBStringInterpretation extends EBInterpretationBase
      */
     getUpstreamInterpretations()
     {
-        return [];
+        return ['string'];
     }
 
 
@@ -66,8 +66,16 @@ class EBStringInterpretation extends EBInterpretationBase
      */
     checkValue(value)
     {
-        // Is it a string.
-        if (underscore.isString(value))
+        // Does it look like a number?
+        if (underscore.isString(value) && /^[+-]?\d+?$/g.test(value))
+        {
+            return Promise.resolve(true);
+        }
+        else if (underscore.isString(value) && /^[+-]?\d+\.\d+$/g.test(value))
+        {
+            return Promise.resolve(true);
+        }
+        else if(underscore.isNumber(value))
         {
             return Promise.resolve(true);
         }
@@ -102,7 +110,7 @@ class EBStringInterpretation extends EBInterpretationBase
      */
     transformValue(value)
     {
-        return Promise.resolve(value.toString());
+        return Promise.resolve(Number(value));
     }
 
 
@@ -154,9 +162,6 @@ class EBStringInterpretation extends EBInterpretationBase
      */
     createFieldAccumulator()
     {
-        // This needs to be moved to a configuration file of some sort
-        const maxStringLengthForHistogram = 250;
-
         // Create a subclass and immediately instantiate it.
         return new (class extends EBFieldAnalysisAccumulatorBase
         {
@@ -168,26 +173,20 @@ class EBStringInterpretation extends EBInterpretationBase
 
             accumulateValue(value)
             {
-                // Only add it to the list of values if its below 250 characters in length. This prevents
-                // The system from storing fields that may have enormous strings that are totally unique
-                // to the field - a common case.
-                if (value.length < maxStringLengthForHistogram)
-                {
-                    this.values.push(value);
-                }
+                this.values.push(value);
             }
 
             getFieldMetadata()
             {
                 const metadata = new EBFieldMetadata();
-
-                metadata.types.push('string');
-                metadata.valueHistogram = EBValueHistogram.computeHistogram(this.values);
-
+                
+                metadata.types.push('number');
+                metadata.numberHistogram = EBNumberHistogram.computeHistogram(this.values);
+                
                 return metadata;
             }
         })();
     }
 }
 
-module.exports = EBStringInterpretation;
+module.exports = EBNumberInterpretation;

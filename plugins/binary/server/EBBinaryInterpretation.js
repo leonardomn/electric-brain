@@ -19,22 +19,23 @@
 "use strict";
 
 const
-    EBFieldAnalysisAccumulatorBase = require('./EBFieldAnalysisAccumulatorBase'),
-    EBFieldMetadata = require('../../../../shared/models/EBFieldMetadata'),
-    EBInterpretationBase = require('./EBInterpretationBase'),
+    EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
+    EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
+    EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
+    fileType = require('file-type'),
     underscore = require('underscore');
 
 /**
  * The string interpretation is used for all strings.
  */
-class EBBooleanInterpretation extends EBInterpretationBase
+class EBBinaryInterpretation extends EBInterpretationBase
 {
     /**
      * Constructor
      */
     constructor()
     {
-        super('boolean');
+        super('binary');
     }
 
 
@@ -65,18 +66,8 @@ class EBBooleanInterpretation extends EBInterpretationBase
      */
     checkValue(value)
     {
-        const acceptableStringValues = [
-            'true',
-            'false'
-        ];
-
-        // Is it a string and its contents look booleanish
-        if (underscore.isString(value) && acceptableStringValues.indexOf(value.toLowerCase()) !== -1)
-        {
-            return Promise.resolve(true);
-        }
-        // Is it directly just a boolean value
-        else if (underscore.isBoolean(value))
+        // Is it a buffer object?
+        if (value instanceof Buffer)
         {
             return Promise.resolve(true);
         }
@@ -111,7 +102,7 @@ class EBBooleanInterpretation extends EBInterpretationBase
      */
     transformValue(value)
     {
-        return Promise.resolve(value.toString());
+        return Promise.resolve(value);
     }
 
 
@@ -142,8 +133,61 @@ class EBBooleanInterpretation extends EBInterpretationBase
      */
     transformExample(value)
     {
-        return Promise.resolve(value);
+        if (value.length > 50)
+        {
+            return Promise.resolve(value.substr(0, 50));
+        }
+        else
+        {
+            return Promise.resolve(value);
+        }
+    }
+
+
+    /**
+     * This method should create a new field accumulator, a subclass of EBFieldAnalysisAccumulatorBase.
+     *
+     * This accumulator can be used to analyze a bunch of values through the lens of this interpretation,
+     * and calculate statistics that the user may use to analyze the situation.
+     *
+     * @return {EBFieldAnalysisAccumulatorBase} An instantiation of a field accumulator.
+     */
+    createFieldAccumulator()
+    {
+        // This needs to be moved to a configuration file of some sort
+        const maxLengthForHistogram = 250;
+
+        // Create a subclass and immediately instantiate it.
+        return new (class extends EBFieldAnalysisAccumulatorBase
+        {
+            constructor()
+            {
+                super();
+
+            }
+
+            accumulateValue(value)
+            {
+                // self[_binaryMimeTypes].add(result.mimeType);
+                // if (result.image)
+                // {
+                //     self.metadata.binaryHasImage = true;
+                //     self[_imageWidths].push(result.imageWidth);
+                //     self[_imageHeights].push(result.imageHeight);
+                // }
+            }
+
+            getFieldMetadata()
+            {
+                const metadata = new EBFieldMetadata();
+
+                metadata.types.push('binary');
+                // metadata.valueHistogram = EBValueHistogram.computeHistogram(self[_stringValues]);
+
+                return metadata;
+            }
+        })();
     }
 }
 
-module.exports = EBBooleanInterpretation;
+module.exports = EBBinaryInterpretation;

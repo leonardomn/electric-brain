@@ -368,7 +368,7 @@ class EBArchitectureAPI extends EBAPIRoot
             }
             else
             {
-                const schemaDetector = new EBSchemaDetector();
+                const schemaDetector = new EBSchemaDetector(self.application);
                 const numberOfObjectsToSample = 500;
                 const architecture = new models.EBArchitecture(architectureObject);
                 console.log(architecture.dataSource);
