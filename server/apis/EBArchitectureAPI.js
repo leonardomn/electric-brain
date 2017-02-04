@@ -354,7 +354,6 @@ class EBArchitectureAPI extends EBAPIRoot
      */
     getTransformedSample(req, res, next)
     {
-        console.log('getting a transformed sample');
         const self = this;
         this.architectures.findOne({_id: Number(req.params.id)}, function(err, architectureObject)
         {
@@ -371,14 +370,13 @@ class EBArchitectureAPI extends EBAPIRoot
                 const schemaDetector = new EBSchemaDetector(self.application);
                 const numberOfObjectsToSample = 500;
                 const architecture = new models.EBArchitecture(architectureObject);
-                console.log(architecture.dataSource);
                 const sourceSchema = architecture.dataSource.dataSchema.filterIncluded();
                 const filterFunction = sourceSchema.filterFunction();
 
                 const transformStream = EBCustomTransformationProcess.createCustomTransformationStream(architecture);
                 transformStream.on('data', function(object)
                 {
-                    schemaDetector.accumulateObject(object, false).then(() => {}, (err) => {throw err});
+                    schemaDetector.accumulateObject(object, false).then(() => {}, (err) => {console.error(err);throw err});
                 });
                 transformStream.on('error', function(error)
                 {
