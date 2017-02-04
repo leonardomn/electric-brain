@@ -1,0 +1,66 @@
+<h3>Sequence</h3>
+
+<div class="table-responsive">
+    <table class="table table-stripped table-bordered">
+
+        <thead>
+            <tr>
+                <th>
+                    Layer
+                </th>
+                <th>
+                    Type
+                </th>
+                <th>
+                    Internal Size
+                </th>
+                <th>
+                    Bidirectional
+                </th>
+                <th>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr ng-repeat="layer in field.configuration.neuralNetwork.sequence.layers">
+                <td class="sequence-layer-configuration-input">
+                    {{$index + 1}}
+                </td>
+                <td class="sequence-layer-configuration-input">
+                    <select class="form-control" ng-model="layer.type">
+                        <option value="lstm">LSTM</option>
+                        <option value="gru">GRU</option>
+                    </select>
+                </td>
+                <td class="sequence-layer-configuration-input">
+                    <input type="number" class="form-control" placeholder="100" ng-model="layer.internalSize">
+                </td>
+                <td class="sequence-layer-configuration-input">
+                    <input type="checkbox" class="form-control" ng-model="layer.bidirectional">
+                </td>
+                <td class="sequence-layer-configuration-input">
+                    <button class="btn btn-default remove-sequence-layer">
+                        <i class="fa fa-minus-square"></i>
+                    </button>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="sequence-layer-configuration-input">
+                </td>
+                <td class="sequence-layer-configuration-input">
+                </td>
+                <td class="sequence-layer-configuration-input">
+                </td>
+                <td class="sequence-layer-configuration-input">
+                </td>
+                <td class="sequence-layer-configuration-input">
+                    <button class="btn btn-default add-new-sequence-layer">
+                        <i class="fa fa-plus-square"></i>
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+
+    </table>
+</div>
