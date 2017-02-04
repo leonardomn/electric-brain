@@ -277,10 +277,13 @@ class EBSchemaDetector
             const interpretationChains = this.interpretationChains.get(field);
 
             // Determine which interpretation chain is the dominant one
-            const dominantInterpretation = underscore.max(Object.keys(interpretationChains), (chain) => interpretationChains[chain]);
-            const fieldAccumulator = this.fieldAccumulators.get(field)[dominantInterpretation];
+            const dominantInterpretationChain = underscore.max(Object.keys(interpretationChains), (chain) => interpretationChains[chain]).split('=>');
+            const mainInterpretation = dominantInterpretationChain[dominantInterpretationChain.length - 1];
+            const fieldAccumulator = this.fieldAccumulators.get(field)[mainInterpretation];
             const fieldMetadata = fieldAccumulator.getFieldMetadata();
-
+            fieldMetadata.interpretationChain = dominantInterpretationChain;
+            fieldMetadata.mainInterpretation = mainInterpretation;
+            
             // Only include this in fields if its a field
             if (fieldMetadata.types.indexOf('object') === -1 && fieldMetadata.types.indexOf('array') === -1)
             {
@@ -290,6 +293,8 @@ class EBSchemaDetector
                 });
             }
         }
+
+        console.log(fields);
 
         const getFieldHead = (fieldName) =>
         {
@@ -369,6 +374,8 @@ class EBSchemaDetector
 
         const sortedFields = underscore.sortBy(fields, (field) => (field.name));
         const schema = assembleSchema("", sortedFields, 1);
+
+        console.log(schema);
 
         return new models.EBSchema(schema);
     }
