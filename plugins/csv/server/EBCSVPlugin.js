@@ -300,7 +300,7 @@ class EBCSVPlugin extends EBDataSourcePlugin
 
             if (query.id)
             {
-                modifiedQuery._id = query.id;
+                modifiedQuery._id = EBCSVPlugin.recursiveCoerceMongoID(query.id);
             }
 
             const queryObject = this.csvRows.find(modifiedQuery);
