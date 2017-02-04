@@ -316,7 +316,7 @@ class EBCSVPlugin extends EBDataSourcePlugin
                 return rows.map((row) =>
                 {
                     const newRow = underscore.omit(row, "_id", "ebCSVFile", "ebRowIndex");
-                    newRow.id = row._id;
+                    newRow.id = row._id.toString();
                     return newRow;
                 });
             });

@@ -20,22 +20,13 @@
     <div class="col-xs-12">
         <div class="ibox" ng-if="field.isString || field.isNumber">
             <div class="ibox-title">
-                <h5>Interpetation</h5>
+                <h5>Interpretation Chain</h5>
             </div>
             <div class="ibox-content">
-                <select ng-model="field.metadata.interpretation">
-                    <option value="base32">base32</option>
-                    <option value="base64">base64</option>
-                    <option value="boolean">boolean</option>
-                    <option value="date">date</option>
-                    <option value="datetime">datetime</option>
-                    <option value="hex">hex</option>
-                    <option value="mstimestamp">mstimestamp</option>
-                    <option value="number">number</option>
-                    <option value="text">text</option>
-                    <option value="time">time</option>
-                    <option value="unixtimestamp">unixtimestamp</option>
-                </select>
+                <div ng-repeat="interpretation in field.metadata.interpretationChain">
+                    <span>{{interpretation}}</span>
+                    <span ng-show="$index < (field.metadata.interpretationChain.length - 1)">&equals;&gt;</span>
+                </div>
             </div>
         </div>
 
