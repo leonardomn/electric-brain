@@ -1,0 +1,7 @@
+{
+  "name": "eb-number",
+  "description": "This plugin provides the number interpretation",
+  "dependencies": {
+    "bluebird": "^3.4.6"
+  }
+}

@@ -24,7 +24,7 @@
  */
 
 
-angular.module('eb').controller('EBEditDataSourceController', function EBEditDataSourceController($scope, $timeout, EBDataService, EBDataSourceService, $stateParams, $state, EBNavigationBarService, EBLoaderService)
+angular.module('eb').controller('EBEditDataSourceController', function EBEditDataSourceController($scope, $timeout, EBDataSourceService, $stateParams, $state, EBNavigationBarService, EBLoaderService)
 {
     if (!$stateParams.id)
     {

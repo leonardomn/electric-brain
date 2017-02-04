@@ -19,24 +19,25 @@
 "use strict";
 
 const
-    EBFieldAnalysisAccumulatorBase = require('./EBFieldAnalysisAccumulatorBase'),
-    EBFieldMetadata = require('../../../../shared/models/EBFieldMetadata'),
-    EBInterpretationBase = require('./EBInterpretationBase'),
+    EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
+    EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
+    EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
+    Promise = require('bluebird'),
     underscore = require('underscore');
 
 /**
- * The object interpretation is for objects.
- *
- * TODO: Do we actually need this
+ * The hex interpretation will work on any strings that contain
+ * only hexidecimal characters. It will be converted into binary
+ * data.
  */
-class EBObjectInterpretation extends EBInterpretationBase
+class EBHexInterpretation extends EBInterpretationBase
 {
     /**
      * Constructor
      */
     constructor()
     {
-        super('object');
+        super('hex');
     }
 
 
@@ -52,7 +53,7 @@ class EBObjectInterpretation extends EBInterpretationBase
      */
     getUpstreamInterpretations()
     {
-        return [];
+        return ['string'];
     }
 
 
@@ -67,8 +68,7 @@ class EBObjectInterpretation extends EBInterpretationBase
      */
     checkValue(value)
     {
-        // Is it a string.
-        if (underscore.isObject(value))
+        if(underscore.isString(value) && /^(?:[abcdef0123456789]{2})*$/i.test(value))
         {
             return Promise.resolve(true);
         }
@@ -103,7 +103,7 @@ class EBObjectInterpretation extends EBInterpretationBase
      */
     transformValue(value)
     {
-        return Promise.resolve(value);
+        return Promise.resolve(new Buffer(`0x${value}`, 'hex'));
     }
 
 
@@ -134,43 +134,15 @@ class EBObjectInterpretation extends EBInterpretationBase
      */
     transformExample(value)
     {
-        return Promise.resolve(null);
-    }
-
-
-    /**
-     * This method should create a new field accumulator, a subclass of EBFieldAnalysisAccumulatorBase.
-     *
-     * This accumulator can be used to analyze a bunch of values through the lens of this interpretation,
-     * and calculate statistics that the user may use to analyze the situation.
-     *
-     * @return {EBFieldAnalysisAccumulatorBase} An instantiation of a field accumulator.
-     */
-    createFieldAccumulator()
-    {
-        // Create a subclass and immediately instantiate it.
-        return new (class extends EBFieldAnalysisAccumulatorBase
+        if (value.length > 50)
         {
-            constructor()
-            {
-                super();
-            }
-
-            accumulateValue(value)
-            {
-                // Do nothing.
-            }
-
-            getFieldMetadata()
-            {
-                const metadata = new EBFieldMetadata();
-
-                metadata.types.push('object');
-
-                return metadata;
-            }
-        })();
+            return Promise.resolve(value.substr(0, 50) + "...");
+        }
+        else
+        {
+            return Promise.resolve(value);
+        }
     }
 }
 
-module.exports = EBObjectInterpretation;
+module.exports = EBHexInterpretation;

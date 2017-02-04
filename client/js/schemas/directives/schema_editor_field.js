@@ -21,7 +21,7 @@
 /**
  * Represents a single field in the schema editor
  */
-angular.module('eb').directive('ebSchemaEditorField', function ebSchemaEditorField($timeout, EBDataService, EBDataSourceService)
+angular.module('eb').directive('ebSchemaEditorField', function ebSchemaEditorField($timeout, EBDataSourceService)
 {
     function controller($scope, $element, $attrs)
     {

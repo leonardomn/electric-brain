@@ -1,0 +1,7 @@
+{
+  "name": "eb-boolean",
+  "description": "This plugin provides the boolean interpretation.",
+  "dependencies": {
+    "bluebird": "^3.4.6"
+  }
+}

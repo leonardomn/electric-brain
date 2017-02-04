@@ -21,7 +21,7 @@
 /**
  * The collection list is an element that allows you to view the list of tables/collections that are contained within a database
  */
-angular.module('eb').directive('ebCollectionList', function ebCollectionList($timeout, EBDataService, EBDataSourceService)
+angular.module('eb').directive('ebCollectionList', function ebCollectionList($timeout, EBDataSourceService)
 {
     const controller = function($scope)
     {

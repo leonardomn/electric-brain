@@ -19,23 +19,23 @@
 "use strict";
 
 const
-    EBFieldAnalysisAccumulatorBase = require('./EBFieldAnalysisAccumulatorBase'),
-    EBFieldMetadata = require('../../../../shared/models/EBFieldMetadata'),
-    EBInterpretationBase = require('./EBInterpretationBase'),
-    fileType = require('file-type'),
+    EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
+    EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
+    EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
+    EBValueHistogram = require('../../../shared/models/EBValueHistogram'),
     underscore = require('underscore');
 
 /**
  * The string interpretation is used for all strings.
  */
-class EBBinaryInterpretation extends EBInterpretationBase
+class EBStringInterpretation extends EBInterpretationBase
 {
     /**
      * Constructor
      */
     constructor()
     {
-        super('binary');
+        super('string');
     }
 
 
@@ -66,8 +66,8 @@ class EBBinaryInterpretation extends EBInterpretationBase
      */
     checkValue(value)
     {
-        // Is it a buffer object?
-        if (value instanceof Buffer)
+        // Is it a string.
+        if (underscore.isString(value))
         {
             return Promise.resolve(true);
         }
@@ -102,7 +102,7 @@ class EBBinaryInterpretation extends EBInterpretationBase
      */
     transformValue(value)
     {
-        return Promise.resolve(value);
+        return Promise.resolve(value.toString());
     }
 
 
@@ -135,7 +135,7 @@ class EBBinaryInterpretation extends EBInterpretationBase
     {
         if (value.length > 50)
         {
-            return Promise.resolve(value.substr(0, 50));
+            return Promise.resolve(value.substr(0, 50) + "...");
         }
         else
         {
@@ -155,7 +155,7 @@ class EBBinaryInterpretation extends EBInterpretationBase
     createFieldAccumulator()
     {
         // This needs to be moved to a configuration file of some sort
-        const maxLengthForHistogram = 250;
+        const maxStringLengthForHistogram = 250;
 
         // Create a subclass and immediately instantiate it.
         return new (class extends EBFieldAnalysisAccumulatorBase
@@ -163,26 +163,26 @@ class EBBinaryInterpretation extends EBInterpretationBase
             constructor()
             {
                 super();
-
+                this.values = [];
             }
 
             accumulateValue(value)
             {
-                // self[_binaryMimeTypes].add(result.mimeType);
-                // if (result.image)
-                // {
-                //     self.metadata.binaryHasImage = true;
-                //     self[_imageWidths].push(result.imageWidth);
-                //     self[_imageHeights].push(result.imageHeight);
-                // }
+                // Only add it to the list of values if its below 250 characters in length. This prevents
+                // The system from storing fields that may have enormous strings that are totally unique
+                // to the field - a common case.
+                if (value.length < maxStringLengthForHistogram)
+                {
+                    this.values.push(value);
+                }
             }
 
             getFieldMetadata()
             {
                 const metadata = new EBFieldMetadata();
 
-                metadata.types.push('binary');
-                // metadata.valueHistogram = EBValueHistogram.computeHistogram(self[_stringValues]);
+                metadata.types.push('string');
+                metadata.valueHistogram = EBValueHistogram.computeHistogram(this.values);
 
                 return metadata;
             }
@@ -190,4 +190,4 @@ class EBBinaryInterpretation extends EBInterpretationBase
     }
 }
 
-module.exports = EBBinaryInterpretation;
+module.exports = EBStringInterpretation;

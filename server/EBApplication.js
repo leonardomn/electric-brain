@@ -24,7 +24,6 @@ const
     config = require("./config/config"),
     express = require("express"),
     EBDataSourcePluginDispatch = require("./components/datasource/EBDataSourcePluginDispatch"),
-    EBCSVPlugin = require("./components/datasource/EBCSVPlugin"),
     flattener = require('./middleware/flattener'),
     fs = require("fs"),
     http = require('http'),
@@ -47,16 +46,24 @@ class EBApplication
     {
         // Initialize each of the modules that we find in pages
         const polyfills = fs.readdirSync(`${__dirname}/../shared/polyfill`);
-        polyfills.forEach(function(polyfillFilename)
+        polyfills.forEach((polyfillFilename) =>
         {
             require(`../shared/polyfill/${polyfillFilename}`);
         });
 
         // Initialize any mods
         const mods = fs.readdirSync(`${__dirname}/mods`);
-        mods.forEach(function(modFilename)
+        mods.forEach((modFilename) =>
         {
             require(`./mods/${modFilename}`).apply();
+        });
+
+        // Load any plugins
+        const pluginNames = fs.readdirSync(`${__dirname}/../plugins`);
+        this.plugins = [];
+        pluginNames.forEach((pluginFilename) =>
+        {
+            this.plugins.push(require(`../plugins/${pluginFilename}`));
         });
 
         // Setup the global tasks with a reference to this application object
@@ -74,7 +81,7 @@ class EBApplication
     initializeDatabase(done)
     {
         const self = this;
-        mongodb.MongoClient.connect(config.mongo.uri, function(err, db)
+        mongodb.MongoClient.connect(config.mongo.uri, (err, db) =>
         {
             if (err)
             {
@@ -83,7 +90,16 @@ class EBApplication
             else
             {
                 self.db = db;
-                self.dataSourcePluginDispatch.registerPlugin("csv", new EBCSVPlugin(self));
+
+                this.plugins.forEach((plugin) =>
+                {
+                    const dataSourceNames = Object.keys(plugin.dataSources);
+                    dataSourceNames.forEach((name) =>
+                    {
+                        self.dataSourcePluginDispatch.registerPlugin(name, new plugin.dataSources[name](self));
+                    })
+                });
+
                 return done();
             }
         });
