@@ -133,7 +133,7 @@ class EBSchemaDetector
                     }
                     else
                     {
-                        return interpretationResults[0].interpretation;
+                        return successfulInterpretations[0].interpretation;
                     }
                 });
             }
@@ -141,7 +141,6 @@ class EBSchemaDetector
 
         const recurse = (value, currentInterpretation) =>
         {
-            // console.log('recursing', value, currentInterpretation);
             return analyze(value, currentInterpretation).then((interpretation) =>
             {
                 if (!interpretation)
@@ -151,11 +150,12 @@ class EBSchemaDetector
                 else
                 {
                     const chain = [interpretation];
-                    const transformed = interpretation.transformValue(value);
-
-                    return recurse(transformed, chain[0].name).then((subChain) =>
+                    return interpretation.transformValue(value).then((transformed) =>
                     {
-                        return chain.concat(subChain);
+                        return recurse(transformed, chain[0].name).then((subChain) =>
+                        {
+                            return chain.concat(subChain);
+                        });
                     });
                 }
             });
@@ -242,7 +242,7 @@ class EBSchemaDetector
                             return recurse(`${rootVariablePath}.[]`, arrayValue)
                         });
                     }
-                    else if (underscore.isObject(currentValue))
+                    else if (underscore.isObject(currentValue) && !(currentValue instanceof Buffer))
                     {
                         const fields = Object.keys(currentValue);
                         return Promise.each(fields, (field) =>

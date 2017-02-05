@@ -24,6 +24,7 @@ const EBHexInterpretation = require('./server/EBHexInterpretation');
 
 module.exports = {
     "name": "hex",
+    "folder": __dirname,
     "dataSources": {},
     "interpretations": {'hex': EBHexInterpretation}
 };

@@ -169,6 +169,23 @@ class EBSequenceInterpretation extends EBInterpretationBase
             }
         })();
     }
+
+
+    /**
+     * This method should return a schema for the metadata associated with this interpretation
+     *
+     * @return {jsonschema} A schema representing the metadata for this interpretation
+     */
+    static metadataSchema()
+    {
+        return {
+            "id": "EBFieldMetadata",
+            "type": "object",
+            "properties": {
+                arrayLengthHistogram: EBNumberHistogram.schema()
+            }
+        };
+    }
 }
 
 module.exports = EBSequenceInterpretation;

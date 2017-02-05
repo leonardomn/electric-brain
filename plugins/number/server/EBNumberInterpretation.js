@@ -187,6 +187,23 @@ class EBNumberInterpretation extends EBInterpretationBase
             }
         })();
     }
+
+
+    /**
+     * This method should return a schema for the metadata associated with this interpretation
+     *
+     * @return {jsonschema} A schema representing the metadata for this interpretation
+     */
+    static metadataSchema()
+    {
+        return {
+            "id": "EBFieldMetadata",
+            "type": "object",
+            "properties": {
+                numberHistogram: EBNumberHistogram.schema()
+            }
+        };
+    }
 }
 
 module.exports = EBNumberInterpretation;

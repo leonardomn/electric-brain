@@ -111,7 +111,7 @@ class EBBooleanInterpretation extends EBInterpretationBase
      */
     transformValue(value)
     {
-        return Promise.resolve(value.toString());
+        return Promise.resolve(value);
     }
 
 
@@ -143,6 +143,82 @@ class EBBooleanInterpretation extends EBInterpretationBase
     transformExample(value)
     {
         return Promise.resolve(value);
+    }
+
+
+    /**
+     * This method should create a new field accumulator, a subclass of EBFieldAnalysisAccumulatorBase.
+     *
+     * This accumulator can be used to analyze a bunch of values through the lens of this interpretation,
+     * and calculate statistics that the user may use to analyze the situation.
+     *
+     * @return {EBFieldAnalysisAccumulatorBase} An instantiation of a field accumulator.
+     */
+    createFieldAccumulator()
+    {
+        // This needs to be moved to a configuration file of some sort
+        const maxLengthForHistogram = 250;
+
+        // Create a subclass and immediately instantiate it.
+        return new (class extends EBFieldAnalysisAccumulatorBase
+        {
+            constructor()
+            {
+                super();
+                this.truths = 0;
+                this.falses = 0;
+            }
+
+            accumulateValue(value)
+            {
+                if (value)
+                {
+                    this.truths += 1;
+                }
+                else
+                {
+                    this.falses += 1;
+                }
+            }
+
+            getFieldMetadata()
+            {
+                const metadata = new EBFieldMetadata();
+
+                metadata.types.push('boolean');
+
+                const values = [];
+                for(let n = 0; n < this.truths; n += 1)
+                {
+                    values.push('true')
+                }
+                for(let n = 0; n < this.falses; n += 1)
+                {
+                    values.push('false')
+                }
+
+                metadata.valueHistogram = EBValueHistogram.computeHistogram(values);
+
+                return metadata;
+            }
+        })();
+    }
+
+
+    /**
+     * This method should return a schema for the metadata associated with this interpretation
+     *
+     * @return {jsonschema} A schema representing the metadata for this interpretation
+     */
+    static metadataSchema()
+    {
+        return {
+            "id": "EBFieldMetadata",
+            "type": "object",
+            "properties": {
+                valueHistogram: EBValueHistogram.schema()
+            }
+        };
     }
 }
 

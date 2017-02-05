@@ -16,16 +16,24 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const EBBinaryInterpretation = require('./server/EBBinaryInterpretation');
+"use strict";
 
-/*
- * Plugins must define a series of standard methods.
+/**
+ * This directive provides the menu for configuring fields being interpretted as binary data.
  */
+angular.module('eb').directive('ebBooleanInterpretationMetadata', function ebBooleanInterpretationMetadata($timeout)
+{
+    function controller($scope, $element, $attrs)
+    {
 
-module.exports = {
-    "name": "binary",
-    "folder": __dirname,
-    "dataSources": {},
-    "interpretations": {'binary': EBBinaryInterpretation}
-};
+    }
 
+    return {
+        templateUrl: "/plugins/boolean/views/boolean_interpretation_metadata.html",
+        controller,
+        restrict: "A",
+        scope: {
+            field: '='
+        }
+    };
+});

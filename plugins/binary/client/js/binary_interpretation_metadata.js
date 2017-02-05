@@ -16,16 +16,24 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const EBBinaryInterpretation = require('./server/EBBinaryInterpretation');
+"use strict";
 
-/*
- * Plugins must define a series of standard methods.
+/**
+ * This directive provides the menu for viewing metadata about the field
  */
+angular.module('eb').directive('ebBinaryInterpretationMetadata', function ebBinaryInterpretationMetadata($timeout)
+{
+    function controller($scope, $element, $attrs)
+    {
 
-module.exports = {
-    "name": "binary",
-    "folder": __dirname,
-    "dataSources": {},
-    "interpretations": {'binary': EBBinaryInterpretation}
-};
+    }
 
+    return {
+        templateUrl: "/plugins/binary/views/binary_interpretation_metadata.html",
+        controller,
+        restrict: "A",
+        scope: {
+            field: '='
+        }
+    };
+});

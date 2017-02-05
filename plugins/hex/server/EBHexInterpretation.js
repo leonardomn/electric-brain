@@ -22,6 +22,7 @@ const
     EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
+    EBValueHistogram = require('../../../shared/models/EBValueHistogram'),
     Promise = require('bluebird'),
     underscore = require('underscore');
 
@@ -68,7 +69,7 @@ class EBHexInterpretation extends EBInterpretationBase
      */
     checkValue(value)
     {
-        if(underscore.isString(value) && /^(?:[abcdef0123456789]{2})*$/i.test(value))
+        if(underscore.isString(value) && /^(?:[abcdef0123456789]{2})+$/i.test(value))
         {
             return Promise.resolve(true);
         }
@@ -142,6 +143,67 @@ class EBHexInterpretation extends EBInterpretationBase
         {
             return Promise.resolve(value);
         }
+    }
+
+
+    /**
+     * This method should create a new field accumulator, a subclass of EBFieldAnalysisAccumulatorBase.
+     *
+     * This accumulator can be used to analyze a bunch of values through the lens of this interpretation,
+     * and calculate statistics that the user may use to analyze the situation.
+     *
+     * @return {EBFieldAnalysisAccumulatorBase} An instantiation of a field accumulator.
+     */
+    createFieldAccumulator()
+    {
+        // This needs to be moved to a configuration file of some sort
+        const maxHexLengthForHistogram = 250;
+
+        // Create a subclass and immediately instantiate it.
+        return new (class extends EBFieldAnalysisAccumulatorBase
+        {
+            constructor()
+            {
+                super();
+                this.values = [];
+            }
+
+            accumulateValue(value)
+            {
+                // Only add it if its short
+                if (value.length < maxHexLengthForHistogram)
+                {
+                    this.values.push(value);
+                }
+            }
+
+            getFieldMetadata()
+            {
+                const metadata = new EBFieldMetadata();
+
+                metadata.types.push('string');
+                metadata.valueHistogram = EBValueHistogram.computeHistogram(this.values);
+
+                return metadata;
+            }
+        })();
+    }
+
+
+    /**
+     * This method should return a schema for the metadata associated with this interpretation
+     *
+     * @return {jsonschema} A schema representing the metadata for this interpretation
+     */
+    static metadataSchema()
+    {
+        return {
+            "id": "EBFieldMetadata",
+            "type": "object",
+            "properties": {
+                valueHistogram: EBValueHistogram.schema()
+            }
+        };
     }
 }
 

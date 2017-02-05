@@ -24,6 +24,7 @@ const EBNumberInterpretation = require('./server/EBNumberInterpretation');
 
 module.exports = {
     "name": "number",
+    "folder": __dirname,
     "dataSources": {},
     "interpretations": {'number': EBNumberInterpretation}
 };

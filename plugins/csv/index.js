@@ -23,6 +23,7 @@ const EBCSVPlugin = require('./server/EBCSVPlugin');
  */
 module.exports = {
     "name": "csv",
+    "folder": __dirname,
     "dataSources": {
         'csv': EBCSVPlugin
     }

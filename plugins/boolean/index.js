@@ -24,6 +24,7 @@ const EBBooleanInterpretation = require('./server/EBBooleanInterpretation');
 
 module.exports = {
     "name": "boolean",
+    "folder": __dirname,
     "dataSources": {},
     "interpretations": {'boolean': EBBooleanInterpretation}
 };

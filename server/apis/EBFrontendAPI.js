@@ -110,11 +110,10 @@ class EBFrontendAPI extends EBAPIRoot
         // Now search each plugins client directory,
         this.application.plugins.forEach((plugin) =>
         {
-            const pluginFolder = path.join(__dirname, '..', '..', 'plugins', plugin.name);
-            if (fs.existsSync(path.join(pluginFolder, 'client', 'js')))
+            if (fs.existsSync(path.join(plugin.folder, 'client', 'js')))
             {
                 foldersToSearch.push({
-                    folder: path.join(pluginFolder, 'client', 'js'),
+                    folder: path.join(plugin.folder, 'client', 'js'),
                     root: `/plugins/${plugin.name}/js`
                 });
             }
@@ -164,11 +163,10 @@ class EBFrontendAPI extends EBAPIRoot
         // Now search each plugins client directory,
         this.application.plugins.forEach((plugin) =>
         {
-            const pluginFolder = path.join(__dirname, '..', '..', 'plugins', plugin.name);
-            if (fs.existsSync(path.join(pluginFolder, 'client', 'css')))
+            if (fs.existsSync(path.join(plugin.folder, 'client', 'css')))
             {
                 foldersToSearch.push({
-                    folder: path.join(pluginFolder, 'client', 'css'),
+                    folder: path.join(plugin.folder, 'client', 'css'),
                     root: `/plugins/${plugin}/css`
                 });
             }
@@ -263,16 +261,15 @@ class EBFrontendAPI extends EBAPIRoot
         
         this.application.plugins.forEach((plugin) =>
         {
-            const pluginFolder = path.join(__dirname, '..', '..', 'plugins', plugin.name);
-            if (fs.existsSync(path.join(pluginFolder, 'client')))
+            if (fs.existsSync(path.join(plugin.folder, 'client')))
             {
-                const frontendFolders = fs.readdirSync(path.join(pluginFolder, 'client'));
+                const frontendFolders = fs.readdirSync(path.join(plugin.folder, 'client'));
                 frontendFolders.forEach((frontendFolderName) =>
                 {
                     const pathString = `/plugins/${plugin.name}/${frontendFolderName}`;
                     if (pathString !== "index.html")
                     {
-                        expressApplication.use(pathString, express.static(path.join(pluginFolder, 'client', frontendFolderName)));
+                        expressApplication.use(pathString, express.static(path.join(plugin.folder, 'client', frontendFolderName)));
                         expressApplication.use(`/plugins/${plugin.name}/${frontendFolderName}/*`, (req, res) =>
                         {
                             res.status(httpStatus.NOT_FOUND);

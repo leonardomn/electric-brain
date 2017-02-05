@@ -24,6 +24,7 @@ const EBObjectInterpretation = require('./server/EBObjectInterpretation');
 
 module.exports = {
     "name": "object",
+    "folder": __dirname,
     "dataSources": {},
     "interpretations": {'object': EBObjectInterpretation}
 };

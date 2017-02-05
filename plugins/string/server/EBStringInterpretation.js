@@ -22,6 +22,7 @@ const
     EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
+    EBNumberHistogram = require('../../../shared/models/EBNumberHistogram'),
     EBValueHistogram = require('../../../shared/models/EBValueHistogram'),
     underscore = require('underscore');
 
@@ -187,6 +188,24 @@ class EBStringInterpretation extends EBInterpretationBase
                 return metadata;
             }
         })();
+    }
+
+
+    /**
+     * This method should return a schema for the metadata associated with this interpretation
+     *
+     * @return {jsonschema} A schema representing the metadata for this interpretation
+     */
+    static metadataSchema()
+    {
+        return {
+            "id": "EBFieldMetadata",
+            "type": "object",
+            "properties": {
+                imageWidthHistogram: EBNumberHistogram.schema(),
+                imageHeightHistogram: EBNumberHistogram.schema()
+            }
+        };
     }
 }
 

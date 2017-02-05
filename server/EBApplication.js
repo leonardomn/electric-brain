@@ -58,12 +58,20 @@ class EBApplication
             require(`./mods/${modFilename}`).apply();
         });
 
-        // Load any plugins
-        const pluginNames = fs.readdirSync(`${__dirname}/../plugins`);
+        // Load any plugins that are found in the various plugin directories
+        const pluginDirectories = [
+            path.join(__dirname, '..', 'plugins'),
+            path.join(__dirname, '..', 'extraplugins')
+        ];
+
         this.plugins = [];
-        pluginNames.forEach((pluginFilename) =>
+        pluginDirectories.forEach((directory) =>
         {
-            this.plugins.push(require(`../plugins/${pluginFilename}`));
+            const pluginNames = fs.readdirSync(directory);
+            pluginNames.forEach((pluginFilename) =>
+            {
+                this.plugins.push(require(path.join(directory, pluginFilename)));
+            });
         });
 
         // Setup the global tasks with a reference to this application object

@@ -24,6 +24,7 @@ const EBStringInterpretation = require('./server/EBStringInterpretation');
 
 module.exports = {
     "name": "string",
+    "folder": __dirname,
     "dataSources": {},
     "interpretations": {'string': EBStringInterpretation}
 };

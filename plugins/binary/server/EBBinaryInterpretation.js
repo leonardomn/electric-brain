@@ -22,6 +22,7 @@ const
     EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
+    EBValueHistogram = require('../../../shared/models/EBValueHistogram'),
     fileType = require('file-type'),
     underscore = require('underscore');
 
@@ -163,18 +164,16 @@ class EBBinaryInterpretation extends EBInterpretationBase
             constructor()
             {
                 super();
-
+                this.mimeTypes = [];
             }
 
             accumulateValue(value)
             {
-                // self[_binaryMimeTypes].add(result.mimeType);
-                // if (result.image)
-                // {
-                //     self.metadata.binaryHasImage = true;
-                //     self[_imageWidths].push(result.imageWidth);
-                //     self[_imageHeights].push(result.imageHeight);
-                // }
+                const result = fileType(value);
+                if (result && result.mime)
+                {
+                    this.mimeTypes.push(result.mime);
+                }
             }
 
             getFieldMetadata()
@@ -182,11 +181,28 @@ class EBBinaryInterpretation extends EBInterpretationBase
                 const metadata = new EBFieldMetadata();
 
                 metadata.types.push('binary');
-                // metadata.valueHistogram = EBValueHistogram.computeHistogram(self[_stringValues]);
+                metadata.binaryMimeTypeHistogram = EBValueHistogram.computeHistogram(this.mimeTypes);
 
                 return metadata;
             }
         })();
+    }
+
+
+    /**
+     * This method should return a schema for the metadata associated with this interpretation
+     *
+     * @return {jsonschema} A schema representing the metadata for this interpretation
+     */
+    static metadataSchema()
+    {
+        return {
+            "id": "EBFieldMetadata",
+            "type": "object",
+            "properties": {
+                binaryMimeTypeHistogram: EBValueHistogram.schema()
+            }
+        };
     }
 }
 

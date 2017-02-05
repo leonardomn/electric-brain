@@ -136,6 +136,17 @@ class EBInterpretationBase
     {
         throw new Error("Unimplemented");
     }
+    
+
+    /**
+     * This method should return a schema for the metadata associated with this interpretation
+     *
+     * @return {jsonschema} A schema representing the metadata for this interpretation
+     */
+    static metadataSchema()
+    {
+        throw Promise.rejected(new Error("Unimplemented"));
+    }
 }
 
 module.exports = EBInterpretationBase;

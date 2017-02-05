@@ -24,6 +24,7 @@ const EBSequenceInterpretation = require('./server/EBSequenceInterpretation');
 
 module.exports = {
     "name": "sequence",
+    "folder": __dirname,
     "dataSources": {},
     "interpretations": {'sequence': EBSequenceInterpretation}
 };

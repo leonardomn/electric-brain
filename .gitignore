@@ -10,7 +10,7 @@ build/*
 training/*
 scripts/datasets/mnist_png/*
 .bower/*
-
+extraplugins/*
 
 
 
