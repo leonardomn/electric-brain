@@ -69,4 +69,14 @@ angular.module('eb').controller('EBDataSourceSelectFieldsController', function E
             $state.go('dashboard');
         });
     };
+
+
+    $scope.onContinue = function onContinue()
+    {
+        return EBDataSourceService.saveDataSource($scope.dataSource).then(function success(body)
+        {
+            EBNavigationBarService.refreshNavigationBar();
+            $state.go('edit_architecture');
+        });
+    };
 });

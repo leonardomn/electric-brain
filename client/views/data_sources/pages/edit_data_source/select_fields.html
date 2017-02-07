@@ -24,10 +24,7 @@
                     <div class="pull-right">
                         <eb-loader-button on-click="onSaveClicked()" title="Save"></eb-loader-button>
                         <eb-loader-button ng-if="$stateParams.id != 'new'" on-click="onDeleteClicked()" title="Delete" confirm="true" confirm-title="Warning!" confirm-message="Deleting this data source will erase all of your progress. Are you sure you want to delete?"></eb-loader-button>
-                        <div class="btn btn-primary" ui-sref="edit_architecture">
-                            <span>Continue to architecture</span>
-                            <i class="fa fa-arrow-circle-right"></i>
-                        </div>
+                        <eb-loader-button on-click="onContinue()" title="Continue to Architecture"></eb-loader-button>
                     </div>
                 </div>
             </div>
