@@ -43,8 +43,8 @@ class EBSchemaDetector
         self.objectsAccumulated = 0;
         self.knownValueEnumCutOff = 250;
 
-        self.fieldIntepretation = new FieldInterpretationModel(path.join(__dirname, '../../../build/models/fieldinterpretation'));
-        self.fieldIntepretationStartPromise = self.fieldIntepretation.startModelProcess();
+        // self.fieldIntepretation = new FieldInterpretationModel(path.join(__dirname, '../../../build/models/fieldinterpretation'));
+        // self.fieldIntepretationStartPromise = self.fieldIntepretation.startModelProcess();
     }
 
 
@@ -62,8 +62,8 @@ class EBSchemaDetector
     {
         const self = this;
 
-        self.fieldIntepretationStartPromise.then(() =>
-        {
+        // self.fieldIntepretationStartPromise.then(() =>
+        // {
             /**
              * This function is used internally to recurse through a JSON object
              *
@@ -124,7 +124,7 @@ class EBSchemaDetector
             self.objectsAccumulated += 1;
 
             recurse("", object, callback);
-        }, (err) => callback(err));
+        // }, (err) => callback(err));
     }
 
 

@@ -18,6 +18,7 @@
 
 "use strict";
 
+const Promise = require('bluebird');
 
 /**
  *  This is the base class for different possible sources of data for the Electric Brain engine.
@@ -32,7 +33,7 @@ class EBDataSourcePlugin
      */
     test(dataSource)
     {
-
+        return Promise.rejected(new Error('Unimplemented'));
     }
 
 
@@ -44,7 +45,7 @@ class EBDataSourcePlugin
      */
     lookupTables(dataSource)
     {
-
+        return Promise.rejected(new Error('Unimplemented'));
     }
 
 
@@ -57,7 +58,7 @@ class EBDataSourcePlugin
      */
     count(dataSource)
     {
-
+        return Promise.rejected(new Error('Unimplemented'));
     }
 
 
@@ -72,7 +73,7 @@ class EBDataSourcePlugin
      */
     sample(count, dataSource, iterator)
     {
-
+        return Promise.rejected(new Error('Unimplemented'));
     }
 
 
@@ -87,7 +88,7 @@ class EBDataSourcePlugin
      */
     fetch(dataSource, query, limit)
     {
-
+        return Promise.rejected(new Error('Unimplemented'));
     }
 
 
@@ -99,7 +100,7 @@ class EBDataSourcePlugin
      */
     detectSchema(dataSource)
     {
-
+        return Promise.rejected(new Error('Unimplemented'));
     }
 }
 

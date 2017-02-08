@@ -43,6 +43,7 @@ angular.module('eb').controller('EBDataSourceSelectTableController', function EB
     
     $scope.selectMongoCollection = function selectMongoCollection(mongoCollection)
     {
+        $scope.dataSource.name = mongoCollection.name;
         $scope.dataSource.database.collection = mongoCollection.name;
         $scope.dataSource.dataSchema = null;
         $timeout(function()

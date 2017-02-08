@@ -45,10 +45,14 @@
 
 {{~ topLevelFields:field:index}}
     {{? field.isBinary }}
-        local decoded{{=it.depth}}_{{=field.machineVariableName}} = mime.unb64(data{{=it.depth}}["{{=field.variablePathFrom(it.schema).replace(".", "").replace(/\./g, "\"][\"")}}"]
-        local bytes{{=it.depth}}_{{=field.machineVariableName}} = torch.ByteStorage()
-        bytes{{=it.depth}}_{{=field.machineVariableName}}:string(decoded{{=it.depth}}_{{=field.machineVariableName}})
-        local tensor{{=it.depth}}_{{=field.machineVariableName}} = torch.ByteTensor(bytes{{=it.depth}}_{{=field.machineVariableName}})
-        transformed{{=it.depth}}[{{=index+1+hasFixedTensor+topLevelSequences.length}}] = image.decompress(tensor{{=it.depth}}_{{=field.machineVariableName}})
+    local height, width = samples{{=it.depth}}[1][{{=index+1+hasFixedTensor+topLevelSequences.length}}]:size(2), samples{{=it.depth}}[1][{{=index+1+hasFixedTensor+topLevelSequences.length}}]:size(3)
+    batch{{=it.depth}}[{{=index+1+hasFixedTensor+topLevelSequences.length}}] = torch.zeros(#samples,3,height ,width )
+
+        for k,v in pairs(samples{{=it.depth}}) do
+            print(batch{{=it.depth}}[1]:narrow(1, k ,1))
+            print(samples{{=it.depth}}[k][{{=index+1+hasFixedTensor+topLevelSequences.length}}]:view(1, 3, height, width))
+            batch{{=it.depth}}[1]:narrow(1, k , 1):copy(samples{{=it.depth}}[k][{{=index+1+hasFixedTensor+topLevelSequences.length}}]:view(1, 3, height, width))
+
+        end
     {{?}}
 {{~}}

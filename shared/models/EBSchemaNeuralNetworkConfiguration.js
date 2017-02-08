@@ -151,8 +151,8 @@ class EBSchemaNeuralNetworkConfiguration
         }
         else if (field.isString)
         {
-            if (field.metadata.cardinality < enumCardinalityCutoff)
-            {
+            // if (field.metadata.cardinality < enumCardinalityCutoff)
+            // {
                 return new EBSchemaNeuralNetworkConfiguration({
                     sequence: null,
                     string: {
@@ -161,17 +161,17 @@ class EBSchemaNeuralNetworkConfiguration
                     field: null,
                     image: null
                 });
-            }
-            else {
-                return new EBSchemaNeuralNetworkConfiguration({
-                    sequence: null,
-                    string: {
-                        mode: "sequence"
-                    },
-                    field: null,
-                    image: null
-                });
-            }
+            // }
+            // else {
+            //     return new EBSchemaNeuralNetworkConfiguration({
+            //         sequence: null,
+            //         string: {
+            //             mode: "sequence"
+            //         },
+            //         field: null,
+            //         image: null
+            //     });
+            // }
         }
         else
         {

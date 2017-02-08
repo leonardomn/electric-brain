@@ -134,7 +134,7 @@ class EBFieldAnalysisAccumulator
                     {
                         if (value instanceof Buffer)
                         {
-                            self.metadata.examples.push(value.toString('base64'));
+                            // self.metadata.examples.push(value.toString('base64'));
                         }
                         else
                         {
@@ -165,19 +165,20 @@ class EBFieldAnalysisAccumulator
 
                     if (keepForExample)
                     {
-                        self.fieldInterpretationModel.processData([{value: value}]).then((results) =>
-                        {
-                            const type = results[0].condensedType;
-                            
-                            if (!self[_fieldInterpretations][type])
-                            {
-                                self[_fieldInterpretations][type] = 0;
-                            }
-
-                            self[_fieldInterpretations][type] += 1;
-                            
-                            return next();
-                        }, (err) => next(err));
+                        return next();
+                        // self.fieldInterpretationModel.processData([{value: value}]).then((results) =>
+                        // {
+                        //     const type = results[0].condensedType;
+                        //
+                        //     if (!self[_fieldInterpretations][type])
+                        //     {
+                        //         self[_fieldInterpretations][type] = 0;
+                        //     }
+                        //
+                        //     self[_fieldInterpretations][type] += 1;
+                        //
+                        //     return next();
+                        // }, (err) => next(err));
                     }
                     else
                     {
