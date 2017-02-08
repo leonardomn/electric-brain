@@ -38,10 +38,10 @@ angular.module('eb').service('EBDataService', function EBDataService()
             //     type: "mysql",
             //     logo: "img/databases/mysql-logo.png"
             // },
-            // {
-            //     type: "mongo",
-            //     logo: "img/databases/mongodb-logo.jpg"
-            // },
+            {
+                type: "mongo",
+               logo: "img/databases/mongodb-logo.jpg"
+            },
             {
                 type: "csv",
                 logo: "img/databases/csv.png"

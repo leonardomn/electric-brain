@@ -25,6 +25,7 @@ const
     express = require("express"),
     EBDataSourcePluginDispatch = require("./components/datasource/EBDataSourcePluginDispatch"),
     EBCSVPlugin = require("./components/datasource/EBCSVPlugin"),
+    EBMongoPlugin= require("./components/datasource/EBMongoplugin"),
     flattener = require('./middleware/flattener'),
     fs = require("fs"),
     http = require('http'),
@@ -84,6 +85,7 @@ class EBApplication
             {
                 self.db = db;
                 self.dataSourcePluginDispatch.registerPlugin("csv", new EBCSVPlugin(self));
+                self.dataSourcePluginDispatch.registerPlugin("mongo", new EBMongoPlugin(self));
                 return done();
             }
         });
