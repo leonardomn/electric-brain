@@ -53,7 +53,10 @@ class EBModel
 
         if (!self.parameters)
         {
-            self.parameters = {batchSize: 16};
+            self.parameters = {
+                batchSize: 16,
+                testingBatchSize: 4
+            };
         }
 
         if (!self.codeGeneration)
@@ -129,6 +132,9 @@ class EBModel
                     properties: {
                         "batchSize": {
                             type: "number"
+                        },
+                        "testingBatchSize": {
+                            type: "number"
                         }
                     }
                 },
@@ -177,7 +183,7 @@ class EBModel
                                 type: "object",
                                 properties: {
                                     "accuracy": {type: "number"},
-                                    "trainingAccuracy" : {type:"number"},
+                                    "trainingAccuracy": {type: "number"},
                                     "loss": {type: "number"}
                                 }
                             }
