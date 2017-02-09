@@ -10,13 +10,6 @@ end
 
 function MergeSequences:updateOutput(input)
     -- Make sure both sequences are the same length
-    print(#(input[1]))
-    print(#(input[#input]))
-
-    print(input[1])
-    print(input[#input])
-
-
     assert(#(input[1]) == #(input[#input]))
 
     -- Prepare a new output sequence
