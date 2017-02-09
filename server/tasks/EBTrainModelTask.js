@@ -146,7 +146,7 @@ class EBTrainModelTask {
             // Generate the code
             (next) =>
             {
-                self.trainingProcess.generateCode((err, totalFiles) =>
+                self.trainingProcess.generateCode(self.application.neuralNetworkComponentDispatch, (err, totalFiles) =>
                 {
                     if (err)
                     {

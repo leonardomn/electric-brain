@@ -27,6 +27,5 @@ module.exports = {
     "EBTorchNode": require('./EBTorchNode'),
     "EBTorchModule": require('./EBTorchModule'),
     "EBTorchCustomModule": require('./EBTorchCustomModule'),
-    "EBTorchNeuralNetwork": require("./EBTorchNeuralNetwork"),
     "EBSchemaNeuralNetworkConfiguration": require("./EBSchemaNeuralNetworkConfiguration")
 };

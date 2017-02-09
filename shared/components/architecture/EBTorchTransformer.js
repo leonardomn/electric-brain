@@ -170,7 +170,6 @@ class EBTorchTransformer extends EBArchitectureElement
 
             if (schema.enum)
             {
-                console.log(schema.enum);
                 const index = schema.enum.indexOf(value);
                 if (index === -1)
                 {

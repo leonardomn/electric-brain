@@ -23,6 +23,17 @@ angular.module('eb').service('EBDataSourceService', function EBDataSourceService
 {
     const service = {};
 
+    service.getSupportedDataSources = function getSupportedDataSources(databaseType)
+    {
+        const headers = {};
+        return $http({
+            method: 'GET',
+            url: '/api/data-source-types',
+            headers,
+            params: {}
+        });
+    };
+
     service.detectDatabase = function detectDatabase(databaseType)
     {
         const headers = {};

@@ -26,6 +26,27 @@ const Promise = require('bluebird');
 class EBDataSourcePlugin
 {
     /**
+     * This method returns the machine name for the data source
+     *
+     * @returns {string} A string containing the machine name
+     */
+    get name()
+    {
+        throw new Error("Unimplemented");
+    }
+    
+    
+    /**
+     * This method returns the URL for the icon of the data source
+     *
+     * @returns {string} A string containing a URL that can be loaded from the frontend API
+     */
+    get icon()
+    {
+        throw new Error("Unimplemented");
+    }
+
+    /**
      * This method tests the connection to the data source.
      *
      * @param {EBDataSource} This should be an EBDataSource object to test the connection with.

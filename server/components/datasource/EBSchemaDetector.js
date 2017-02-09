@@ -19,10 +19,9 @@
 "use strict";
 const
     async = require('async'),
-    EBFieldAnalysisAccumulator = require("./EBFieldAnalysisAccumulator"),
-    FieldInterpretationModel = require('../../../build/models/fieldinterpretation/ebbundle').EBBundleScript,
     models = require('../../../shared/models/models'),
     path = require('path'),
+    Promise = require('bluebird'),
     underscore = require('underscore');
 
 /**
@@ -34,17 +33,136 @@ class EBSchemaDetector
 {
     /**
      * Creates a EBSchemaDetector
+     * 
+     * @param {EBApplication} application The global application object.
      */
-    constructor()
+    constructor(application)
     {
-        const self = this;
+        this.fieldAccumulators = new Map();
+        this.interpretationChains = new Map();
+        this.objectsAccumulated = 0;
 
-        self.fieldAccumulators = new Map();
-        self.objectsAccumulated = 0;
-        self.knownValueEnumCutOff = 250;
+        this.interpretations = [];
+        this.interpretationMap = {};
+        application.plugins.forEach((plugin) =>
+        {
+            underscore.values(plugin.interpretations).forEach((interpretation) =>
+            {
+                const initialized = new interpretation();
 
-        // self.fieldIntepretation = new FieldInterpretationModel(path.join(__dirname, '../../../build/models/fieldinterpretation'));
-        // self.fieldIntepretationStartPromise = self.fieldIntepretation.startModelProcess();
+                this.interpretations.push(initialized);
+                this.interpretationMap[initialized.name] = initialized;
+            });
+        });
+    }
+
+
+    /**
+     * This method will determine the best interpretation chain for the given value.
+     *
+     * @param {*} value Can be practically anything.
+     * @return {Promise} A promise that that resolves to an array with the sequence of interpretations that this value should go through
+     */
+    detectInterpretationChain(value)
+    {
+        const analyze = (value, currentInterpretation) =>
+        {
+            if (!currentInterpretation)
+            {
+                // Determine the starting interpretation based entirely on the fields type
+                if (underscore.isString(value))
+                {
+                    return Promise.resolve(this.interpretationMap['string']);
+                }
+                else if (underscore.isBoolean(value))
+                {
+                    return Promise.resolve(this.interpretationMap['boolean']);
+                }
+                else if (underscore.isNumber(value))
+                {
+                    return Promise.resolve(this.interpretationMap['number']);
+                }
+                else if (value instanceof Buffer)
+                {
+                    return Promise.resolve(this.interpretationMap['binary']);
+                }
+                else if (underscore.isArray(value))
+                {
+                    return Promise.resolve(this.interpretationMap['sequence']);
+                }
+                else if (underscore.isObject(value))
+                {
+                    return Promise.resolve(this.interpretationMap['object']);
+                }
+                else
+                {
+                    throw new Error("null interpretation here?");
+                }
+            }
+            else
+            {
+                // Find all of the interpretations that are downstream from this one
+                const availableInterpretations = underscore.filter(this.interpretations, (interpretation) =>
+                {
+                    const upstream = interpretation.getUpstreamInterpretations();
+                    return upstream.indexOf(currentInterpretation) !== -1;
+                });
+
+                // Find a suitable interpretation
+                return Promise.map(availableInterpretations, (interpretation) =>
+                {
+                    return interpretation.checkValue(value).then((result) =>
+                    {
+                        return {
+                            result: result,
+                            interpretation: interpretation
+                        }
+                    });
+                }).then((interpretationResults) =>
+                {
+                    // If there are multiple possible interpretations, then perhaps it needs to be automatically detected
+                    // which one to go with
+                    const successfulInterpretations = underscore.filter(interpretationResults, (interpretationResult) =>
+                    {
+                        return interpretationResult.result;
+                    });
+
+                    if (successfulInterpretations.length === 0)
+                    {
+                        return null;
+                    }
+                    else
+                    {
+                        return successfulInterpretations[0].interpretation;
+                    }
+                });
+            }
+        };
+
+        const recurse = (value, currentInterpretation) =>
+        {
+            return analyze(value, currentInterpretation).then((interpretation) =>
+            {
+                if (!interpretation)
+                {
+                    return [];
+                }
+                else
+                {
+                    const chain = [interpretation];
+                    return interpretation.transformValue(value).then((transformed) =>
+                    {
+                        return recurse(transformed, chain[0].name).then((subChain) =>
+                        {
+                            return chain.concat(subChain);
+                        });
+                    });
+                }
+            });
+        };
+
+
+        return recurse(value, null);
     }
 
 
@@ -55,76 +173,92 @@ class EBSchemaDetector
      *  @param {boolean} [keepForExample] Whether or not the values on the object
      *                                    should be kept for as examples. Defaults
      *                                    to false.
-     *  @param {function(err)} callback The callback after the object has been
-     *                                  successfully accumulated
+     *  @return {Promise} A promise that will resolve after the object has been fully accumulated.
      */
-    accumulateObject(object, keepForExample, callback)
+    accumulateObject(object, keepForExample)
     {
-        const self = this;
-
-        // self.fieldIntepretationStartPromise.then(() =>
-        // {
-            /**
-             * This function is used internally to recurse through a JSON object
-             *
-             * @param {string} rootVariablePath The variablePath leading from the root of the object down to this field
-             * @param {anything} value The value being analyzed
-             * @param {function(err)} callback The callback after recursion
-             */
-            function recurse(rootVariablePath, value, callback)
+        /**
+         * This function is used internally to recurse through a JSON object
+         *
+         * @param {string} rootVariablePath The variablePath leading from the root of the object down to this field
+         * @param {*} value The value being analyzed
+         * @returns {Promise} A promise that will resolve when the value has been accumulated.
+         */
+        const recurse = (rootVariablePath, value) =>
+        {
+            if (!this.interpretationChains.has(rootVariablePath))
             {
-                if (!self.fieldAccumulators.has(rootVariablePath))
-                {
-                    self.fieldAccumulators.set(rootVariablePath, new EBFieldAnalysisAccumulator(self.fieldIntepretation));
-                }
-
-                if (underscore.isArray(value))
-                {
-                    async.eachSeries(value, function(arrayValue, next)
-                    {
-                        recurse(`${rootVariablePath}.[]`, arrayValue, next);
-                    }, function(err)
-                    {
-                        if (err)
-                        {
-                            return callback(err);
-                        }
-
-                        self.fieldAccumulators.get(rootVariablePath).accumulateValue(value, false, callback);
-                    });
-                }
-                else if (value instanceof Buffer)
-                {
-                    self.fieldAccumulators.get(rootVariablePath).accumulateValue(value, keepForExample, callback);
-                }
-                else if (underscore.isObject(value))
-                {
-                    const fields = Object.keys(value);
-                    async.eachSeries(fields, function(field, next)
-                    {
-                        let variablePath = (rootVariablePath ? `${rootVariablePath}.` : "");
-                        variablePath += field;
-                        recurse(variablePath, value[field], next);
-                    }, function(err)
-                    {
-                        if (err)
-                        {
-                            return callback(err);
-                        }
-
-                        self.fieldAccumulators.get(rootVariablePath).accumulateValue(value, false, callback);
-                    });
-                }
-                else
-                {
-                    self.fieldAccumulators.get(rootVariablePath).accumulateValue(value, keepForExample, callback);
-                }
+                this.interpretationChains.set(rootVariablePath, {});
             }
 
-            self.objectsAccumulated += 1;
+            if (!this.fieldAccumulators.has(rootVariablePath))
+            {
+                this.fieldAccumulators.set(rootVariablePath, {});
+            }
 
-            recurse("", object, callback);
-        // }, (err) => callback(err));
+            return this.detectInterpretationChain(value).then((chain) =>
+            {
+                const chainId = chain.map((chain) => chain.name).join("=>");
+                const lastInterpretation = chain[chain.length - 1];
+
+                // Record this interpretation chain for this value
+                if(!this.interpretationChains.get(rootVariablePath)[chainId])
+                {
+                    this.interpretationChains.get(rootVariablePath)[chainId] = 0;
+                }
+                this.interpretationChains.get(rootVariablePath)[chainId] += 1;
+
+                // // Now record data for this interpretation
+                if (!this.fieldAccumulators.get(rootVariablePath)[lastInterpretation.name])
+                {
+                    this.fieldAccumulators.get(rootVariablePath)[lastInterpretation.name] = this.interpretationMap[lastInterpretation.name].createFieldAccumulator();
+                }
+
+                // Put the variable through the transformation for each interpretation, and on the last
+                // one, we accumulate it for statistical purposes
+                let currentValue = value;
+                return Promise.each(chain, (interpretation) =>
+                {
+                    return interpretation.transformValue(currentValue).then((transformedValue) =>
+                    {
+                        currentValue = transformedValue;
+                    })
+                }).then(() =>
+                {
+                    let  keep = keepForExample;
+                    if (underscore.isArray(currentValue) || underscore.isObject(currentValue))
+                    {
+                        keep = false;
+                    }
+
+                    return this.fieldAccumulators.get(rootVariablePath)[lastInterpretation.name].accumulateValue(currentValue, keep);
+                }).then(() =>
+                {
+                    // Recurse into children.
+                    if (underscore.isArray(currentValue))
+                    {
+                        return Promise.each(currentValue, (arrayValue) =>
+                        {
+                            return recurse(`${rootVariablePath}.[]`, arrayValue)
+                        });
+                    }
+                    else if (underscore.isObject(currentValue) && !(currentValue instanceof Buffer))
+                    {
+                        const fields = Object.keys(currentValue);
+                        return Promise.each(fields, (field) =>
+                        {
+                            let variablePath = rootVariablePath ? `${rootVariablePath}.${field}` : `${field}`;
+                            return recurse(variablePath, currentValue[field]);
+                        });
+                    }
+                });
+            });
+        };
+
+        return recurse("", object).then(() =>
+        {
+            this.objectsAccumulated += 1;
+        });
     }
 
 
@@ -135,16 +269,20 @@ class EBSchemaDetector
      */
     getSchema()
     {
-        const self = this;
         const fields = [];
 
         // First step, we create a flat list of values
-        for (const field of self.fieldAccumulators.keys())
+        for (const field of this.fieldAccumulators.keys())
         {
-            const fieldAccumulator = self.fieldAccumulators.get(field);
-            fieldAccumulator.recomputeHistograms();
+            const interpretationChains = this.interpretationChains.get(field);
 
-            const fieldMetadata = fieldAccumulator.metadata;
+            // Determine which interpretation chain is the dominant one
+            const dominantInterpretationChain = underscore.max(Object.keys(interpretationChains), (chain) => interpretationChains[chain]).split('=>');
+            const mainInterpretation = dominantInterpretationChain[dominantInterpretationChain.length - 1];
+            const fieldAccumulator = this.fieldAccumulators.get(field)[mainInterpretation];
+            const fieldMetadata = fieldAccumulator.getFieldMetadata();
+            fieldMetadata.interpretationChain = dominantInterpretationChain;
+            fieldMetadata.mainInterpretation = mainInterpretation;
             
             // Only include this in fields if its a field
             if (fieldMetadata.types.indexOf('object') === -1 && fieldMetadata.types.indexOf('array') === -1)
@@ -156,7 +294,7 @@ class EBSchemaDetector
             }
         }
 
-        const getFieldHead = function(fieldName)
+        const getFieldHead = (fieldName) =>
         {
             if (fieldName.indexOf(".") !== -1)
             {
@@ -169,13 +307,13 @@ class EBSchemaDetector
         };
 
         // Now we need to recursively assemble a schema
-        const assembleSchema = function(root, allSchemaFields, depth)
+        const assembleSchema = (root, allSchemaFields, depth) =>
         {
             let schemaFields = allSchemaFields;
 
             const variablePath = root.substr(0, root.length - 1);
             const schema = {title: variablePath};
-            const removeRoot = function(id)
+            const removeRoot = (id) =>
             {
                 return id.substr(root.length);
             };
@@ -197,7 +335,7 @@ class EBSchemaDetector
             schemaFields = underscore.filter(schemaFields, (field) => (`${field.name}.` !== root));
 
             // Grab the metadata for this field
-            schema.metadata = self.fieldAccumulators.get(variablePath).metadata;
+            schema.metadata = this.fieldAccumulators.get(variablePath).metadata;
 
             // Decide whether we are dealing with an object or an array
             if (getFieldHead(removeRoot(schemaFields[0].name)) === '[]')
@@ -217,7 +355,7 @@ class EBSchemaDetector
 
                 // Now for each root, create a new schema entry under properties
                 schema.properties = {};
-                Object.keys(groupedFields).forEach(function(fieldRoot)
+                Object.keys(groupedFields).forEach((fieldRoot) =>
                 {
                     if (fieldRoot === "")
                     {

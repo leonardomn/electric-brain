@@ -24,7 +24,7 @@ const
     config = require("./config/config"),
     express = require("express"),
     EBDataSourcePluginDispatch = require("./components/datasource/EBDataSourcePluginDispatch"),
-    EBCSVPlugin = require("./components/datasource/EBCSVPlugin"),
+    EBNeuralNetworkComponentDispatch = require("../shared/components/architecture/EBNeuralNetworkComponentDispatch"),
     flattener = require('./middleware/flattener'),
     fs = require("fs"),
     http = require('http'),
@@ -47,16 +47,32 @@ class EBApplication
     {
         // Initialize each of the modules that we find in pages
         const polyfills = fs.readdirSync(`${__dirname}/../shared/polyfill`);
-        polyfills.forEach(function(polyfillFilename)
+        polyfills.forEach((polyfillFilename) =>
         {
             require(`../shared/polyfill/${polyfillFilename}`);
         });
 
         // Initialize any mods
         const mods = fs.readdirSync(`${__dirname}/mods`);
-        mods.forEach(function(modFilename)
+        mods.forEach((modFilename) =>
         {
             require(`./mods/${modFilename}`).apply();
+        });
+
+        // Load any plugins that are found in the various plugin directories
+        const pluginDirectories = [
+            path.join(__dirname, '..', 'plugins'),
+            path.join(__dirname, '..', 'extraplugins')
+        ];
+
+        this.plugins = [];
+        pluginDirectories.forEach((directory) =>
+        {
+            const pluginNames = fs.readdirSync(directory);
+            pluginNames.forEach((pluginFilename) =>
+            {
+                this.plugins.push(require(path.join(directory, pluginFilename)));
+            });
         });
 
         // Setup the global tasks with a reference to this application object
@@ -64,6 +80,16 @@ class EBApplication
         
         // Set up the main data source plugin
         this.dataSourcePluginDispatch = new EBDataSourcePluginDispatch();
+        this.neuralNetworkComponentDispatch = new EBNeuralNetworkComponentDispatch();
+
+        this.plugins.forEach((plugin) =>
+        {
+            const neuralNetworkComponentNames = Object.keys(plugin.neuralNetworkComponents || {});
+            neuralNetworkComponentNames.forEach((name) =>
+            {
+                this.neuralNetworkComponentDispatch.registerPlugin(name, new plugin.neuralNetworkComponents[name](this.neuralNetworkComponentDispatch))
+            });
+        });
     }
 
     /**
@@ -74,7 +100,7 @@ class EBApplication
     initializeDatabase(done)
     {
         const self = this;
-        mongodb.MongoClient.connect(config.mongo.uri, function(err, db)
+        mongodb.MongoClient.connect(config.mongo.uri, (err, db) =>
         {
             if (err)
             {
@@ -83,7 +109,16 @@ class EBApplication
             else
             {
                 self.db = db;
-                self.dataSourcePluginDispatch.registerPlugin("csv", new EBCSVPlugin(self));
+
+                this.plugins.forEach((plugin) =>
+                {
+                    const dataSourceNames = Object.keys(plugin.dataSources || {});
+                    dataSourceNames.forEach((name) =>
+                    {
+                        self.dataSourcePluginDispatch.registerPlugin(name, new plugin.dataSources[name](self));
+                    })
+                });
+
                 return done();
             }
         });

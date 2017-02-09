@@ -24,24 +24,28 @@
  */
 
 
-angular.module('eb').controller('EBDataSourceSelectDatabaseTypeController', function EBDataSourceSelectDatabaseTypeController($scope, $timeout, $state, EBDataService)
+angular.module('eb').controller('EBDataSourceSelectDatabaseTypeController', function EBDataSourceSelectDatabaseTypeController($scope, $timeout, $state, EBDataSourceService)
 {
-    const allDatabases = EBDataService.getDatabases();
-    $scope.databases = allDatabases;
-    $scope.selectDatabase = function selectDatabase(db)
+    EBDataSourceService.getSupportedDataSources().then(function success(results)
     {
-        $scope.dataSource.type = db.type;
-        if (db.type === 'csv')
+        const allDatabases = results.data.types;
+        
+        $scope.databases = allDatabases;
+        $scope.selectDatabase = function selectDatabase(db)
         {
-            $state.go('^.upload_file', {type: db.type});
-        }
-        else if (db.type === 'mongo')
-        {
-            $state.go('^.select_table', {type: db.type});
-        }
-        else
-        {
-            $state.go('^.select_postgres', {type: db.type});
-        }
-    };
+            $scope.dataSource.type = db.name;
+            if (db.name === 'csv')
+            {
+                $state.go('^.upload_file', {type: db.name});
+            }
+            else if (db.name === 'mongo')
+            {
+                $state.go('^.select_table', {type: db.name});
+            }
+            else
+            {
+                $state.go('^.select_postgres', {type: db.name});
+            }
+        };
+    });
 });

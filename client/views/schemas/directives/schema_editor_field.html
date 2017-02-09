@@ -23,7 +23,7 @@
         </a>
     </div>
     <div class="property-information">
-        <span class="badge badge-success">{{field.type[0]}}</span>&nbsp;
+        <span class="badge badge-success">{{field.metadata.mainInterpretation}}</span>&nbsp;
         <span>{{field.title}}</span>
     </div>
     <div ng-if="mode === 'filter'" class="property-checked-icon" ng-click="toggleIncludeSchemaField(field, $event)">
