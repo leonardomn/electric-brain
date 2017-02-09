@@ -69,7 +69,7 @@ class EBNodeBundler
             // Generate the code
             function generateCode(next)
             {
-                const promise = self.trainingProcess.generateCode();
+                const promise = self.trainingProcess.generateCode(self.application.neuralNetworkComponentDispatch);
                 promise.then(() =>
                 {
                     next(null);

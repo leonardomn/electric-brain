@@ -18,7 +18,9 @@
 
 "use strict";
 
-const underscore = require('underscore');
+const
+    assert = require('assert'),
+    underscore = require('underscore');
 
 /**
  *  This class represents a torch nn module
@@ -36,10 +38,12 @@ class EBTorchModule
     {
         const self = this;
         self.torchClass = torchClass;
+        assert(torchClass);
 
         if (parameters)
         {
             self.parameters = parameters;
+            underscore.each(parameters, assert);
         }
         else
         {

@@ -8,9 +8,9 @@ require('image')
 local _ = require('underscore')
 cjson = require('cjson')
 local JSON = require('./JSON')
-require('./Debug')
-require('./WrapDebug')
-require('./WrapTable')
+require('./EBDebug')
+require('./EBWrapDebug')
+require('./EBWrapTable')
 require('{{=it.rootModuleName}}')
 require('{{=it.rootCriterionName}}')
 
@@ -118,22 +118,23 @@ end
 function TrainingScript:prepareBatch(samples)
     local batch = {}
 
-    local samples1 = {}
+    local inputSamples = {}
     for k,v in pairs(samples) do
-        table.insert(samples1, self.dataEntries[v].input)
+        table.insert(inputSamples, self.dataEntries[v].input)
     end
 
-    {{= it.prepareBatch({schema: it.inputSchema, prepareBatch: it.prepareBatch, depth: 1}) }}
+    {{= it.prepareBatch(it.inputSchema, "prepareInputRoot").replace(/\n/g, "\n    ") }}
 
-    batch.input = batch1
+    batch.input = prepareInputRoot(inputSamples)
 
-    samples1 = {}
+    local outputSamples = {}
     for k,v in pairs(samples) do
-        table.insert(samples1, self.dataEntries[v].output)
+        table.insert(outputSamples, self.dataEntries[v].output)
     end
-    {{= it.prepareBatch({schema: it.outputSchema, prepareBatch: it.prepareBatch, depth: 1}) }}
 
-    batch.output = batch1
+    {{= it.prepareBatch(it.outputSchema, "prepareOutputRoot").replace(/\n/g, "\n    ") }}
+
+    batch.output = prepareOutputRoot(outputSamples)
 
     return batch
 end
@@ -141,36 +142,29 @@ end
 
 -- Unwinds a given batch output, separating its outputs composed of the given data points
 function TrainingScript:unwindBatchOutput(batch1)
-    {{= it.unwindBatchOutput({schema: it.outputSchema, unwindBatchOutput: it.unwindBatchOutput, depth: 1}) }}
-    return output1
+    {{= it.unwindBatchOutput(it.outputSchema, "unwindOutputRoot").replace(/\n/g, "\n    ") }}
+    return unwindOutputRoot(batch1)
 end
 
 
 -- This method converts a piece of input data from object format into Torch Tensor format.
 function TrainingScript:convertInputIn(data1)
-    {{= it.convertDataIn({schema: it.inputSchema, convertDataIn: it.convertDataIn, depth: 1}) }}
-    return transformed1
+    {{= it.convertDataIn(it.inputSchema, "convert").replace(/\n/g, "\n    ") }}
+    return convert(data1)
 end
 
 
 -- This method converts a piece of output data from object format into Torch Tensor format.
 function TrainingScript:convertOutputIn(data1)
-    {{= it.convertDataIn({schema: it.outputSchema, convertDataIn: it.convertDataIn, depth: 1}) }}
-    return transformed1
-end
-
-
--- This method converts a piece of input data from Torch Tensor format back into regular object format
-function TrainingScript:convertInputOut(data1)
-    {{= it.convertDataOut({schema: it.inputSchema, convertDataOut: it.convertDataOut, depth: 1}) }}
-    return transformed1
+    {{= it.convertDataIn(it.outputSchema, "convert").replace(/\n/g, "\n    ") }}
+    return convert(data1)
 end
 
 
 -- This method converts a piece of output data from Torch Tensor format back into regular object format
 function TrainingScript:convertOutputOut(data1)
-    {{= it.convertDataOut({schema: it.outputSchema, convertDataOut: it.convertDataOut, depth: 1}) }}
-    return transformed1
+    {{= it.convertDataOut(it.outputSchema, "convert").replace(/\n/g, "\n    ") }}
+    return convert(data1)
 end
 
 
@@ -248,8 +242,7 @@ function TrainingScript:enterTrainingLoop()
                     objects = convertedResults,
                     type = "iterationCompleted",
                     loss = results.loss
-
-                    }
+                }
                 self:sendResponse(response)
 
             elseif command.type == "store" then

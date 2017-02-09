@@ -20,12 +20,13 @@
 
 const Ajv = require('ajv'),
     httpStatus = require('http-status-codes'),
-    request = require('request');
+    request = require('request'),
+    validatorUtilities = require("../../shared/utilities/validator");
 
 
 module.exports.inputValidator = function inputValidator(endpoint)
 {
-    const validatorPromise = module.exports.getJSONValidator(endpoint.inputSchema);
+    const validatorPromise = validatorUtilities.getJSONValidator(endpoint.inputSchema);
 
     return function(req, res, next)
     {
@@ -60,52 +61,4 @@ module.exports.inputValidator = function inputValidator(endpoint)
             return next(new Error("Error compiling the json validators"));
         });
     };
-};
-
-module.exports.getJSONValidator = function getJSONValidator(schema)
-{
-    /**
-     * This function is used by json-schema to request referenced schemas, such as json-schema spec itself which is used internally
-     *
-     * @param {string} uri The URI of the referenced schema resource
-     * @param {function} callback The callback to be called with the result.
-     */
-    function loadSchema(uri, callback)
-    {
-        request.json(uri, function(err, res, body)
-        {
-            if (err || res.statusCode >= httpStatus.BAD_REQUEST)
-            {
-                return callback(err || new Error(`Error while loading a JSON schema: ${res.statusCode}`));
-            }
-            else
-            {
-                return callback(null, body);
-            }
-        });
-    }
-
-    const ajv = new Ajv({
-        "allErrors": true,
-        // "removeAdditional": true,
-        "coerceTypes": true,
-        loadSchema
-    });
-
-    const compilePromise = new Promise(function(resolve, reject)
-    {
-        ajv.compileAsync(schema, function(err, validate)
-        {
-            if (err)
-            {
-                reject(err);
-            }
-            else
-            {
-                resolve(validate);
-            }
-        });
-    });
-
-    return compilePromise;
 };

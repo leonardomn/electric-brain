@@ -146,14 +146,9 @@ class EBTrainModelTask {
             // Generate the code
             (next) =>
             {
-                const promise = self.trainingProcess.generateCode(totalFiles);
-                promise.then( () =>
+                const promise = self.trainingProcess.generateCode(self.application.neuralNetworkComponentDispatch);
+                promise.then((totalFiles) =>
                 {
-                    if (err)
-                    {
-                        return next(err);
-                    }
-
                     const codeGenerationResult = {
                         status: 'complete',
                         percentageComplete: 100,

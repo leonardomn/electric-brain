@@ -367,7 +367,7 @@ class EBArchitectureAPI extends EBAPIRoot
             }
             else
             {
-                const schemaDetector = new EBSchemaDetector();
+                const schemaDetector = new EBSchemaDetector(self.application);
                 const numberOfObjectsToSample = 500;
                 const architecture = new models.EBArchitecture(architectureObject);
                 const sourceSchema = architecture.dataSource.dataSchema.filterIncluded();
@@ -377,14 +377,13 @@ class EBArchitectureAPI extends EBAPIRoot
                 transformStream.on('data', function(object)
                 {
                     transformStream.pause();
-                    schemaDetector.accumulateObject(object, false, function(err)
+                    schemaDetector.accumulateObject(object, false).then(() =>
                     {
-                        if (err)
-                        {
-                            throw err;
-                        }
-
                         transformStream.resume();
+                    }, (err) =>
+                    {
+                        console.error(err);
+                        throw err;
                     });
                 });
                 transformStream.on('error', function(error)
@@ -435,6 +434,7 @@ class EBArchitectureAPI extends EBAPIRoot
      */
     getDiagrams(req, res, next)
     {
+        const self = this;
         this.architectures.findOne({_id: Number(req.params.id)}, function(err, architectureObject)
         {
             if (err)
@@ -452,7 +452,7 @@ class EBArchitectureAPI extends EBAPIRoot
                 async.series([
                     function generateCode(next)
                     {
-                        const promise = process.generateCode();
+                        const promise = process.generateCode(self.application.neuralNetworkComponentDispatch);
                         promise.then(() =>
                         {
                             next(null);

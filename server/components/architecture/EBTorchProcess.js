@@ -56,9 +56,10 @@ class EBTorchProcess
     /**
      * This function will generate the code and write the code to disk.
      *
+     * @param {EBNeuralNetworkComponentDispatch} neuralNetworkComponentDispatch A reference the the globally initialized componentDispatch method
      * @param {function(err, totalFiles)} callback Callback after the code has been written to disk, ready for the process to start
      */
-    generateCode()
+    generateCode(neuralNetworkComponentDispatch)
     {
         const self = this;
         return Promise.fromCallback((callback) =>
@@ -76,12 +77,12 @@ class EBTorchProcess
                             return next(err);
                         }
 
-                        // childProcess.execSync('rm -rf /home/bradley/electric-brain/training/*');
-                        // self.scriptFolder = '/home/bradley/electric-brain/training/';
+                        //childProcess.execSync('rm -rf /home/bradley/eb/electric-brain/training/*');
+                        //self.scriptFolder = '/home/bradley/eb/electric-brain/training/';
                         self.scriptFolder = temporaryFolder;
 
                         // Create a list of files that need to be written
-                        const files = self.architecture.generateFiles();
+                        const files = self.architecture.generateFiles(neuralNetworkComponentDispatch);
 
                         // Write out each of the files
                         async.each(files, function(file, next)

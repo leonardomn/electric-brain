@@ -290,6 +290,16 @@ class EBSchema
     }
 
     /**
+     * Machine variable path is just the variable path but reduced to just letters, numbers, and underscores
+     *
+     * @returns {string} The machine version of the variable name
+     */
+    get machineVariablePath()
+    {
+        return this.metadata.variablePath.replace(/\[\]/g, "_array_").replace(/\W/g, "");
+    }
+
+    /**
      * This returns the variable path from the given schema object (must be a parent of
      * the current schema) down to this schema object
      *
@@ -432,6 +442,23 @@ class EBSchema
                 return self.properties[fieldName];
             });
         }
+    }
+
+
+    /**
+     * This function returns the immediate descendants of this schema in an array form.
+     *
+     * @returns { [EBSchema] } An array filled with all immediate descendants of this schema.
+     */
+    get children()
+    {
+        const self = this;
+        if (self.isObject)
+        {
+            return underscore.values(self.properties);
+        }
+
+        return [];
     }
 
 
@@ -1054,6 +1081,8 @@ class EBSchema
      * This function returns the field tensor size for this schema. This is the number of discrete
      * floats are required to represent this schema in the data. This completely ignores all sequences
      * in this schema.
+     * 
+     * TODO: DEPRECATED
      *
      * @returns {Number} The tensor size of this field
      */

@@ -45,129 +45,30 @@ class EBFieldMetadata
             rawFieldMetadata = {};
         }
 
-        if (rawFieldMetadata.types)
+        Object.keys(rawFieldMetadata).forEach((key) =>
         {
-            self.types = rawFieldMetadata.types;
-        }
-        else
+            self[key] = rawFieldMetadata[key];
+        });
+
+
+        if (!rawFieldMetadata.types)
         {
             self.types = [];
         }
 
-        if (rawFieldMetadata.valueHistogram)
-        {
-            self.valueHistogram = new EBValueHistogram(rawFieldMetadata.valueHistogram);
-        }
-        else
-        {
-            self.valueHistogram = new EBValueHistogram();
-        }
-
-        if (rawFieldMetadata.numberHistogram)
-        {
-            self.numberHistogram = new EBNumberHistogram(rawFieldMetadata.numberHistogram);
-        }
-        else
-        {
-            self.numberHistogram = new EBNumberHistogram();
-        }
-
-        if (rawFieldMetadata.arrayLengthHistogram)
-        {
-            self.arrayLengthHistogram = new EBNumberHistogram(rawFieldMetadata.arrayLengthHistogram);
-        }
-        else
-        {
-            self.arrayLengthHistogram = new EBNumberHistogram();
-        }
-
-        if (rawFieldMetadata.binaryMimeTypeHistogram)
-        {
-            self.binaryMimeTypeHistogram = new EBValueHistogram(rawFieldMetadata.binaryMimeTypeHistogram);
-        }
-        else
-        {
-            self.binaryMimeTypeHistogram = new EBValueHistogram();
-        }
-
-        if (rawFieldMetadata.imageWidthHistogram)
-        {
-            self.imageWidthHistogram = new EBNumberHistogram(rawFieldMetadata.imageWidthHistogram);
-        }
-        else
-        {
-            self.imageWidthHistogram = new EBNumberHistogram();
-        }
-
-        if (rawFieldMetadata.imageHeightHistogram)
-        {
-            self.imageHeightHistogram = new EBNumberHistogram(rawFieldMetadata.imageHeightHistogram);
-        }
-        else
-        {
-            self.imageHeightHistogram = new EBNumberHistogram();
-        }
-
-        if (rawFieldMetadata.total)
-        {
-            self.total = rawFieldMetadata.total;
-        }
-        else
-        {
-            self.total = 0;
-        }
-
-        if (rawFieldMetadata.distinct)
-        {
-            self.distinct = rawFieldMetadata.distinct;
-        }
-        else
-        {
-            self.distinct = 0;
-        }
-
-        if (rawFieldMetadata.cardinality)
-        {
-            self.cardinality = rawFieldMetadata.cardinality;
-        }
-        else
-        {
-            self.cardinality = 0;
-        }
-
-        if (rawFieldMetadata.variableName)
-        {
-            self.variableName = rawFieldMetadata.variableName;
-        }
-        if (rawFieldMetadata.variablePath)
-        {
-            self.variablePath = rawFieldMetadata.variablePath;
-        }
-        if (rawFieldMetadata.binaryHasImage)
-        {
-            self.binaryHasImage = true;
-        }
-        else
-        {
-            self.binaryHasImage = false;
-        }
-
-        if (rawFieldMetadata.examples)
-        {
-            self.examples = rawFieldMetadata.examples;
-        }
-        else
+        if (!rawFieldMetadata.examples)
         {
             self.examples = [];
         }
 
-        if (rawFieldMetadata.interpretation)
+        if (!rawFieldMetadata.interpretationChain)
         {
-            self.interpretation = rawFieldMetadata.interpretation;
+            self.interpretationChain = null;
         }
-        else
+
+        if (!rawFieldMetadata.mainInterpretation)
         {
-            self.interpretation = null;
+            self.mainInterpretation = null;
         }
     }
 
@@ -190,16 +91,6 @@ class EBFieldMetadata
                     "type": "array",
                     "items": {"type": "string"}
                 },
-                cardinality: {"type": "number"},
-                distinct: {"type": "number"},
-                total: {"type": "number"},
-                valueHistogram: EBValueHistogram.schema(),
-                numberHistogram: EBNumberHistogram.schema(),
-                arrayLengthHistogram: EBNumberHistogram.schema(),
-                binaryHasImage: {"type": "boolean"},
-                binaryMimeTypeHistogram: EBValueHistogram.schema(),
-                imageWidthHistogram: EBNumberHistogram.schema(),
-                imageHeightHistogram: EBNumberHistogram.schema(),
                 examples: {"type": "array"},
                 number: {
                     "type": "object",
@@ -209,24 +100,17 @@ class EBFieldMetadata
                         max: {"type": "number"}
                     }
                 },
-                interpretation: {
-                    "type": ["string", "null"],
-                    "enum": [
-                        "base32",
-                        "base64",
-                        "boolean",
-                        "date",
-                        "datetime",
-                        "hex",
-                        "mstimestamp",
-                        "number",
-                        "text",
-                        "time",
-                        "unixtimestamp",
-                        null
-                    ]
+                interpretationChain: {
+                    "type": ["array", "null"],
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                mainInterpretation: {
+                    "type": "string"
                 }
-            }
+            },
+            additionalProperties: true
         };
     }
 }
