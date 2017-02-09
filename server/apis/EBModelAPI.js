@@ -527,7 +527,11 @@ class EBModelAPI extends EBAPIRoot
                     // Generate the code
                     function generateCode(next)
                     {
-                        modelProcess.generateCode(next);
+                        const promise = modelProcess.generateCode();
+                        promise.then(() =>
+                        {
+                            next(null);
+                        }, (err) => next(err));
                     },
                     // Download the torch model file
                     function(next)
@@ -546,12 +550,23 @@ class EBModelAPI extends EBAPIRoot
                     // Start up the process
                     function(next)
                     {
-                        modelProcess.startProcess(next);
+                        const promise = modelProcess.startProcess();
+                        promise.then(() =>
+                        {
+                            next(null);
+                        }, (err) => next(err));
                     },
                     // Load the model file from the disk
                     function(next)
                     {
-                        modelProcess.loadModelFile(next);
+                        const promise = modelProcess.loadModelFile();
+                        promise.then(() =>
+                        {
+                            return next();
+                        }, (err) =>
+                        {
+                            return next(err);
+                        });
                     },
                     // Load the object into the process
                     function(next)
@@ -560,7 +575,11 @@ class EBModelAPI extends EBAPIRoot
                         const stream = model.architecture.getObjectTransformationStream();
                         stream.on('data', function(data)
                         {
-                            modelProcess.loadObject("1", data.input, data.output, next);
+                            const promise = modelProcess.loadObject("1", data.input, data.output );
+                            promise.then(() =>
+                            {
+                                next(null);
+                            }, (err) => next(err));
                         });
                         stream.end(object);
                     },
@@ -568,13 +587,9 @@ class EBModelAPI extends EBAPIRoot
                     function(next)
                     {
                         // Process the provided object
-                        modelProcess.processObjects(["1"], function(err, results)
+                        const promise = modelProcess.processObjects(["1"]);
+                        promise.then((results) =>
                         {
-                            if (err)
-                            {
-                                return next(err);
-                            }
-                            
                             const result = results[0];
                             model.architecture.convertNetworkOutputObject(result, function(err, output)
                             {
@@ -585,12 +600,16 @@ class EBModelAPI extends EBAPIRoot
                                 resultObject = output;
                                 return next();
                             });
-                        });
+                        }, (err) => next(err));
                     },
                     // Kill the process we started
                     function(next)
                     {
-                        modelProcess.killProcess(next);
+                        const promise = modelProcess.killProcess();
+                        promise.then(() =>
+                        {
+                            next(null);
+                        }, (err) => next(err));
                     }
                 ], function(err)
                 {

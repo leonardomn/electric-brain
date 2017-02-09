@@ -146,7 +146,8 @@ class EBTrainModelTask {
             // Generate the code
             (next) =>
             {
-                self.trainingProcess.generateCode((err, totalFiles) =>
+                const promise = self.trainingProcess.generateCode(totalFiles);
+                promise.then( () =>
                 {
                     if (err)
                     {
@@ -160,12 +161,16 @@ class EBTrainModelTask {
                     };
 
                     self.updateStepResult('codeGeneration', codeGenerationResult, next);
-                });
+                }, (err) => next(err));
             },
             // Start up the process
             (next) =>
             {
-                self.trainingProcess.startProcess(next);
+                const promise = self.trainingProcess.startProcess();
+                promise.then( () =>
+                {
+                    next(null);
+                }, (err) => next(err));
             },
             // Scan the data, analyze it for input
             (next) =>
@@ -270,16 +275,11 @@ class EBTrainModelTask {
     loadObject(id, input, output, callback)
     {
         const self = this;
-
-        self.trainingProcess.loadObject(id, input, output, (err) =>
+        const promise = self.trainingProcess.loadObject(id, input, output);
+        promise.then(() =>
         {
-            if (err)
-            {
-                return callback(err);
-            }
-
             return callback(null);
-        });
+        }, (err)=> next(err));
     }
 
 
@@ -563,13 +563,9 @@ class EBTrainModelTask {
             }
 
             // Reset the model with random parameters
-            self.trainingProcess.reset((err) =>
+            const promise = self.trainingProcess.reset();
+            promise.then(() =>
             {
-                if (err)
-                {
-                    return callback(err);
-                }
-
                 // The number of iterations run so far
                 async.whilst(
                     () =>
@@ -595,13 +591,9 @@ class EBTrainModelTask {
 
                                 performanceTrace.addTrace('load-object');
 
-                                self.trainingProcess.executeTrainingIteration(underscore.pluck(sample, "id"), (err, result) =>
+                                const promise = self.trainingProcess.executeTrainingIteration(underscore.pluck(sample, "id"));
+                                promise.then((result) =>
                                 {
-                                    if (err)
-                                    {
-                                        return next(err);
-                                    }
-
                                     performanceTrace.addTrace('training-iteration');
 
                                     // At the end of each iteration, update the current training results
@@ -630,59 +622,49 @@ class EBTrainModelTask {
                                             return next(err);
                                         }
 
-                                        async.mapSeries(sample, (object, next) =>
+                                        const removeObjectPromise = Promise.each(sample, (object) =>
                                         {
-                                            this.trainingProcess.removeObject(object.id, next);
-                                        }, (err) =>
+                                            return this.trainingProcess.removeObject(object.id);
+                                        });
+                                        removeObjectPromise.then(() =>
+                                        {
+                                            performanceTrace.addTrace('testing-iteration');
+
+                                        const trainingAccuracy = math.mean(trainingAccuracies);
+                                        self.rollingAverageAccuracy.accumulate(accuracy);
+                                        self.rollingAverageTrainingaccuracy.accumulate(trainingAccuracy * 100);
+                                        trainingResult.currentAccuracy = self.rollingAverageAccuracy.average;
+                                        trainingResult.iterations.push({
+                                            loss: result.loss,
+                                            accuracy: self.rollingAverageAccuracy.average,
+                                            trainingAccuracy: self.rollingAverageTrainingaccuracy.average
+                                        });
+
+                                        self.updateStepResult('training', trainingResult, (err) =>
                                         {
                                             if (err)
                                             {
                                                 return next(err);
                                             }
 
-                                            performanceTrace.addTrace('remove-object');
-                                            self.testIteration((err, accuracy) =>
-                                            {
-                                                if (err)
+                                                performanceTrace.addTrace('save-to-db');
+                                                trainingResult.performance.accumulate(performanceTrace);
+
+                                                if ((trainingResult.completedIterations % saveFrequency) === 0)
                                                 {
-                                                    return next(err);
+                                                    self.saveTorchModelFile(next);
                                                 }
-
-                                                performanceTrace.addTrace('testing-iteration');
-
-                                                const trainingAccuracy = math.mean(trainingAccuracies);
-                                                self.rollingAverageAccuracy.accumulate(accuracy);
-                                                self.rollingAverageTrainingaccuracy.accumulate(trainingAccuracy * 100);
-                                                trainingResult.currentAccuracy = self.rollingAverageAccuracy.average;
-                                                trainingResult.iterations.push({
-                                                    loss: result.loss,
-                                                    accuracy: self.rollingAverageAccuracy.average,
-                                                    trainingAccuracy: self.rollingAverageTrainingaccuracy.average
-                                                });
-
-                                                self.updateStepResult('training', trainingResult, (err) =>
+                                                else
                                                 {
-                                                    if (err)
-                                                    {
-                                                        return next(err);
-                                                    }
-
-                                                    performanceTrace.addTrace('save-to-db');
-                                                    trainingResult.performance.accumulate(performanceTrace);
-
-                                                    if ((trainingResult.completedIterations % saveFrequency) === 0)
-                                                    {
-                                                        self.saveTorchModelFile(next);
-                                                    }
-                                                    else
-                                                    {
-                                                        return next();
-                                                    }
-                                                });
+                                                    return next();
+                                                }
                                             });
-                                        });
+
+
+                                        }, (err) => next(err));
+
                                     });
-                                });
+                                }, (err) => next(err));
                             });
                         }, (err) => next(err));
                     }, (err) =>
@@ -697,7 +679,7 @@ class EBTrainModelTask {
 
                         self.updateStepResult('training', trainingResult, callback);
                     });
-            });
+            }, (err) => callback(err));
         });
     }
 
@@ -718,7 +700,11 @@ class EBTrainModelTask {
         {
             async.mapSeries(sample, (object, next) =>
             {
-                this.loadObject(object.id, object.input, object.output, next);
+                const promise = this.loadObject(object.id, object.input, object.output);
+                promise.then(() =>
+                {
+                    next(null);
+                }, (err)=>next(err));
             }, (err) =>
             {
                 if (err)
@@ -726,13 +712,9 @@ class EBTrainModelTask {
                     return callback(err);
                 }
 
-                self.trainingProcess.processObjects(underscore.pluck(sample, "id"), (err, outputs) =>
+                const promise = self.trainingProcess.processObjects(underscore.pluck(sample, "id"));
+                promise.then((outputs) =>
                 {
-                    if (err)
-                    {
-                        return callback(err);
-                    }
-
                     let index = 0;
                     async.eachSeries(sample, (object, next) =>
                     {
@@ -752,7 +734,6 @@ class EBTrainModelTask {
                                 return next();
                             }, (err) => next(err));
                         });
-
                     }, (err) =>
                     {
                         if (err)
@@ -760,22 +741,20 @@ class EBTrainModelTask {
                             return callback(err);
                         }
 
-                        async.mapSeries(sample, (object, next) =>
+                        const removeObjectPromise = Promise.each(sample, (object) =>
                         {
-                            this.trainingProcess.removeObject(object.id, next);
-                        }, (err) =>
-                        {
-                            if (err)
-                            {
-                                return callback(err);
-                            }
+                            return this.trainingProcess.removeObject(object.id);
 
+                        });
+                        removeObjectPromise.then(() =>
+                        {
                             const accuracy = math.mean(accuracies);
 
                             return callback(null, accuracy);
-                        });
+
+                        }, (err) => callback(err));
                     });
-                });
+                }, (err) => callback(err));
             });
         });
     }
@@ -889,7 +868,11 @@ class EBTrainModelTask {
                     {
                         async.mapSeries(sample, (object, next) =>
                         {
-                            this.loadObject(object.id, object.input, object.output, next);
+                            const promise = this.loadObject(object.id, object.input, object.output);
+                            promise.then(()=>
+                            {
+                                next(null);
+                            },(err)=>next(err));
                         }, (err) =>
                         {
                             if (err)
@@ -897,13 +880,9 @@ class EBTrainModelTask {
                                 return next(err);
                             }
 
-                            self.trainingProcess.processObjects(underscore.pluck(sample, "id"), (err, outputs) =>
+                            const promise = self.trainingProcess.processObjects(underscore.pluck(sample, "id"));
+                            promise.then((outputs) =>
                             {
-                                if (err)
-                                {
-                                    return next(err);
-                                }
-
                                 let index = 0;
                                 async.eachSeries(sample, (object, next) =>
                                 {
@@ -933,7 +912,6 @@ class EBTrainModelTask {
                                             }
                                         }, (err) => next(err));
                                     });
-
                                 }, (err) =>
                                 {
                                     if (err)
@@ -941,24 +919,21 @@ class EBTrainModelTask {
                                         return next(err);
                                     }
 
-                                    async.mapSeries(sample, (object, next) =>
+                                    const removeObjectPromise = Promise.each(sample, (object) =>
                                     {
-                                        this.trainingProcess.removeObject(object.id, next);
-                                    }, (err) =>
-                                    {
-                                        if (err)
-                                        {
-                                            return next(err);
-                                        }
+                                        return this.trainingProcess.removeObject(object.id);
 
+                                    });
+                                    removeObjectPromise.then(() =>
+                                    {
                                         testingResult.accuracy = math.mean(accuracies);
                                         testingResult.completedObjects += 1;
                                         testingResult.percentageComplete = (testingResult.completedObjects * 100) / testingResult.totalObjects;
 
                                         return next(null);
-                                    });
+                                    }, (err) => next(err));
                                 });
-                            });
+                            }, (err) => next(err));
                         });
                     });
                 }, (err) =>
@@ -984,22 +959,17 @@ class EBTrainModelTask {
     saveTorchModelFile(callback)
     {
         const self = this;
-        self.trainingProcess.getTorchModelFileStream((err, stream) =>
-        {
-            if (err)
-            {
-                return callback(err);
-            }
-
-            stream.pipe(self.gridFS.openUploadStream(`model-${self.model._id}.t7`)).on('error', (error) =>
+       const promise = self.trainingProcess.getTorchModelFileStream();
+       promise.then((stream) =>
+       {
+           stream.pipe(self.gridFS.openUploadStream(`model-${self.model._id}.t7`)).on('error', (error) =>
             {
                 return callback(error);
             }).on('finish', () =>
             {
-
                 return callback();
             });
-        });
+       }, (err) => callback(err));
     }
 }
 
