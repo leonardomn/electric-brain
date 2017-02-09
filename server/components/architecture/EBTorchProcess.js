@@ -25,6 +25,7 @@ const
     fs = require('fs'),
     math = require("mathjs"),
     path = require('path'),
+    Promise = require('bluebird'),
     temp = require('temp'),
     underscore = require('underscore');
 
@@ -57,82 +58,84 @@ class EBTorchProcess
      *
      * @param {function(err, totalFiles)} callback Callback after the code has been written to disk, ready for the process to start
      */
-    generateCode(callback)
+    generateCode()
     {
         const self = this;
-
-        let totalFiles = 0;
-
-        async.series([
-            function writeGeneratedFiles(next)
-            {
-                // First, create a temporary folder to put all of the model files in
-                temp.mkdir('electric-brain-model', (err, temporaryFolder) =>
-                {
-                    if (err)
-                    {
-                        return next(err);
-                    }
-
-                    // childProcess.execSync('rm -rf /home/bradley/electric-brain/training/*');
-                    // self.scriptFolder = '/home/bradley/electric-brain/training/';
-                    self.scriptFolder = temporaryFolder;
-
-                    // Create a list of files that need to be written
-                    const files = self.architecture.generateFiles();
-
-                    // Write out each of the files
-                    async.each(files, function(file, next)
-                    {
-                        totalFiles += 1;
-                        fs.writeFile(path.join(self.scriptFolder, file.path), file.data, next);
-                    }, next);
-                });
-            },
-            function writeLibraryFiles(next)
-            {
-                // Write any libraries
-                const libraryFiles = fs.readdirSync(path.join(__dirname, '..', '..', '..', 'lib', 'lua'));
-                async.eachSeries(libraryFiles, function(filename, next)
-                {
-                    fs.readFile(path.join(__dirname, '..', '..', '..', 'lib', 'lua', filename), function(err, buffer)
-                    {
-                        if (err)
-                        {
-                            return next(err);
-                        }
-
-                        totalFiles += 1;
-                        fs.writeFile(path.join(self.scriptFolder, filename), buffer, next);
-                    });
-                }, next);
-            },
-            function writeElectricBrainLibrary(next)
-            {
-                // Write any libraries
-                const libraryFiles = fs.readdirSync(path.join(__dirname, '..', '..', '..', 'lib', 'lua'));
-                async.eachSeries(libraryFiles, function(filename, next)
-                {
-                    fs.readFile(path.join(__dirname, '..', '..', '..', 'lib', 'lua', filename), function(err, buffer)
-                    {
-                        if (err)
-                        {
-                            return next(err);
-                        }
-
-                        totalFiles += 1;
-                        fs.writeFile(path.join(self.scriptFolder, filename), buffer, next);
-                    });
-                }, next);
-            }
-        ], function(err)
+        return Promise.fromCallback((callback) =>
         {
-            if (err)
-            {
-                return callback(err);
-            }
+            let totalFiles = 0;
 
-            return callback(null, totalFiles);
+            async.series([
+                function writeGeneratedFiles(next)
+                {
+                    // First, create a temporary folder to put all of the model files in
+                    temp.mkdir('electric-brain-model', (err, temporaryFolder) =>
+                    {
+                        if (err)
+                        {
+                            return next(err);
+                        }
+
+                        // childProcess.execSync('rm -rf /home/bradley/electric-brain/training/*');
+                        // self.scriptFolder = '/home/bradley/electric-brain/training/';
+                        self.scriptFolder = temporaryFolder;
+
+                        // Create a list of files that need to be written
+                        const files = self.architecture.generateFiles();
+
+                        // Write out each of the files
+                        async.each(files, function(file, next)
+                        {
+                            totalFiles += 1;
+                            fs.writeFile(path.join(self.scriptFolder, file.path), file.data, next);
+                        }, next);
+                    });
+                },
+                function writeLibraryFiles(next)
+                {
+                    // Write any libraries
+                    const libraryFiles = fs.readdirSync(path.join(__dirname, '..', '..', '..', 'lib', 'lua'));
+                    async.eachSeries(libraryFiles, function(filename, next)
+                    {
+                        fs.readFile(path.join(__dirname, '..', '..', '..', 'lib', 'lua', filename), function(err, buffer)
+                        {
+                            if (err)
+                            {
+                                return next(err);
+                            }
+
+                            totalFiles += 1;
+                            fs.writeFile(path.join(self.scriptFolder, filename), buffer, next);
+                        });
+                    }, next);
+                },
+                function writeElectricBrainLibrary(next)
+                {
+                    // Write any libraries
+                    const libraryFiles = fs.readdirSync(path.join(__dirname, '..', '..', '..', 'lib', 'lua'));
+                    async.eachSeries(libraryFiles, function(filename, next)
+                    {
+                        fs.readFile(path.join(__dirname, '..', '..', '..', 'lib', 'lua', filename), function(err, buffer)
+                        {
+                            if (err)
+                            {
+                                return next(err);
+                            }
+
+                            totalFiles += 1;
+                            fs.writeFile(path.join(self.scriptFolder, filename), buffer, next);
+                        });
+                    }, next);
+                }
+            ], function(err)
+            {
+                if (err)
+                {
+                    return callback(err);
+                }
+
+                return callback(null, totalFiles);
+            });
         });
     }
 
@@ -141,69 +144,71 @@ class EBTorchProcess
      *
      * @param {function(err)} callback Callback to be called after the sub-process is started
      */
-    startProcess(callback)
+    startProcess()
     {
         const self = this;
-
-        async.series([
-            function startProcess(next)
-            {
-                async.times(self.numProcesses, function(n, next)
+        return Promise.fromCallback((callback) =>
+        {
+            async.series([
+                function startProcess(next)
                 {
-                    EBStdioJSONStreamProcess.spawn('luajit', ['TrainingScript.lua', n + 1, self.numProcesses], {
-                        cwd: self.scriptFolder,
-                        env: underscore.extend({TERM: "xterm"}, process.env)
-                    }, function(err, process)
+                    async.times(self.numProcesses, function(n, next)
                     {
-                        if (err)
+                        EBStdioJSONStreamProcess.spawn('luajit', ['TrainingScript.lua', n + 1, self.numProcesses], {
+                            cwd: self.scriptFolder,
+                            env: underscore.extend({TERM: "xterm"}, process.env)
+                        }, function(err, process)
                         {
-                            return callback(err);
-                        }
-
-                        self.processes.push(process);
-
-                        // Set up a handler for log messages coming from the lua process
-                        process.outputStream.on('data', (data) =>
-                        {
-                            if (data.type === 'log')
+                            if (err)
                             {
-                                self.logError(`${data.message}`);
+                                return callback(err);
                             }
-                        });
 
-                        process.on('close', (exitCode) =>
-                        {
-                            self.logError(`luajit closed: ${exitCode}`);
-                        });
+                            self.processes.push(process);
 
-                        process.on('disconnect', () =>
-                        {
-                            self.logError(`luajit disconnected`);
-                        });
+                            // Set up a handler for log messages coming from the lua process
+                            process.outputStream.on('data', (data) =>
+                            {
+                                if (data.type === 'log')
+                                {
+                                    self.logError(`${data.message}`);
+                                }
+                            });
 
-                        process.on('error', (error) =>
-                        {
-                            self.logError(`luajit error: ${error}`);
-                        });
+                            process.on('close', (exitCode) =>
+                            {
+                                self.logError(`luajit closed: ${exitCode}`);
+                            });
 
-                        process.on('exit', () =>
-                        {
-                            self.logError(`luajit exited`);
-                        });
+                            process.on('disconnect', () =>
+                            {
+                                self.logError(`luajit disconnected`);
+                            });
 
-                        return next();
-                    });
-                }, next);
-            },
-            function handshake(next)
-            {
-                async.each(self.processes, function(process, next)
+                            process.on('error', (error) =>
+                            {
+                                self.logError(`luajit error: ${error}`);
+                            });
+
+                            process.on('exit', () =>
+                            {
+                                self.logError(`luajit exited`);
+                            });
+
+                            return next();
+                        });
+                    }, next);
+                },
+                function handshake(next)
                 {
-                    // Now we handshake with the process and get version / name information
-                    process.writeAndWaitForMatchingOutput({type: "handshake"}, {"type": "handshake"}, next);
-                }, next);
-            }
-        ], callback);
+                    async.each(self.processes, function(process, next)
+                    {
+                        // Now we handshake with the process and get version / name information
+                        process.writeAndWaitForMatchingOutput({type: "handshake"}, {"type": "handshake"}, next);
+                    }, next);
+                }
+            ], callback);
+        });
     }
 
     /**
@@ -211,15 +216,17 @@ class EBTorchProcess
      *
      * @param {function(err)} callback Callback to be called after the sub-processes are all killed
      */
-    killProcess(callback)
+    killProcess()
     {
         const self = this;
-
-        async.each(self.processes, function(process, next)
+        return Promise.fromCallback((callback) =>
         {
-            process.process.kill();
-            next();
-        }, callback);
+            async.each(self.processes, function(process, next)
+            {
+                process.process.kill();
+                next();
+            }, callback);
+        });
     }
 
 
@@ -228,14 +235,16 @@ class EBTorchProcess
      *
      * @param {function(err)} callback The callback after the process has been reset
      */
-    reset(callback)
+    reset()
     {
         const self = this;
-
-        async.each(self.processes, function(process, next)
+        return Promise.fromCallback((callback) =>
         {
-            process.writeAndWaitForMatchingOutput({type: "reset"}, {type: "resetCompleted"}, next);
-        }, callback);
+            async.each(self.processes, function(process, next)
+            {
+                process.writeAndWaitForMatchingOutput({type: "reset"}, {type: "resetCompleted"}, next);
+            }, callback);
+        });
     }
 
     /**
@@ -254,18 +263,21 @@ class EBTorchProcess
      *
      * @param {function(err, statistics)} callback The callback with the statistics object
      */
-    getInternalStatistics(callback)
+    getInternalStatistics()
     {
         const self = this;
-        const message = {type: "stats"};
-        self.processes[0].writeAndWaitForMatchingOutput(message, {type: "stats"}, function(err, response)
+        return Promise.fromCallback((callback) =>
         {
-            if (err)
+            const message = {type: "stats"};
+            self.processes[0].writeAndWaitForMatchingOutput(message, {type: "stats"}, function(err, response)
             {
-                return callback(err);
-            }
+                if (err)
+                {
+                    return callback(err);
+                }
 
-            return callback(null, response.stats);
+                return callback(null, response.stats);
+            });
         });
     }
 
@@ -278,30 +290,32 @@ class EBTorchProcess
      * @param {object} output The output data for the object
      * @param {function(err)} callback The callback after the object has been successfully stored
      */
-    loadObject(id, input, output, callback)
+    loadObject(id, input, output)
     {
         const self = this;
-
-        const message = {
-            type: "store",
-            id: id,
-            input: input,
-            output: output
-        };
-
-        async.each(self.processes, function(process, next)
+        return Promise.fromCallback((callback) =>
         {
-            process.writeAndWaitForMatchingOutput(message, {type: "stored"}, next);
-        }, function(err)
-        {
-            if (err)
+            const message = {
+                type: "store",
+                id: id,
+                input: input,
+                output: output
+            };
+
+            async.each(self.processes, function(process, next)
             {
-                return callback(err);
-            }
+                process.writeAndWaitForMatchingOutput(message, {type: "stored"}, next);
+            }, function(err)
+            {
+                if (err)
+                {
+                    return callback(err);
+                }
 
-            self.allLoadedEntries.push(id);
+                self.allLoadedEntries.push(id);
 
-            return callback();
+                return callback();
+            });
         });
     }
 
@@ -312,28 +326,31 @@ class EBTorchProcess
      * @param {string} id The ID of the object to be stored
      * @param {function(err)} callback The callback after the object has been forgotten
      */
-    removeObject(id, callback)
+    removeObject(id)
     {
         const self = this;
 
-        const message = {
-            type: "forget",
-            id: id
-        };
+        return Promise.fromCallback((callback) =>
+        {
+            const message = {
+                type: "forget",
+                id: id
+            };
 
-        async.each(self.processes, function(process, next)
-        {
-            process.writeAndWaitForMatchingOutput(message, {type: "forgotten"}, next);
-        }, function(err)
-        {
-            if (err)
+            async.each(self.processes, function(process, next)
             {
-                return callback(err);
-            }
+                process.writeAndWaitForMatchingOutput(message, {type: "forgotten"}, next);
+            }, function(err)
+            {
+                if (err)
+                {
+                    return callback(err);
+                }
 
-            self.allLoadedEntries.splice(self.allLoadedEntries.indexOf(id), 1);
+                self.allLoadedEntries.splice(self.allLoadedEntries.indexOf(id), 1);
 
-            return callback();
+                return callback();
+            });
         });
     }
 
@@ -344,110 +361,41 @@ class EBTorchProcess
      * @param {[string]} ids The IDs of the objects to be tested. These should already have been loaded into the Lua process
      * @param {function(err, accuracy, output)} callback The callback function which will receive the accuracy of the test, along with the output object
      */
-    processObjects(ids, callback)
+    processObjects(ids)
     {
-        // Divide all of the ids between the various processes
-        const processBatches = this.processes.map((process) =>
+        return Promise.fromCallback((callback) =>
         {
-            return {
-                samples: [],
-                process: process
-            };
-        });
-
-        ids.forEach((id, index) => processBatches[index % processBatches.length].samples.push(id));
-
-        // The maximum number of iterations to run for
-        async.map(processBatches, (processBatch, next) =>
-        {
-            if (processBatch.samples.length === 0)
+            // Divide all of the ids between the various processes
+            const processBatches = this.processes.map((process) =>
             {
-                return next(null, {objects: []});
-            }
-
-            const message = {
-                type: "evaluate",
-                samples: processBatch.samples
-            };
-            processBatch.process.writeAndWaitForMatchingOutput(message, {type: "evaluationCompleted"}, next);
-        }, (err, results) =>
-        {
-            // Now we force each process to synchronize
-            if (err)
-            {
-                return callback(err);
-            }
-
-            const allResults = {};
-            results.forEach((processResults) =>
-            {
-                processResults.objects.forEach((object) =>
-                {
-                    allResults[object.id] = object;
-                });
+                return {
+                    samples: [],
+                    process: process
+                };
             });
 
-            return callback(null, ids.map((id) => allResults[id]));
-        });
-    }
+            ids.forEach((id, index) => processBatches[index % processBatches.length].samples.push(id));
 
-
-    /**
-     * This method will execute a single training iteration with the given batch.
-     *
-     * @param {[string]} batch An array of object ids for the objects in the batch
-     * @param {function(err)} callback The callback after the batch is complete
-     */
-    executeTrainingIteration(batch, callback)
-    {
-        // Divide the batch between the processes.
-        const processBatches = this.processes.map((process) =>
-        {
-            return {
-                samples: [],
-                process: process
-            };
-        });
-
-        batch.forEach((object, index) => processBatches[index % processBatches.length].samples.push(object));
-
-        // The maximum number of iterations to run for
-        async.map(processBatches, (processBatch, next) =>
-        {
-            if (processBatch.samples.length === 0)
+            // The maximum number of iterations to run for
+            async.map(processBatches, (processBatch, next) =>
             {
-                return next({});
-            }
+                if (processBatch.samples.length === 0)
+                {
+                    return next(null, {objects: []});
+                }
 
-            // Choose a bunch of random samples from the set that we have
-            const message = {
-                type: "iteration",
-                samples: processBatch.samples
-            };
-            processBatch.process.writeAndWaitForMatchingOutput(message, {type: "iterationCompleted"}, next);
-        }, (err, results) =>
-        {
-            // Now we force each process to synchronize
-            if (err)
+                const message = {
+                    type: "evaluate",
+                    samples: processBatch.samples
+                };
+                processBatch.process.writeAndWaitForMatchingOutput(message, {type: "evaluationCompleted"}, next);
+            }, (err, results) =>
             {
-                return callback(err);
-            }
-
-            async.map(this.processes, (process, next) =>
-            {
-                // Choose a bunch of random samples from the set that we have
-                const message = {type: "synchronize"};
-                process.writeAndWaitForMatchingOutput(message, {type: "synchronized"}, next);
-            }, function(err)
-            {
+                // Now we force each process to synchronize
                 if (err)
                 {
                     return callback(err);
                 }
-
-                // Combine all the losses together
-                const losses = underscore.pluck(results, "loss");
-                const loss = math.mean(losses);
 
                 const allResults = {};
                 results.forEach((processResults) =>
@@ -458,88 +406,175 @@ class EBTorchProcess
                     });
                 });
 
-                return callback(null, {
-                    loss: loss,
-                    objects: batch.map((id) => allResults[id])
+                return callback(null, ids.map((id) => allResults[id]));
+            });
+
+        });
+    }
+
+
+    /**
+     * This method will execute a single training iteration with the given batch.
+     *
+     * @param {[string]} batch An array of object ids for the objects in the batch
+     * @param {Promise} A Promise that will resolve when batch is complete
+     */
+    executeTrainingIteration(batch)
+    {
+        return Promise.fromCallback((callback) =>
+        {
+            // Divide the batch between the processes.
+            const processBatches = this.processes.map((process) =>
+            {
+                return {
+                    samples: [],
+                    process: process
+                };
+            });
+
+            batch.forEach((object, index) => processBatches[index % processBatches.length].samples.push(object));
+
+            // The maximum number of iterations to run for
+            async.map(processBatches, (processBatch, next) =>
+            {
+                if (processBatch.samples.length === 0)
+                {
+                    return next({});
+                }
+
+                // Choose a bunch of random samples from the set that we have
+                const message = {
+                    type: "iteration",
+                    samples: processBatch.samples
+                };
+                processBatch.process.writeAndWaitForMatchingOutput(message, {type: "iterationCompleted"}, next);
+            }, (err, results) =>
+            {
+                // Now we force each process to synchronize
+                if (err)
+                {
+                    return callback(err);
+                }
+
+                async.map(this.processes, (process, next) =>
+                {
+                    // Choose a bunch of random samples from the set that we have
+                    const message = {type: "synchronize"};
+                    process.writeAndWaitForMatchingOutput(message, {type: "synchronized"}, next);
+                }, function (err)
+                {
+                    if (err)
+                    {
+                        return callback(err);
+                    }
+
+                    // Combine all the losses together
+                    const losses = underscore.pluck(results, "loss");
+                    const loss = math.mean(losses);
+
+                    const allResults = {};
+                    results.forEach((processResults) =>
+                    {
+                        processResults.objects.forEach((object) =>
+                        {
+                            allResults[object.id] = object;
+                        });
+                    });
+
+                    return callback(null, {
+                        loss: loss,
+                        objects: batch.map((id) => allResults[id])
+                    });
                 });
             });
+
         });
     }
 
     /**
      * This function retrieves the diagrams that are generated by torch.
      *
-     * @param {function(err, diagrams)} callback This function will be called with a list of objects, each with two fields, the filename and the data
+     *  @return {Promise} A promise that will resolve with a list of objects, each with two fields, the filename and the data
      */
-    extractNetworkDiagrams(callback)
+    extractNetworkDiagrams()
     {
         const self = this;
-        let foundFiles = false;
-        const retryAttempts = 50;
-        const timeoutBetweenRetries = 150;
-        const maxBufferSize = 10 * 1024 * 1024;
-        async.retry(retryAttempts, function(callback)
+
+        return Promise.fromCallback((callback) =>
         {
-            fs.readdir(self.scriptFolder, function(err, files)
+            let foundFiles = false;
+            const retryAttempts = 50;
+            const timeoutBetweenRetries = 150;
+            const maxBufferSize = 10 * 1024 * 1024;
+            async.retry(retryAttempts, function (callback)
             {
-                if (err)
+                fs.readdir(self.scriptFolder, function (err, files)
                 {
-                    return callback(err);
-                }
-
-                // Go through the list of files for the dot files
-                const dotFiles = underscore.filter(files, (file) => (/^.*\.dot$/g).test(file));
-
-                if (dotFiles.length === 0)
-                {
-                    setTimeout(function()
+                    if (err)
                     {
-                        return callback(new Error("Could not find any architectural diagrams"));
-                    }, timeoutBetweenRetries);
-                }
-                else
-                {
-                    // Retrieve each image
-                    async.map(dotFiles, function(file, next)
+                        return callback(err);
+                    }
+
+                    // Go through the list of files for the dot files
+                    const dotFiles = underscore.filter(files, (file) => (/^.*\.dot$/g).test(file));
+
+                    if (dotFiles.length === 0)
                     {
-                        childProcess.exec(`dot -Grankdir=LR ${path.join(self.scriptFolder, file)} -Tsvg`, {maxBuffer: maxBufferSize}, function(err, result)
+                        setTimeout(function ()
                         {
-                            if (err)
+                            return callback(new Error("Could not find any architectural diagrams"));
+                        }, timeoutBetweenRetries);
+                    }
+                    else
+                    {
+                        // Retrieve each image
+                        async.map(dotFiles, function (file, next)
+                        {
+                            childProcess.exec(`dot -Grankdir=LR ${path.join(self.scriptFolder, file)} -Tsvg`, {maxBuffer: maxBufferSize}, function (err, result)
                             {
-                                return next(err);
-                            }
+                                if (err)
+                                {
+                                    return next(err);
+                                }
 
-                            return next(null, {
-                                file: file,
-                                data: new Buffer(result).toString('base64')
+                                return next(null, {
+                                    file: file,
+                                    data: new Buffer(result).toString('base64')
+                                });
                             });
-                        });
-                    }, callback);
-                }
-            });
-        }, callback);
+                        }, callback);
+                    }
+                });
+            }, callback);
+
+        });
     }
 
 
     /**
      * This causes the torch process to save the torch model, and then returns a stream to that model file
      *
-     * @param {function(err, statistics)} callback The callback with the statistics object
+     * @return {promise} A promise that will resolve when the model file returns a stream
      */
-    getTorchModelFileStream(callback)
+    getTorchModelFileStream()
     {
         const self = this;
-        const message = {type: "save"};
-        self.processes[0].writeAndWaitForMatchingOutput(message, {type: "saved"}, function(err, response)
+
+        return Promise.fromCallback((callback) =>
         {
-            if (err)
+            const message = {type: "save"};
+            self.processes[0].writeAndWaitForMatchingOutput(message, {type: "saved"}, function (err, response)
             {
-                return callback(err);
-            }
+                if (err)
+                {
+                    return callback(err);
+                }
 
-            const stream = fs.createReadStream(path.join(self.scriptFolder, 'model.t7'));
+                const stream = fs.createReadStream(path.join(self.scriptFolder, 'model.t7'));
 
-            return callback(null, stream);
+                return callback(null, stream);
+            });
+
         });
     }
 
@@ -547,28 +582,32 @@ class EBTorchProcess
     /**
      * This method tells the process to load its model data from torch model file
      *
-     * @param {function(err)} callback The callback which will be called when the model file has been loaded
+     * @return {Promise} A promise that will resolve when the model file has been loaded
      */
-    loadModelFile(callback)
+    loadModelFile()
     {
         const self = this;
 
-        const message = {
-            type: "load"
-        };
-
-        async.each(self.processes, function(process, next)
+        return Promise.fromCallback((callback) =>
         {
-            process.writeAndWaitForMatchingOutput(message, {type: "loaded"}, function(err, result)
-            {
-                if (err)
-                {
-                    return next(err);
-                }
+            const message = {
+                type: "load"
+            };
 
-                return next(null);
-            });
-        }, callback);
+            async.each(self.processes, function(process, next)
+            {
+                process.writeAndWaitForMatchingOutput(message, {type: "loaded"}, function(err, result)
+                {
+                    if (err)
+                    {
+                        return next(err);
+                    }
+
+                    return next(null);
+                });
+            }, callback);
+        });
+
     }
 }
 
