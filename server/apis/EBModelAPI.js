@@ -527,7 +527,7 @@ class EBModelAPI extends EBAPIRoot
                     // Generate the code
                     function generateCode(next)
                     {
-                        modelProcess.generateCode(next);
+                        modelProcess.generateCode(self.application.neuralNetworkComponentDispatch, next);
                     },
                     // Download the torch model file
                     function(next)

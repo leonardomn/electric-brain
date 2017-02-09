@@ -37,18 +37,18 @@ angular.module('eb').directive('ebArchitectureFileBrowser', function ebArchitect
             }
         };
         
-        $scope.files = $scope.architecture.generateFiles();
+        // $scope.files = $scope.architecture.generateFiles();
 
-        $scope.fileSelected = function fileSelected(file)
-        {
-            $scope.file = file;
-            $scope.mode = 'file';
-        };
+        // $scope.fileSelected = function fileSelected(file)
+        // {
+        //     $scope.file = file;
+        //     $scope.mode = 'file';
+        // };
 
-        $scope.exitFile = function()
-        {
-            $scope.mode = 'list';
-        };
+        // $scope.exitFile = function()
+        // {
+        //     $scope.mode = 'list';
+        // };
     }
 
     return {

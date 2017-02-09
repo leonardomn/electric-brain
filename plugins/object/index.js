@@ -17,6 +17,7 @@
  */
 
 const EBObjectInterpretation = require('./server/EBObjectInterpretation');
+const EBNeuralNetworkObjectComponent = require('./server/EBNeuralNetworkObjectComponent');
 
 /*
  * Plugins must define a series of standard methods.
@@ -26,6 +27,7 @@ module.exports = {
     "name": "object",
     "folder": __dirname,
     "dataSources": {},
-    "interpretations": {'object': EBObjectInterpretation}
+    "interpretations": {'object': EBObjectInterpretation},
+    "neuralNetworkComponents": {'object': EBNeuralNetworkObjectComponent}
 };
 

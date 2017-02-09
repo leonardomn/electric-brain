@@ -1,14 +1,14 @@
 require('torch')
 require('nn')
 
-local MergeFixedIntoSequence, parent = torch.class('nn.MergeFixedIntoSequence', 'nn.Module')
+local EBMergeFixedIntoSequence, parent = torch.class('nn.EBMergeFixedIntoSequence', 'nn.Module')
 
-function MergeFixedIntoSequence:__init(name)
+function EBMergeFixedIntoSequence:__init(name)
     parent.__init(self)
     self.name = name
 end
 
-function MergeFixedIntoSequence:updateOutput(input)
+function EBMergeFixedIntoSequence:updateOutput(input)
     -- Make sure that the first entry is a tensor, second is a table
     assert(torch.type(input[1]) == 'tensor')
     assert(torch.type(input[2]) == 'table')
@@ -34,7 +34,7 @@ function MergeFixedIntoSequence:updateOutput(input)
 end
 
 
-function MergeFixedIntoSequence:updateGradInput(input, gradOutput)
+function EBMergeFixedIntoSequence:updateGradInput(input, gradOutput)
     -- Make sure that the first entry is a tensor, second is a table
     assert(torch.type(input[1]) == 'tensor')
     assert(torch.type(input[2]) == 'table')
@@ -60,7 +60,7 @@ function MergeFixedIntoSequence:updateGradInput(input, gradOutput)
     return self.gradInput
 end
 
-function MergeFixedIntoSequence:clearState()
+function EBMergeFixedIntoSequence:clearState()
     -- don't call set because it might reset referenced tensors
     local function clear(f)
         if self[f] then

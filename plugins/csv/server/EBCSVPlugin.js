@@ -312,7 +312,6 @@ class EBCSVPlugin extends EBDataSourcePlugin
 
             return queryObject.toArray().then((rows) =>
             {
-                console.log(rows);
                 return rows.map((row) =>
                 {
                     const newRow = underscore.omit(row, "_id", "ebCSVFile", "ebRowIndex");

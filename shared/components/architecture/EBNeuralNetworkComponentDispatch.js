@@ -18,93 +18,226 @@
 
 "use strict";
 
+const Promise = require('bluebird'),
+    underscore = require('underscore');
+
 /**
- * This is a base class for 
+ *  This is registers all of the available EBDataSourcePlugins and will dispatch the methods
+ *  to the appropriate plugin depending on the type of data source.
  */
-class EBNeuralNetworkObjectComponent extends EBNeuralNetworkComponentBase
+class EBNeuralNetworkComponentDispatch
 {
     /**
-     * Constructor
+     * Creates an EBNeuralNetworkComponentDispatch object.
      */
     constructor()
     {
-        this.variableName = 'a';
-        this.machineVariableName ='b';
+        this.plugins = {};
+    }
+
+    /**
+     * This method returns a list of all neural network components
+     *
+     * @return {[EBNeuralNetworkComponentBase]} Returns all of the neural network components
+     */
+    getSupportedDataSources(type, plugin)
+    {
+        return underscore.values(this.plugins);
+    }
+
+    /**
+     * This method registers a plugin with the dispatch.
+     *
+     * @param {string} type The machine name of the data source type
+     * @param {EBDataSourcePlugin} plugin The plugin to be registered.
+     */
+    registerPlugin(type, plugin)
+    {
+        this.plugins[type] = plugin;
+    }
+
+
+    /**
+     * This method gets the correct neural network plugin for the given EBSchema
+     */
+    getPluginForSchema(schema)
+    {
+        if (schema.isObject)
+        {
+            return this.plugins['object'];
+        }
+        else if (schema.isArray)
+        {
+            return this.plugins['sequence'];
+        }
+        else if (schema.enum)
+        {
+            return this.plugins['classification'];
+        }
+        else if (schema.isNumber)
+        {
+            return this.plugins['number'];
+        }
+        else if (schema.metadata.mainInterpretation === 'image')
+        {
+            return this.plugins['image'];
+        }
+        else
+        {
+            throw new Error(`Unknown plugin for EBSchema: ${schema.toString()}`);
+        }
+    }
+
+
+    /**
+     * Method returns the tensor schema for input data to the network
+     *
+     * @param {EBSchema} schema The regular schema from which we will determine the tensor schema
+     * @returns {EBTensorSchema} The mapping of tensors.
+     */
+    getTensorSchema(schema)
+    {
+        return this.getPluginForSchema(schema).getTensorSchema(schema);
+    }
+
+
+    /**
+     * Method returns the size of the fixed input tensor for a given schema
+     *
+     * @param {EBSchema} schema The schema to get the tensor size of
+     * @returns {number} The size of the tensor
+     */
+    getInputTensorSize(schema)
+    {
+        return this.getPluginForSchema(schema).getInputTensorSize(schema);
+    }
+
+
+    /**
+     * Method returns the size of the table outputs for the given schema
+     *
+     * @param {EBSchema} schema The schema to get the table size of
+     * @returns {number} The size of the table
+     */
+    getInputTableSize(schema)
+    {
+        return this.getPluginForSchema(schema).getInputTableSize(schema);
     }
 
 
     /**
      * Method generates Lua code to create a tensor from the JSON of this variable
      *
-     * @param {EBSchema} schema The schema to generate this conversion code for
+     * @param {EBSchema} schema The schema to generate this conversion code for.
+     * @param {string} name The name of the lua function to be generated.
      */
-    generateTensorInputCode(schema, depth)
+    generateTensorInputCode(schema, name)
     {
-        // First, ensure that the schema we are dealing with is an object
-        assert(schema.isObject);
-
-        let code = '';
-        let topLevelFields = schema.topLevelFields;
-        let hasFixedTensor = schema.tensorSize > 0 ? 1 : 0;
-
-        code += `local transformed{{=it.depth}} = {}`;
-
-        if (hasFixedTensor)
+        if (!name)
         {
-            code += `transformed${depth}[1] = torch.zeros(1, 1, ${schema.tensorSize})`;
+            name = 'generateTensor';
         }
-
-        Object.keys(schema.properties).forEach((subSchema) =>
-        {
-            if (subSchema.tensorSize)
-            {
-
-            }
-        });
-
-
-
-
+        return this.getPluginForSchema(schema).generateTensorInputCode(schema, name);
     }
-
-
 
     /**
-     * Method generates Lua code to turn this variable back into a tensor
+     * Method generates Lua code to turn a tensor back into a JSON
+     *
+     * @param {EBSchema} schema The schema to generate this conversion code for
+     * @param {string} name The name of the Lua function to be generated
      */
-    generateTensorOutputCode()
+    generateTensorOutputCode(schema, name)
     {
-        throw new Error("Unimplemented");
+        if (!name)
+        {
+            name = 'generateJSON';
+        }
+        return this.getPluginForSchema(schema).generateTensorOutputCode(schema, name);
     }
-
 
     /**
      * Method generates Lua code that can prepare a combined batch tensor from
      * multiple samples.
-     */
-    generatePrepareBatchCode()
-    {
-        throw new Error("Unimplemented");
-    }
-
-
-    /**
-     * This method should generate the EBTorchNode graph for this neural network
-     */
-    generateNeuralNetwork(inputNode, outputNode)
-    {
-        throw new Error("Unimplemented");
-    }
-
-    /**
-     * Returns a JSON-Schema schema for this architectures
      *
-     * @returns {object} The JSON-Schema that can be used for validating this architectures in its raw form
+     * @param {EBSchema} schema The schema to generate this conversion code for
+     * @param {string} name The name of the Lua function to be generated
      */
-    static schema()
+    generatePrepareBatchCode(schema, name)
     {
-        throw new Error('Unimplemented');
+        if (!name)
+        {
+            name = 'prepareBatch';
+        }
+        return this.getPluginForSchema(schema).generatePrepareBatchCode(schema, name);
+    }
+
+    /**
+     * Method generates Lua code that can takes a batch and breaks it apart
+     * into the individual samples
+     *
+     * @param {EBSchema} schema The schema to generate this unwinding code for
+     * @param {string} name The name of the Lua function to be generated
+     */
+    generateUnwindBatchCode(schema, name)
+    {
+        if (!name)
+        {
+            name = 'unwindBatch';
+        }
+        return this.getPluginForSchema(schema).generateUnwindBatchCode(schema, name);
+    }
+
+
+    /**
+     * This method should generate an input stack for this variable
+     *
+     * @param {EBSchema} schema The schema to generate this stack for
+     * @param {EBTorchNode} inputNode The input node for this variable
+     * @returns {object} An object with the following structure:
+     *                      {
+     *                          "outputNode": EBTorchNode || null,
+     *                          "outputTensorSchema": EBTensorSchema || null,
+     *                          "additionalModules": [EBCustomModule]
+     *                      }
+     */
+    generateInputStack(schema, inputNode)
+    {
+        return this.getPluginForSchema(schema).generateInputStack(schema, inputNode);
+    }
+
+
+    /**
+     * This method should generate the output stack for this variable
+     *
+     * @param {EBSchema} outputSchema The schema to generate this output stack for
+     * @param {EBTorchNode} inputNode The input node for this stack
+     * @param {EBTensorSchema} inputTensorSchema The schema for the intermediary tensors from which we construct this output stack
+     * @returns {object} An object with the following structure:
+     *                      {
+     *                          "outputNode": EBTorchNode || null,
+     *                          "outputTensorSchema": EBTensorSchema || null,
+     *                          "additionalModules": [EBCustomModule]
+     *                      }
+     */
+    generateOutputStack(outputSchema, inputNode, inputTensorSchema)
+    {
+        return this.getPluginForSchema(outputSchema).generateOutputStack(outputSchema, inputNode, inputTensorSchema);
+    }
+
+
+    /**
+     * This method should generate the criterion for a schema
+     *
+     * @param {EBSchema} outputSchema The schema to generate the criterion for
+     * @returns {object} An object with the following structure:
+     *                      {
+     *                          "outputCriterion": EBTorchModule || null
+     *                      }
+     */
+    generateCriterion(outputSchema)
+    {
+        return this.getPluginForSchema(outputSchema).generateCriterion(outputSchema);
     }
 }
 
-module.exports = EBNeuralNetworkObjectComponent;
+module.exports = EBNeuralNetworkComponentDispatch;

@@ -434,6 +434,7 @@ class EBArchitectureAPI extends EBAPIRoot
      */
     getDiagrams(req, res, next)
     {
+        const self = this;
         this.architectures.findOne({_id: Number(req.params.id)}, function(err, architectureObject)
         {
             if (err)
@@ -451,7 +452,7 @@ class EBArchitectureAPI extends EBAPIRoot
                 async.series([
                     function generateCode(next)
                     {
-                        process.generateCode(next);
+                        process.generateCode(self.application.neuralNetworkComponentDispatch, next);
                     },
                     function startProcess(next)
                     {

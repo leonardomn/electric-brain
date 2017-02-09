@@ -24,6 +24,7 @@ const
     config = require("./config/config"),
     express = require("express"),
     EBDataSourcePluginDispatch = require("./components/datasource/EBDataSourcePluginDispatch"),
+    EBNeuralNetworkComponentDispatch = require("../shared/components/architecture/EBNeuralNetworkComponentDispatch"),
     flattener = require('./middleware/flattener'),
     fs = require("fs"),
     http = require('http'),
@@ -79,6 +80,16 @@ class EBApplication
         
         // Set up the main data source plugin
         this.dataSourcePluginDispatch = new EBDataSourcePluginDispatch();
+        this.neuralNetworkComponentDispatch = new EBNeuralNetworkComponentDispatch();
+
+        this.plugins.forEach((plugin) =>
+        {
+            const neuralNetworkComponentNames = Object.keys(plugin.neuralNetworkComponents || {});
+            neuralNetworkComponentNames.forEach((name) =>
+            {
+                this.neuralNetworkComponentDispatch.registerPlugin(name, new plugin.neuralNetworkComponents[name](this.neuralNetworkComponentDispatch))
+            });
+        });
     }
 
     /**
@@ -101,7 +112,7 @@ class EBApplication
 
                 this.plugins.forEach((plugin) =>
                 {
-                    const dataSourceNames = Object.keys(plugin.dataSources);
+                    const dataSourceNames = Object.keys(plugin.dataSources || {});
                     dataSourceNames.forEach((name) =>
                     {
                         self.dataSourcePluginDispatch.registerPlugin(name, new plugin.dataSources[name](self));

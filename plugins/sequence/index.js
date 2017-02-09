@@ -17,6 +17,7 @@
  */
 
 const EBSequenceInterpretation = require('./server/EBSequenceInterpretation');
+const EBNeuralNetworkSequenceComponent = require('./server/EBNeuralNetworkSequenceComponent');
 
 /*
  * Plugins must define a series of standard methods.
@@ -26,6 +27,7 @@ module.exports = {
     "name": "sequence",
     "folder": __dirname,
     "dataSources": {},
-    "interpretations": {'sequence': EBSequenceInterpretation}
+    "interpretations": {'sequence': EBSequenceInterpretation},
+    "neuralNetworkComponents": {'sequence': EBNeuralNetworkSequenceComponent}
 };
 

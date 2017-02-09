@@ -1,25 +1,25 @@
 require('torch')
 require('nn')
 
-local WrapTable, parent = torch.class('nn.WrapTable', 'nn.Module')
+local EBWrapTable, parent = torch.class('nn.EBWrapTable', 'nn.Module')
 
-function WrapTable:__init(name)
+function EBWrapTable:__init(name)
     parent.__init(self)
     self.name = name
 end
 
-function WrapTable:updateOutput(input)
+function EBWrapTable:updateOutput(input)
     self.output = {input}
     return self.output
 end
 
 
-function WrapTable:updateGradInput(input, gradOutput)
+function EBWrapTable:updateGradInput(input, gradOutput)
     self.gradInput = gradOutput[1]
     return self.gradInput
 end
 
-function WrapTable:clearState()
+function EBWrapTable:clearState()
     -- don't call set because it might reset referenced tensors
     local function clear(f)
         if self[f] then

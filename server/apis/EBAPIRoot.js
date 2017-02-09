@@ -21,7 +21,8 @@
 const
     Ajv = require('ajv'),
     httpStatus = require('http-status-codes'),
-    validator = require('../middleware/validator');
+    validatorMiddleware = require('../middleware/validator'),
+    validatorUtilities = require('../../shared/utilities/validator');
 
 
 class EBAPIRoot
@@ -44,9 +45,9 @@ class EBAPIRoot
      */
     registerEndpoint(expressApplication, endpoint)
     {
-        const outputValidatorPromise = validator.getJSONValidator(endpoint.outputSchema);
+        const outputValidatorPromise = validatorUtilities.getJSONValidator(endpoint.outputSchema);
         expressApplication[endpoint.method.toLowerCase()](`/api${endpoint.uri}`,
-            validator.inputValidator(endpoint),
+            validatorMiddleware.inputValidator(endpoint),
             function(req, res, next)
             {
                 outputValidatorPromise.then(function(validateOutput)
@@ -88,7 +89,7 @@ class EBAPIRoot
                     }
                 }, function(err)
                 {
-                    return next(new Error(`Failure while compiling the input validator: ${err.toString()}`));
+                    return next(new Error(`Failure while compiling the input validatorMiddleware: ${err.toString()}`));
                 });
             }
         );

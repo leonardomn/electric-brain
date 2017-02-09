@@ -1,55 +1,42 @@
-local OneHot, parent = torch.class('nn.OneHot', 'nn.Module')
+local EBOneHot, parent = torch.class('nn.EBOneHot', 'nn.Module')
 
--- adapted from https://github.com/karpathy/char-rnn
--- and https://github.com/hughperkins/char-lstm
+-- adapted from https://github.com/Element-Research/dpnn/blob/master/EBOneHot.lua
+-- which was adapted from https://github.com/karpathy/char-rnn
+-- and ultimately from https://github.com/hughperkins/char-lstm
 
-function OneHot:__init(outputSize)
+function EBOneHot:__init(outputSize)
     parent.__init(self)
     self.outputSize = outputSize
 end
 
-function OneHot:updateOutput(input)
-    local size
-    if type(input) == 'number' then
-        if self:type() == 'torch.CudaTensor' then
-            self._single = self._single or torch.CudaTensor():resize(1);
-        else
-            self._single = self._single or torch.LongTensor():resize(1);
-        end
-        self._single[1] = input
-        input = self._single;
-        size = {}
+function EBOneHot:updateOutput(input)
+    -- Get the batch size
+    local batchSize = input:size()[1]
+
+    -- Create an output tensor
+    if self:type() == 'torch.CudaTensor' then
+        self.outputTensor = self.outputTensor or torch.zeros(batchSize, self.outputSize):cuda()
     else
-        size = input:size():totable()
-    end
-    table.insert(size, self.outputSize)
-
-    self.output:resize(unpack(size)):zero()
-
-    size[#size] = 1
-    local input_ = input:view(unpack(size))
-
-    if torch.type(input) == 'torch.CudaTensor' or torch.type(input) == 'torch.ClTensor' then
-        self.output:scatter(self.output:dim(), input_, 1)
-    else
-        if torch.type(self.output) == 'torch.CudaTensor' then
-            -- input is not cuda, module is, cast input to cuda
-            self._input = self._input or torch.CudaTensor()
-            self._input:resize(input_:size()):copy(input_)
-            input_ = self._input
-        elseif torch.type(input) ~= 'torch.LongTensor' then
-            -- input is not long, module isnot cuda, cast input to long
-            self._input = self._input or torch.LongTensor()
-            self._input:resize(input_:size()):copy(input_)
-            input_ = self._input
-        end
-        self.output:scatter(self.output:dim(), input_, 1)
+        self.outputTensor = self.outputTensor or torch.zeros(batchSize, self.outputSize):long()
     end
 
-    return self.output
+    -- Zero the output
+    self.outputTensor:resize(batchSize, self.outputSize)
+    self.outputTensor:zero()
+
+    -- Go through each item in the batch, set the one-hot
+    -- value
+    for n=1,batchSize do
+        local value = input[n]
+        if value > 0 then
+            self.outputTensor[n][value] = 1
+        end
+    end
+
+    return self.outputTensor
 end
 
-function OneHot:updateGradInput(input, gradOutput)
+function EBOneHot:updateGradInput(input, gradOutput)
     if type(input) == 'number' then
         return 0
     else
@@ -58,8 +45,6 @@ function OneHot:updateGradInput(input, gradOutput)
     end
 end
 
-function OneHot:type(type, typecache)
-    self._single = nil
-    self._input = nil
+function EBOneHot:type(type, typecache)
     return parent.type(self, type, typecache)
 end

@@ -1,14 +1,14 @@
 require('torch')
 require('nn')
 
-local MergeSequences, parent = torch.class('nn.MergeSequences', 'nn.Module')
+local EBMergeSequences, parent = torch.class('nn.EBMergeSequences', 'nn.Module')
 
-function MergeSequences:__init(name)
+function EBMergeSequences:__init(name)
     parent.__init(self)
     self.name = name
 end
 
-function MergeSequences:updateOutput(input)
+function EBMergeSequences:updateOutput(input)
     -- Make sure both sequences are the same length
     assert(#(input[1]) == #(input[#input]))
 
@@ -27,7 +27,7 @@ function MergeSequences:updateOutput(input)
 end
 
 
-function MergeSequences:updateGradInput(input, gradOutput)
+function EBMergeSequences:updateGradInput(input, gradOutput)
     -- Break apart the gradients for each entry
     local splitGradients = {}
     for s = 1, #input do
@@ -44,7 +44,7 @@ function MergeSequences:updateGradInput(input, gradOutput)
     return self.gradInput
 end
 
-function MergeSequences:clearState()
+function EBMergeSequences:clearState()
     -- don't call set because it might reset referenced tensors
     local function clear(f)
         if self[f] then

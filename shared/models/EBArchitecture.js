@@ -20,17 +20,15 @@
 
 const
     async = require('async'),
-    convertDataInTemplate = require("../../build/torch/convert_data_in"),
-    convertDataOutTemplate = require("../../build/torch/convert_data_out"),
     criterionTemplate = require("../../build/torch/criterion"),
     deepcopy = require('deepcopy'),
     EBCustomTransformation = require("../components/architecture/EBCustomTransformation"),
     EBDataSource = require('./EBDataSource'),
     EBSchema = require('./EBSchema'),
-    EBTorchNeuralNetwork = require("./EBTorchNeuralNetwork"),
+    EBTorchModule = require("./EBTorchModule"),
+    EBTorchNode = require("./EBTorchNode"),
+    EBTorchCustomModule = require("./EBTorchCustomModule"),
     EBTorchTransformer = require("../components/architecture/EBTorchTransformer"),
-    prepareBatchTemplate = require("../../build/torch/prepare_batch"),
-    unwindBatchOutputTemplate = require("../../build/torch/unwind_batch_output"),
     stream = require('stream'),
     trainingScriptTemplate = require("../../build/torch/training_script"),
     underscore = require('underscore');
@@ -252,11 +250,11 @@ class EBArchitecture
     {
         const self = this;
         const stream = self.getNetworkOutputTransformationStream();
-        stream.on("data", function(output)
+        stream.on("data", (output) =>
         {
             return next(null, output);
         });
-        stream.on("error", function(error)
+        stream.on("error", (error) =>
         {
             return next(error);
         });
@@ -285,7 +283,7 @@ class EBArchitecture
         const includedInputFields = [];
         const includedOutputSchemas = [];
         const includedOutputFields = [];
-        self.inputSchema.walk(function(schema)
+        self.inputSchema.walk((schema) =>
         {
             if (schema.configuration.included)
             {
@@ -296,7 +294,7 @@ class EBArchitecture
                 }
             }
         });
-        self.outputSchema.walk(function(schema)
+        self.outputSchema.walk((schema) =>
         {
             if (schema.configuration.included)
             {
@@ -323,7 +321,7 @@ class EBArchitecture
         // None of the output fields can be a binary, since this would involve generating
         // data (currently not supported)
         let outputBinaryFound = false;
-        self.outputSchema.walk(function(schema)
+        self.outputSchema.walk((schema) =>
         {
             if (schema.configuration.included && schema.isBinary)
             {
@@ -338,7 +336,7 @@ class EBArchitecture
         // Any arrays on the output must also exist on the input. The system
         // Isn't going to generate arrays for you (yet!)
         let foundOutputOnlyArray = false;
-        self.outputSchema.walk(function(field)
+        self.outputSchema.walk((field) =>
         {
             if (field.isArray && field.configuration.included)
             {
@@ -386,12 +384,13 @@ class EBArchitecture
     /**
      * This method generates all the files for this neural network architecture
      *
+     * @param {EBNeuralNetworkComponentDispatch} neuralNetworkComponentDispatch A reference the the globally initialized componentDispatch method
      * @returns {[object]} The an array of objects describing the generated files.
      *                     Each object has two properties, 'path' for the files
      *                     path and filename, and 'data' for the contents of the
      *                     file
      */
-    generateFiles()
+    generateFiles(neuralNetworkComponentDispatch)
     {
         const self = this;
         
@@ -403,35 +402,43 @@ class EBArchitecture
 
         // Create a list of files that need to be written
         const files = [];
-        const network = EBTorchNeuralNetwork.generateNeuralNetwork(rootModuleName, inputSchema, outputSchema);
+
+        const inputNode = new EBTorchNode(new EBTorchModule("nn.Identity", []), null, `${rootModuleName}_input`);
+        const inputStack = neuralNetworkComponentDispatch.generateInputStack(inputSchema, inputNode);
+        const outputStack = neuralNetworkComponentDispatch.generateOutputStack(outputSchema, inputStack.outputNode, inputStack.outputTensorSchema);
+        const mainModule = new EBTorchCustomModule(rootModuleName, inputNode, outputStack.outputNode, (inputStack.additionalModules.concat(outputStack.additionalModules).map((module) => module.name)));
+
+        const allModules = [mainModule].concat(inputStack.additionalModules).concat(outputStack.additionalModules);
 
         // Create a file for each module
-        network.modules.forEach(function(module)
+        allModules.forEach((module) =>
         {
-            files.push({
+            const file = {
                 path: module.filename,
                 data: module.generateLuaCode()
-            });
+            };
+
+            files.push(file);
         });
+
 
         // Create a file for the criterion
         files.push({
             path: `${rootCriterionName}.lua`,
             // Create the criterion template for the output schema
             data: criterionTemplate({
-                criterionTemplate: criterionTemplate,
                 criterionName: rootCriterionName,
-                outputSchema
+                mainCriterion: neuralNetworkComponentDispatch.generateCriterion(outputSchema)
             })
         });
 
         files.push({
             path: "TrainingScript.lua",
             data: trainingScriptTemplate({
-                convertDataIn: convertDataInTemplate,
-                convertDataOut: convertDataOutTemplate,
-                prepareBatch: prepareBatchTemplate,
-                unwindBatchOutput: unwindBatchOutputTemplate,
+                convertDataIn: neuralNetworkComponentDispatch.generateTensorInputCode.bind(neuralNetworkComponentDispatch),
+                convertDataOut: neuralNetworkComponentDispatch.generateTensorOutputCode.bind(neuralNetworkComponentDispatch),
+                prepareBatch: neuralNetworkComponentDispatch.generatePrepareBatchCode.bind(neuralNetworkComponentDispatch),
+                unwindBatchOutput: neuralNetworkComponentDispatch.generateUnwindBatchCode.bind(neuralNetworkComponentDispatch),
                 rootModuleName: rootModuleName,
                 rootCriterionName: rootCriterionName,
                 optimizationAlgorithm: "adamax",
