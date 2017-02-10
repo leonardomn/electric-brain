@@ -452,11 +452,19 @@ class EBArchitectureAPI extends EBAPIRoot
                 async.series([
                     function generateCode(next)
                     {
-                        process.generateCode(self.application.neuralNetworkComponentDispatch, next);
+                        const promise = process.generateCode(self.application.neuralNetworkComponentDispatch);
+                        promise.then(() =>
+                        {
+                            next(null);
+                        }, (err) => next(err));
                     },
                     function startProcess(next)
                     {
-                        process.startProcess(next);
+                        const promise = process.startProcess();
+                        promise.then(() =>
+                        {
+                            next(null);
+                        }, (err) => next(err));
                     }
                 ], function(err)
                 {
@@ -465,13 +473,9 @@ class EBArchitectureAPI extends EBAPIRoot
                         return next(err);
                     }
 
-                    process.extractNetworkDiagrams(function(err, diagrams)
+                    const promise = process.extractNetworkDiagrams();
+                    promise.then((diagrams) =>
                     {
-                        if (err)
-                        {
-                            return next(err);
-                        }
-
                         return next(null, {diagrams: diagrams.map(function(diagram)
                         {
                             return {
@@ -479,7 +483,7 @@ class EBArchitectureAPI extends EBAPIRoot
                                 data: diagram.data.toString('base64')
                             };
                         })});
-                    });
+                    }, (err) => next(err));
                 });
             }
         });

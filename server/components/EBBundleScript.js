@@ -70,12 +70,23 @@ class EBBundleScript
                 // Start up the process
                 (next) =>
                 {
-                    this.modelProcess.startProcess(next);
+                    const promise = this.modelProcess.startProcess();
+                    promise.then(() =>
+                    {
+                        next(null);
+                    }, (err) => next(err));
                 },
                 // Load the model file from the disk
                 (next) =>
                 {
-                    this.modelProcess.loadModelFile(next);
+                    const promise = this.modelProcess.loadModelFile();
+                    promise.then(() =>
+                    {
+                        return next();
+                    }, (err) =>
+                    {
+                        return next(err);
+                    });
                 }
             ], next);
         });
@@ -109,20 +120,16 @@ class EBBundleScript
                         {
                             stream.pause();
                             processedIndex += 1;
-                            this.modelProcess.loadObject(processedIndex.toString(), data.input, data.output, (err) =>
+                            const promise = this.modelProcess.loadObject(processedIndex.toString(), data.input, data.output);
+                            promise.then(() =>
                             {
-                                if (err)
-                                {
-                                    console.log(err);
-                                }
-
                                 stream.resume();
                                 
                                 if (processedIndex === objects.length)
                                 {
                                     return next();
                                 }
-                            });
+                            }, (err) => next(err));
                         });
 
                         objects.forEach((object, objectIndex) =>
@@ -141,15 +148,11 @@ class EBBundleScript
                     (next) =>
                     {
                         // Process the provided object
-                        this.modelProcess.processObjects(objects.map((object, index) => (index + 1).toString()), (err, results) =>
+                        const promise = this.modelProcess.processObjects(objects.map((object, index) => (index + 1).toString()));
+                        promise.then((results) =>
                         {
-                            if (err)
-                            {
-                                return next(err);
-                            }
-
                             return next(null, results);
-                        });
+                        }, (err) => next(err));
                     },
                     // Convert the outputs
                     (results, next) =>
@@ -189,7 +192,11 @@ class EBBundleScript
     {
         return Promise.fromCallback((next) =>
         {
-            this.modelProcess.killProcess(next);
+            const promise = this.modelProcess.killProcess();
+            promise.then(() =>
+            {
+                next(null);
+            }, (err) => next(err));
         });
     }
 }
