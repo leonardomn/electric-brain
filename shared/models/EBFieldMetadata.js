@@ -92,25 +92,16 @@ class EBFieldMetadata
                     "items": {"type": "string"}
                 },
                 examples: {"type": "array"},
-                number: {
-                    "type": "object",
-                    "properties": {
-                        min: {"type": "number"},
-                        average: {"type": "number"},
-                        max: {"type": "number"}
-                    }
-                },
                 interpretationChain: {
                     "type": ["array", "null"],
-                    "items": {
-                        "type": "string"
-                    }
+                    "items": {"type": "string"}
                 },
-                mainInterpretation: {
-                    "type": "string"
+                mainInterpretation: {"type": "string"},
+                statistics: {
+                    "type": "object",
+                    "additionalProperties": true
                 }
-            },
-            additionalProperties: true
+            }
         };
     }
 }

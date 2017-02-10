@@ -22,6 +22,7 @@ const
     EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
+    EBValueHistogram = require("../../../shared/models/EBValueHistogram"),
     underscore = require('underscore');
 
 /**
@@ -51,6 +52,18 @@ class EBBooleanInterpretation extends EBInterpretationBase
     getUpstreamInterpretations()
     {
         return [];
+    }
+
+
+
+    /**
+     * This method returns the raw javascript type of value that this interpretation applies to.
+     *
+     * @return {string} Can be one of: 'object', 'array', 'number', 'string', 'boolean', 'binary'
+     */
+    getJavascriptType()
+    {
+        return 'boolean';
     }
 
 
@@ -118,21 +131,6 @@ class EBBooleanInterpretation extends EBInterpretationBase
 
 
     /**
-     * This method should return information about fields that need to be graphed on
-     * the frontend for this interpretation.
-     *
-     * @param {*} value The value to be transformed
-     * @return {Promise} A promise that resolves to an array of statistics
-     */
-    listStatistics(value)
-    {
-        return Promise.resolve([]);
-    }
-
-
-
-
-    /**
      * This method should transform an example into a value that is small enough to be
      * stored with the schema and shown on the frontend. Information can be destroyed
      * in this transformation in order to allow the data to be stored easily.
@@ -181,25 +179,19 @@ class EBBooleanInterpretation extends EBInterpretationBase
                 }
             }
 
-            getFieldMetadata()
+            getFieldStatistics()
             {
-                const metadata = new EBFieldMetadata();
-
-                metadata.types.push('boolean');
-
                 const values = [];
-                for(let n = 0; n < this.truths; n += 1)
+                for(let truthN = 0; truthN < this.truths; truthN += 1)
                 {
-                    values.push('true')
+                    values.push('true');
                 }
-                for(let n = 0; n < this.falses; n += 1)
+                for(let falseN = 0; falseN < this.falses; falseN += 1)
                 {
-                    values.push('false')
+                    values.push('false');
                 }
 
-                metadata.valueHistogram = EBValueHistogram.computeHistogram(values);
-
-                return metadata;
+                return {valueHistogram: EBValueHistogram.computeHistogram(values)};
             }
         })();
     }
@@ -210,7 +202,7 @@ class EBBooleanInterpretation extends EBInterpretationBase
      *
      * @return {jsonschema} A schema representing the metadata for this interpretation
      */
-    static metadataSchema()
+    static statisticsSchema()
     {
         return {
             "id": "EBFieldMetadata",

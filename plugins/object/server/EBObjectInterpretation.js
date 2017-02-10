@@ -57,6 +57,19 @@ class EBObjectInterpretation extends EBInterpretationBase
 
 
 
+
+    /**
+     * This method returns the raw javascript type of value that this interpretation applies to.
+     *
+     * @return {string} Can be one of: 'object', 'array', 'number', 'string', 'boolean', 'binary'
+     */
+    getJavascriptType()
+    {
+        return 'object';
+    }
+
+
+
     /**
      * This method should look at the given value and decide whether it can be handled by this
      * interpretation.
@@ -108,22 +121,6 @@ class EBObjectInterpretation extends EBInterpretationBase
 
 
 
-
-    /**
-     * This method should return information about fields that need to be graphed on
-     * the frontend for this interpretation.
-     *
-     * @param {*} value The value to be transformed
-     * @return {Promise} A promise that resolves to an array of statistics
-     */
-    listStatistics(value)
-    {
-        return Promise.resolve([]);
-    }
-
-
-
-
     /**
      * This method should transform an example into a value that is small enough to be
      * stored with the schema and shown on the frontend. Information can be destroyed
@@ -161,13 +158,9 @@ class EBObjectInterpretation extends EBInterpretationBase
                 // Do nothing.
             }
 
-            getFieldMetadata()
+            getFieldStatistics()
             {
-                const metadata = new EBFieldMetadata();
-
-                metadata.types.push('object');
-
-                return metadata;
+                return {};
             }
         })();
     }
@@ -178,7 +171,7 @@ class EBObjectInterpretation extends EBInterpretationBase
      *
      * @return {jsonschema} A schema representing the metadata for this interpretation
      */
-    static metadataSchema()
+    static statisticsSchema()
     {
         return {
             "id": "EBFieldMetadata",

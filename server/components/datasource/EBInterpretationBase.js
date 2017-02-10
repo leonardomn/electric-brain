@@ -50,6 +50,19 @@ class EBInterpretationBase
 
 
     /**
+     * This method returns the raw javascript type of value that this interpretation applies to.
+     *
+     * @return {string} Can be one of: 'object', 'array', 'number', 'string', 'boolean', 'binary'
+     */
+    getJavascriptType(value)
+    {
+        throw new Error("Unimplemented");
+    }
+
+
+
+
+    /**
      * This method should look at the given value and decide whether it can be handled by this
      * interpretation.
      *
@@ -95,21 +108,6 @@ class EBInterpretationBase
 
 
     /**
-     * This method should return information about fields that need to be graphed on
-     * the frontend for this interpretation.
-     *
-     * @param {*} value The value to be transformed
-     * @return {Promise} A promise that resolves to an array of statistics
-     */
-    listStatistics(value)
-    {
-        return Promise.rejected(new Error("Unimplemented"));
-    }
-
-
-
-
-    /**
      * This method should transform an example into a value that is small enough to be
      * stored with the schema and shown on the frontend.
      *
@@ -143,7 +141,7 @@ class EBInterpretationBase
      *
      * @return {jsonschema} A schema representing the metadata for this interpretation
      */
-    static metadataSchema()
+    static statisticsSchema()
     {
         throw Promise.rejected(new Error("Unimplemented"));
     }

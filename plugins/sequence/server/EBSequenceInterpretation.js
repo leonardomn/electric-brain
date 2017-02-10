@@ -20,6 +20,7 @@
 
 const
     EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
+    EBNumberHistogram = require('../../../shared/models/EBNumberHistogram'),
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
     underscore = require('underscore');
@@ -51,6 +52,19 @@ class EBSequenceInterpretation extends EBInterpretationBase
     getUpstreamInterpretations()
     {
         return [];
+    }
+
+
+
+
+    /**
+     * This method returns the raw javascript type of value that this interpretation applies to.
+     *
+     * @return {string} Can be one of: 'object', 'array', 'number', 'string', 'boolean', 'binary'
+     */
+    getJavascriptType()
+    {
+        return 'array';
     }
 
 
@@ -108,21 +122,6 @@ class EBSequenceInterpretation extends EBInterpretationBase
 
 
     /**
-     * This method should return information about fields that need to be graphed on
-     * the frontend for this interpretation.
-     *
-     * @param {*} value The value to be transformed
-     * @return {Promise} A promise that resolves to an array of statistics
-     */
-    listStatistics(value)
-    {
-        return Promise.resolve([]);
-    }
-
-
-
-
-    /**
      * This method should transform an example into a value that is small enough to be
      * stored with the schema and shown on the frontend. Information can be destroyed
      * in this transformation in order to allow the data to be stored easily.
@@ -160,12 +159,9 @@ class EBSequenceInterpretation extends EBInterpretationBase
                 this.arrayLengths.push(value.length);
             }
 
-            getFieldMetadata()
+            getFieldStatistics()
             {
-                const metadata = new EBFieldMetadata();
-                self.metadata.types.push('array');
-                self.metadata.arrayLengthHistogram = EBNumberHistogram.computeHistogram(self.arrayLengths);
-                return metadata;
+                return {arrayLengthHistogram: EBNumberHistogram.computeHistogram(this.arrayLengths)};
             }
         })();
     }
@@ -176,7 +172,7 @@ class EBSequenceInterpretation extends EBInterpretationBase
      *
      * @return {jsonschema} A schema representing the metadata for this interpretation
      */
-    static metadataSchema()
+    static statisticsSchema()
     {
         return {
             "id": "EBFieldMetadata",

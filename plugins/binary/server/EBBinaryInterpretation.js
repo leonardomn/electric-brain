@@ -57,6 +57,19 @@ class EBBinaryInterpretation extends EBInterpretationBase
 
 
 
+
+    /**
+     * This method returns the raw javascript type of value that this interpretation applies to.
+     *
+     * @return {string} Can be one of: 'object', 'array', 'number', 'string', 'boolean', 'binary'
+     */
+    getJavascriptType()
+    {
+        return 'binary';
+    }
+
+
+
     /**
      * This method should look at the given value and decide whether it can be handled by this
      * interpretation.
@@ -104,21 +117,6 @@ class EBBinaryInterpretation extends EBInterpretationBase
     transformValue(value)
     {
         return Promise.resolve(value);
-    }
-
-
-
-
-    /**
-     * This method should return information about fields that need to be graphed on
-     * the frontend for this interpretation.
-     *
-     * @param {*} value The value to be transformed
-     * @return {Promise} A promise that resolves to an array of statistics
-     */
-    listStatistics(value)
-    {
-        return Promise.resolve([]);
     }
 
 
@@ -176,14 +174,9 @@ class EBBinaryInterpretation extends EBInterpretationBase
                 }
             }
 
-            getFieldMetadata()
+            getFieldStatistics()
             {
-                const metadata = new EBFieldMetadata();
-
-                metadata.types.push('binary');
-                metadata.binaryMimeTypeHistogram = EBValueHistogram.computeHistogram(this.mimeTypes);
-
-                return metadata;
+                return {binaryMimeTypeHistogram: EBValueHistogram.computeHistogram(this.mimeTypes)};
             }
         })();
     }
@@ -194,7 +187,7 @@ class EBBinaryInterpretation extends EBInterpretationBase
      *
      * @return {jsonschema} A schema representing the metadata for this interpretation
      */
-    static metadataSchema()
+    static statisticsSchema()
     {
         return {
             "id": "EBFieldMetadata",

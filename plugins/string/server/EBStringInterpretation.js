@@ -55,6 +55,16 @@ class EBStringInterpretation extends EBInterpretationBase
         return [];
     }
 
+    
+    /**
+     * This method returns the raw javascript type of value that this interpretation applies to.
+     *
+     * @return {string} Can be one of: 'object', 'array', 'number', 'string', 'boolean', 'binary'
+     */
+    getJavascriptType(value)
+    {
+        return 'string';
+    }
 
 
     /**
@@ -105,22 +115,6 @@ class EBStringInterpretation extends EBInterpretationBase
     {
         return Promise.resolve(value.toString());
     }
-
-
-
-
-    /**
-     * This method should return information about fields that need to be graphed on
-     * the frontend for this interpretation.
-     *
-     * @param {*} value The value to be transformed
-     * @return {Promise} A promise that resolves to an array of statistics
-     */
-    listStatistics(value)
-    {
-        return Promise.resolve([]);
-    }
-
 
 
 
@@ -178,14 +172,9 @@ class EBStringInterpretation extends EBInterpretationBase
                 }
             }
 
-            getFieldMetadata()
+            getFieldStatistics()
             {
-                const metadata = new EBFieldMetadata();
-
-                metadata.types.push('string');
-                metadata.valueHistogram = EBValueHistogram.computeHistogram(this.values);
-
-                return metadata;
+                return {valueHistogram: EBValueHistogram.computeHistogram(this.values)};
             }
         })();
     }
@@ -196,14 +185,13 @@ class EBStringInterpretation extends EBInterpretationBase
      *
      * @return {jsonschema} A schema representing the metadata for this interpretation
      */
-    static metadataSchema()
+    static statisticsSchema()
     {
         return {
             "id": "EBFieldMetadata",
             "type": "object",
             "properties": {
-                imageWidthHistogram: EBNumberHistogram.schema(),
-                imageHeightHistogram: EBNumberHistogram.schema()
+                valueHistogram: EBValueHistogram.schema()
             }
         };
     }

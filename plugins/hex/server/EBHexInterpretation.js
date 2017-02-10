@@ -59,6 +59,19 @@ class EBHexInterpretation extends EBInterpretationBase
 
 
 
+
+    /**
+     * This method returns the raw javascript type of value that this interpretation applies to.
+     *
+     * @return {string} Can be one of: 'object', 'array', 'number', 'string', 'boolean', 'binary'
+     */
+    getJavascriptType()
+    {
+        return 'string';
+    }
+
+
+
     /**
      * This method should look at the given value and decide whether it can be handled by this
      * interpretation.
@@ -111,21 +124,6 @@ class EBHexInterpretation extends EBInterpretationBase
 
 
     /**
-     * This method should return information about fields that need to be graphed on
-     * the frontend for this interpretation.
-     *
-     * @param {*} value The value to be transformed
-     * @return {Promise} A promise that resolves to an array of statistics
-     */
-    listStatistics(value)
-    {
-        return Promise.resolve([]);
-    }
-
-
-
-
-    /**
      * This method should transform an example into a value that is small enough to be
      * stored with the schema and shown on the frontend. Information can be destroyed
      * in this transformation in order to allow the data to be stored easily.
@@ -137,11 +135,11 @@ class EBHexInterpretation extends EBInterpretationBase
     {
         if (value.length > 50)
         {
-            return Promise.resolve(value.substr(0, 50) + "...");
+            return Promise.resolve(value.substr(0, 50).toString('hex') + "...");
         }
         else
         {
-            return Promise.resolve(value);
+            return Promise.resolve(value.toString('hex'));
         }
     }
 
@@ -176,15 +174,10 @@ class EBHexInterpretation extends EBInterpretationBase
                     this.values.push(value);
                 }
             }
-
-            getFieldMetadata()
+            
+            getFieldStatistics()
             {
-                const metadata = new EBFieldMetadata();
-
-                metadata.types.push('string');
-                metadata.valueHistogram = EBValueHistogram.computeHistogram(this.values);
-
-                return metadata;
+                return {valueHistogram: EBValueHistogram.computeHistogram(this.values)};
             }
         })();
     }
@@ -195,7 +188,7 @@ class EBHexInterpretation extends EBInterpretationBase
      *
      * @return {jsonschema} A schema representing the metadata for this interpretation
      */
-    static metadataSchema()
+    static statisticsSchema()
     {
         return {
             "id": "EBFieldMetadata",
