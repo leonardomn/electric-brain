@@ -21,7 +21,7 @@
 /**
  * This directive provides an editor for schema interpretations
  */
-angular.module('eb').directive('ebSchemaInterpretationConfiguration', function ebSchemaInterpretationConfiguration($timeout, EBDataService, EBDataSourceService)
+angular.module('eb').directive('ebSchemaInterpretationConfiguration', function ebSchemaInterpretationConfiguration($timeout, EBDataSourceService)
 {
     function controller($scope, $element, $attrs)
     {

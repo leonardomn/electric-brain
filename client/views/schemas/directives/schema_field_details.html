@@ -20,22 +20,13 @@
     <div class="col-xs-12">
         <div class="ibox" ng-if="field.isString || field.isNumber">
             <div class="ibox-title">
-                <h5>Interpetation</h5>
+                <h5>Interpretation Chain</h5>
             </div>
             <div class="ibox-content">
-                <select ng-model="field.metadata.interpretation">
-                    <option value="base32">base32</option>
-                    <option value="base64">base64</option>
-                    <option value="boolean">boolean</option>
-                    <option value="date">date</option>
-                    <option value="datetime">datetime</option>
-                    <option value="hex">hex</option>
-                    <option value="mstimestamp">mstimestamp</option>
-                    <option value="number">number</option>
-                    <option value="text">text</option>
-                    <option value="time">time</option>
-                    <option value="unixtimestamp">unixtimestamp</option>
-                </select>
+                <div ng-repeat="interpretation in field.metadata.interpretationChain">
+                    <span>{{interpretation}}</span>
+                    <span ng-show="$index < (field.metadata.interpretationChain.length - 1)">&equals;&gt;</span>
+                </div>
             </div>
         </div>
 
@@ -56,42 +47,8 @@
                         <span>{{field.metadata.distinct}}&nbsp;/&nbsp;{{field.metadata.total}}</span>
                         <br/>
                     </div>
-                    <!-- If this field is a number field, show its number histogram -->
-                    <div ng-if="field.isNumber">
-                        <h3>Histogram</h3>
-                        <eb-number-histogram ng-model="field.metadata.numberHistogram"></eb-number-histogram>
-                    </div>
-                    <!-- Show a value histogram if the field is a string its cardinality is less then 0.75,-->
-                    <!-- meaning at least a some values are shared. The cutoff is somewhat arbitrary-->
-                    <div ng-if="field.isString && field.metadata.cardinality < 0.75">
-                        <h3>Histogram</h3>
-                        <eb-value-histogram ng-model="field.metadata.valueHistogram"></eb-value-histogram>
-                    </div>
-                    <!-- If the field is an array, show the array length histogram -->
-                    <div ng-if="field.isArray">
-                        <h3>Length Histogram</h3>
-                        <eb-number-histogram ng-model="field.metadata.arrayLengthHistogram"></eb-number-histogram>
-                    </div>
 
-                    <!-- If the field is binary data, show a histogram on the mime type-->
-                    <div ng-if="field.isBinary">
-                        <h3>File Type</h3>
-                        <eb-value-histogram ng-model="field.metadata.binaryMimeTypeHistogram" height="200"></eb-value-histogram>
-                    </div>
-
-                    <!-- If the field is an image, then show the image width and image height histograms -->
-                    <div ng-if="field.metadata.binaryHasImage">
-                        <div class="row">
-                            <div class="col-xs-6">
-                                <h3>Image Width</h3>
-                                <eb-number-histogram ng-model="field.metadata.imageWidthHistogram" height="100"></eb-number-histogram>
-                            </div>
-                            <div class="col-xs-6">
-                                <h3>Image Height</h3>
-                                <eb-number-histogram ng-model="field.metadata.imageHeightHistogram" height="100"></eb-number-histogram>
-                            </div>
-                        </div>
-                    </div>
+                    <eb-dynamic-directive directive-name="eb-{{field.metadata.mainInterpretation}}-interpretation-metadata" field="field"></eb-dynamic-directive>
 
                     <!-- Show some examples of the field -->
                     <div ng-if="field.metadata.examples.length > 0">

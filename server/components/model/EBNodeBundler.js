@@ -69,7 +69,11 @@ class EBNodeBundler
             // Generate the code
             function generateCode(next)
             {
-                self.trainingProcess.generateCode(next);
+                const promise = self.trainingProcess.generateCode(self.application.neuralNetworkComponentDispatch);
+                promise.then(() =>
+                {
+                    next(null);
+                }, (err) => next(err));
             },
             // Download the torch model file
             function(next)

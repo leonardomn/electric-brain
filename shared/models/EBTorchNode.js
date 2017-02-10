@@ -19,6 +19,7 @@
 "use strict";
 
 const
+    assert = require('assert'),
     EBTorchModule = require("./EBTorchModule"),
     underscore = require('underscore');
 
@@ -38,11 +39,15 @@ class EBTorchNode
     constructor(module, input, name, debug)
     {
         const self = this;
-        
+
+        // Some assertions for sanity
+        assert(module);
+        assert(name);
+
         // If debug, wrap the module in a debug module
         if (debug)
         {
-            self.module = new EBTorchModule("nn.WrapDebug", [module, `"${name}"`]);
+            self.module = new EBTorchModule("nn.EBWrapDebug", [module, `"${name}"`]);
         }
         else
         {

@@ -19,4 +19,4 @@
 module.exports = {
     shared: require("./shared/index"),
     server: require("./server/index")
-}
+};

@@ -24,7 +24,7 @@ module.exports = function(grunt)
         mkdir: {
             dev: {
                 options: {
-                    create: ['build/torch']
+                    create: ['build/torch', 'build/frontend']
                 }
             }
         },
@@ -89,6 +89,10 @@ module.exports = function(grunt)
             }
         },
         dot: {
+            frontend: {
+                src  : ['server/file_templates/frontend'],
+                dest : 'build/frontend'
+            },
             torch: {
                 src  : ['shared/file_templates/torch'],
                 dest : 'build/torch'
@@ -149,6 +153,6 @@ module.exports = function(grunt)
     grunt.loadNpmTasks('grunt-zip');
 
     // Default task(s).
-    grunt.registerTask('default', ['mkdir:dev', 'dot:torch', 'browserify:dev', 'webpack:bundle', 'uglify:dev', 'copy:dev', 'unzip']);
+    grunt.registerTask('default', ['mkdir:dev', 'dot:torch', 'dot:frontend', 'browserify:dev', 'webpack:bundle', 'uglify:dev', 'copy:dev', 'unzip']);
     grunt.registerTask('worker', ['dot:torch']);
 };

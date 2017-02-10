@@ -146,13 +146,9 @@ class EBTrainModelTask {
             // Generate the code
             (next) =>
             {
-                self.trainingProcess.generateCode((err, totalFiles) =>
+                const promise = self.trainingProcess.generateCode(self.application.neuralNetworkComponentDispatch);
+                promise.then((totalFiles) =>
                 {
-                    if (err)
-                    {
-                        return next(err);
-                    }
-
                     const codeGenerationResult = {
                         status: 'complete',
                         percentageComplete: 100,
@@ -160,12 +156,16 @@ class EBTrainModelTask {
                     };
 
                     self.updateStepResult('codeGeneration', codeGenerationResult, next);
-                });
+                }, (err) => next(err));
             },
             // Start up the process
             (next) =>
             {
-                self.trainingProcess.startProcess(next);
+                const promise = self.trainingProcess.startProcess();
+                promise.then( () =>
+                {
+                    next(null);
+                }, (err) => next(err));
             },
             // Scan the data, analyze it for input
             (next) =>
@@ -267,19 +267,10 @@ class EBTrainModelTask {
      * @param {object} output The output data for the object
      * @param {function(err)} callback The callback after the object has been successfully stored
      */
-    loadObject(id, input, output, callback)
+    loadObject(id, input, output)
     {
         const self = this;
-
-        self.trainingProcess.loadObject(id, input, output, (err) =>
-        {
-            if (err)
-            {
-                return callback(err);
-            }
-
-            return callback(null);
-        });
+        return self.trainingProcess.loadObject(id, input, output);
     }
 
 
@@ -370,7 +361,7 @@ class EBTrainModelTask {
             scannedObjects: 0
         };
 
-        const objectsBetweenUpdate = 10000;
+        const objectsBetweenUpdate = 1000;
 
         let lastUpdateTime = new Date();
 
@@ -564,13 +555,9 @@ class EBTrainModelTask {
             }
 
             // Reset the model with random parameters
-            self.trainingProcess.reset((err) =>
+            const promise = self.trainingProcess.reset();
+            promise.then(() =>
             {
-                if (err)
-                {
-                    return callback(err);
-                }
-
                 // The number of iterations run so far
                 async.whilst(
                     () =>
@@ -586,7 +573,7 @@ class EBTrainModelTask {
                             performanceTrace.addTrace('fetch-batch');
                             async.mapSeries(sample, (object, next) =>
                             {
-                                this.loadObject(object.id, object.input, object.output, next);
+                                this.loadObject(object.id, object.input, object.output).then(() => next(), (err) => next(err));
                             }, (err) =>
                             {
                                 if (err)
@@ -596,13 +583,9 @@ class EBTrainModelTask {
 
                                 performanceTrace.addTrace('load-object');
 
-                                self.trainingProcess.executeTrainingIteration(underscore.pluck(sample, "id"), (err, result) =>
+                                const promise = self.trainingProcess.executeTrainingIteration(underscore.pluck(sample, "id"));
+                                promise.then((result) =>
                                 {
-                                    if (err)
-                                    {
-                                        return next(err);
-                                    }
-
                                     performanceTrace.addTrace('training-iteration');
 
                                     // At the end of each iteration, update the current training results
@@ -631,17 +614,14 @@ class EBTrainModelTask {
                                             return next(err);
                                         }
 
-                                        async.mapSeries(sample, (object, next) =>
+                                        const removeObjectPromise = Promise.each(sample, (object) =>
                                         {
-                                            this.trainingProcess.removeObject(object.id, next);
-                                        }, (err) =>
+                                            return this.trainingProcess.removeObject(object.id);
+                                        });
+                                        removeObjectPromise.then(() =>
                                         {
-                                            if (err)
-                                            {
-                                                return next(err);
-                                            }
-
                                             performanceTrace.addTrace('remove-object');
+
                                             self.testIteration((err, accuracy) =>
                                             {
                                                 if (err)
@@ -680,10 +660,10 @@ class EBTrainModelTask {
                                                         return next();
                                                     }
                                                 });
-                                            });
+                                            }, (err) => next(err));
                                         });
                                     });
-                                });
+                                }, (err) => next(err));
                             });
                         }, (err) => next(err));
                     }, (err) =>
@@ -698,7 +678,7 @@ class EBTrainModelTask {
 
                         self.updateStepResult('training', trainingResult, callback);
                     });
-            });
+            }, (err) => callback(err));
         });
     }
 
@@ -719,7 +699,11 @@ class EBTrainModelTask {
         {
             async.mapSeries(sample, (object, next) =>
             {
-                this.loadObject(object.id, object.input, object.output, next);
+                const promise = this.loadObject(object.id, object.input, object.output);
+                promise.then(() =>
+                {
+                    next(null);
+                }, (err)=>next(err));
             }, (err) =>
             {
                 if (err)
@@ -727,13 +711,9 @@ class EBTrainModelTask {
                     return callback(err);
                 }
 
-                self.trainingProcess.processObjects(underscore.pluck(sample, "id"), (err, outputs) =>
+                const promise = self.trainingProcess.processObjects(underscore.pluck(sample, "id"));
+                promise.then((outputs) =>
                 {
-                    if (err)
-                    {
-                        return callback(err);
-                    }
-
                     let index = 0;
                     async.eachSeries(sample, (object, next) =>
                     {
@@ -753,7 +733,6 @@ class EBTrainModelTask {
                                 return next();
                             }, (err) => next(err));
                         });
-
                     }, (err) =>
                     {
                         if (err)
@@ -761,22 +740,20 @@ class EBTrainModelTask {
                             return callback(err);
                         }
 
-                        async.mapSeries(sample, (object, next) =>
+                        const removeObjectPromise = Promise.each(sample, (object) =>
                         {
-                            this.trainingProcess.removeObject(object.id, next);
-                        }, (err) =>
-                        {
-                            if (err)
-                            {
-                                return callback(err);
-                            }
+                            return this.trainingProcess.removeObject(object.id);
 
+                        });
+                        removeObjectPromise.then(() =>
+                        {
                             const accuracy = math.mean(accuracies);
 
                             return callback(null, accuracy);
-                        });
+
+                        }, (err) => callback(err));
                     });
-                });
+                }, (err) => callback(err));
             });
         });
     }
@@ -890,7 +867,11 @@ class EBTrainModelTask {
                     {
                         async.mapSeries(sample, (object, next) =>
                         {
-                            this.loadObject(object.id, object.input, object.output, next);
+                            const promise = this.loadObject(object.id, object.input, object.output);
+                            promise.then(()=>
+                            {
+                                next(null);
+                            },(err)=>next(err));
                         }, (err) =>
                         {
                             if (err)
@@ -898,13 +879,9 @@ class EBTrainModelTask {
                                 return next(err);
                             }
 
-                            self.trainingProcess.processObjects(underscore.pluck(sample, "id"), (err, outputs) =>
+                            const promise = self.trainingProcess.processObjects(underscore.pluck(sample, "id"));
+                            promise.then((outputs) =>
                             {
-                                if (err)
-                                {
-                                    return next(err);
-                                }
-
                                 let index = 0;
                                 async.eachSeries(sample, (object, next) =>
                                 {
@@ -934,7 +911,6 @@ class EBTrainModelTask {
                                             }
                                         }, (err) => next(err));
                                     });
-
                                 }, (err) =>
                                 {
                                     if (err)
@@ -942,24 +918,21 @@ class EBTrainModelTask {
                                         return next(err);
                                     }
 
-                                    async.mapSeries(sample, (object, next) =>
+                                    const removeObjectPromise = Promise.each(sample, (object) =>
                                     {
-                                        this.trainingProcess.removeObject(object.id, next);
-                                    }, (err) =>
-                                    {
-                                        if (err)
-                                        {
-                                            return next(err);
-                                        }
+                                        return this.trainingProcess.removeObject(object.id);
 
+                                    });
+                                    removeObjectPromise.then(() =>
+                                    {
                                         testingResult.accuracy = math.mean(accuracies);
                                         testingResult.completedObjects += 1;
                                         testingResult.percentageComplete = (testingResult.completedObjects * 100) / testingResult.totalObjects;
 
                                         return next(null);
-                                    });
+                                    }, (err) => next(err));
                                 });
-                            });
+                            }, (err) => next(err));
                         });
                     });
                 }, (err) =>
@@ -984,23 +957,22 @@ class EBTrainModelTask {
      */
     saveTorchModelFile(callback)
     {
+        console.log("save1");
         const self = this;
-        self.trainingProcess.getTorchModelFileStream((err, stream) =>
+        const promise = self.trainingProcess.getTorchModelFileStream();
+        console.log("save2");
+        promise.then((stream) =>
         {
-            if (err)
-            {
-                return callback(err);
-            }
-
+            console.log("save3");
             stream.pipe(self.gridFS.openUploadStream(`model-${self.model._id}.t7`)).on('error', (error) =>
-            {
-                return callback(error);
-            }).on('finish', () =>
-            {
-
+             {
+                 console.log("save4");
+                 return callback(error);
+             }).on('finish', () =>
+             {
                 return callback();
-            });
-        });
+             });
+        }, (err) => callback(err));
     }
 }
 

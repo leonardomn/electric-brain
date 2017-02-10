@@ -367,7 +367,7 @@ class EBArchitectureAPI extends EBAPIRoot
             }
             else
             {
-                const schemaDetector = new EBSchemaDetector();
+                const schemaDetector = new EBSchemaDetector(self.application);
                 const numberOfObjectsToSample = 500;
                 const architecture = new models.EBArchitecture(architectureObject);
                 const sourceSchema = architecture.dataSource.dataSchema.filterIncluded();
@@ -377,9 +377,13 @@ class EBArchitectureAPI extends EBAPIRoot
                 transformStream.on('data', function(object)
                 {
                     transformStream.pause();
-                    schemaDetector.accumulateObject(object, false).then(function()
+                    schemaDetector.accumulateObject(object, false).then(() =>
                     {
                         transformStream.resume();
+                    }, (err) =>
+                    {
+                        console.error(err);
+                        throw err;
                     });
                 });
                 transformStream.on('error', function(error)
@@ -430,6 +434,7 @@ class EBArchitectureAPI extends EBAPIRoot
      */
     getDiagrams(req, res, next)
     {
+        const self = this;
         this.architectures.findOne({_id: Number(req.params.id)}, function(err, architectureObject)
         {
             if (err)
@@ -447,11 +452,19 @@ class EBArchitectureAPI extends EBAPIRoot
                 async.series([
                     function generateCode(next)
                     {
-                        process.generateCode(next);
+                        const promise = process.generateCode(self.application.neuralNetworkComponentDispatch);
+                        promise.then(() =>
+                        {
+                            next(null);
+                        }, (err) => next(err));
                     },
                     function startProcess(next)
                     {
-                        process.startProcess(next);
+                        const promise = process.startProcess();
+                        promise.then(() =>
+                        {
+                            next(null);
+                        }, (err) => next(err));
                     }
                 ], function(err)
                 {
@@ -460,13 +473,9 @@ class EBArchitectureAPI extends EBAPIRoot
                         return next(err);
                     }
 
-                    process.extractNetworkDiagrams(function(err, diagrams)
+                    const promise = process.extractNetworkDiagrams();
+                    promise.then((diagrams) =>
                     {
-                        if (err)
-                        {
-                            return next(err);
-                        }
-
                         return next(null, {diagrams: diagrams.map(function(diagram)
                         {
                             return {
@@ -474,7 +483,7 @@ class EBArchitectureAPI extends EBAPIRoot
                                 data: diagram.data.toString('base64')
                             };
                         })});
-                    });
+                    }, (err) => next(err));
                 });
             }
         });
