@@ -33,15 +33,15 @@ angular.module('eb').directive('ebModelList', function ebModelList(EBModelServic
 
             $scope.selectModel = function selectModel(model)
             {
-                EBModelService.getModel(model._id).success(function success(response)
+                EBModelService.getModel(model._id).success(function success(model)
                 {
-                    $scope.selectedModel = response.data;
+                    $scope.selectedModel = model;
 
                     if ($scope.onModelClicked)
                     {
                         $timeout(function()
                         {
-                            $scope.onModelClicked(response.data);
+                            $scope.onModelClicked(model);
                         });
                     }
                 });
