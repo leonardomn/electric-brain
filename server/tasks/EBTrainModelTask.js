@@ -267,14 +267,10 @@ class EBTrainModelTask {
      * @param {object} output The output data for the object
      * @param {function(err)} callback The callback after the object has been successfully stored
      */
-    loadObject(id, input, output, callback)
+    loadObject(id, input, output)
     {
         const self = this;
-        const promise = self.trainingProcess.loadObject(id, input, output);
-        promise.then(() =>
-        {
-            return callback(null);
-        }, (err)=> next(err));
+        return self.trainingProcess.loadObject(id, input, output);
     }
 
 
@@ -365,7 +361,7 @@ class EBTrainModelTask {
             scannedObjects: 0
         };
 
-        const objectsBetweenUpdate = 10000;
+        const objectsBetweenUpdate = 1000;
 
         let lastUpdateTime = new Date();
 
@@ -576,7 +572,7 @@ class EBTrainModelTask {
                             performanceTrace.addTrace('fetch-batch');
                             async.mapSeries(sample, (object, next) =>
                             {
-                                this.loadObject(object.id, object.input, object.output, next);
+                                this.loadObject(object.id, object.input, object.output).then(() => next(), (err) => next(err));
                             }, (err) =>
                             {
                                 if (err)
@@ -623,41 +619,48 @@ class EBTrainModelTask {
                                         });
                                         removeObjectPromise.then(() =>
                                         {
-                                            performanceTrace.addTrace('testing-iteration');
+                                            performanceTrace.addTrace('remove-object');
 
-                                        const trainingAccuracy = math.mean(trainingAccuracies);
-                                        self.rollingAverageAccuracy.accumulate(accuracy);
-                                        self.rollingAverageTrainingaccuracy.accumulate(trainingAccuracy * 100);
-                                        trainingResult.currentAccuracy = self.rollingAverageAccuracy.average;
-                                        trainingResult.iterations.push({
-                                            loss: result.loss,
-                                            accuracy: self.rollingAverageAccuracy.average,
-                                            trainingAccuracy: self.rollingAverageTrainingaccuracy.average
-                                        });
-
-                                        self.updateStepResult('training', trainingResult, (err) =>
-                                        {
-                                            if (err)
+                                            self.testIteration((err, accuracy) =>
                                             {
-                                                return next(err);
-                                            }
-
-                                                performanceTrace.addTrace('save-to-db');
-                                                trainingResult.performance.accumulate(performanceTrace);
-
-                                                if ((trainingResult.completedIterations % saveFrequency) === 0)
+                                                if (err)
                                                 {
-                                                    self.saveTorchModelFile(next);
+                                                    return next(err);
                                                 }
-                                                else
+
+                                                performanceTrace.addTrace('testing-iteration');
+
+                                                const trainingAccuracy = math.mean(trainingAccuracies);
+                                                self.rollingAverageAccuracy.accumulate(accuracy);
+                                                self.rollingAverageTrainingaccuracy.accumulate(trainingAccuracy * 100);
+                                                trainingResult.currentAccuracy = self.rollingAverageAccuracy.average;
+                                                trainingResult.iterations.push({
+                                                    loss: result.loss,
+                                                    accuracy: self.rollingAverageAccuracy.average,
+                                                    trainingAccuracy: self.rollingAverageTrainingaccuracy.average
+                                                });
+
+                                                self.updateStepResult('training', trainingResult, (err) =>
                                                 {
-                                                    return next();
-                                                }
-                                            });
+                                                    if (err)
+                                                    {
+                                                        return next(err);
+                                                    }
 
+                                                    performanceTrace.addTrace('save-to-db');
+                                                    trainingResult.performance.accumulate(performanceTrace);
 
-                                        }, (err) => next(err));
-
+                                                    if ((trainingResult.completedIterations % saveFrequency) === 0)
+                                                    {
+                                                        self.saveTorchModelFile(next);
+                                                    }
+                                                    else
+                                                    {
+                                                        return next();
+                                                    }
+                                                });
+                                            }, (err) => next(err));
+                                        });
                                     });
                                 }, (err) => next(err));
                             });
@@ -953,18 +956,22 @@ class EBTrainModelTask {
      */
     saveTorchModelFile(callback)
     {
+        console.log("save1");
         const self = this;
-       const promise = self.trainingProcess.getTorchModelFileStream();
-       promise.then((stream) =>
-       {
-           stream.pipe(self.gridFS.openUploadStream(`model-${self.model._id}.t7`)).on('error', (error) =>
-            {
-                return callback(error);
-            }).on('finish', () =>
-            {
+        const promise = self.trainingProcess.getTorchModelFileStream();
+        console.log("save2");
+        promise.then((stream) =>
+        {
+            console.log("save3");
+            stream.pipe(self.gridFS.openUploadStream(`model-${self.model._id}.t7`)).on('error', (error) =>
+             {
+                 console.log("save4");
+                 return callback(error);
+             }).on('finish', () =>
+             {
                 return callback();
-            });
-       }, (err) => callback(err));
+             });
+        }, (err) => callback(err));
     }
 }
 
