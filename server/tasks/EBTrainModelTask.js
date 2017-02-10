@@ -52,7 +52,6 @@ class EBTrainModelTask {
             bucketName: 'EBModel.torch'
         });
         this.testingSetPortion = 0.3;
-        this.testingBatchSize = 4;
         this.rollingAverageAccuracy = EBRollingAverage.createWithPeriod(100);
         this.rollingAverageTrainingaccuracy = EBRollingAverage.createWithPeriod(100);
         this.rollingAverageTimeToLoad100Entries = EBRollingAverage.createWithPeriod(100);
@@ -495,7 +494,7 @@ class EBTrainModelTask {
         }
 
         const iterationsForBatch = 25;
-        const minimumTrainingObjectsInQueue = this.testingBatchSize * iterationsForBatch;
+        const minimumTrainingObjectsInQueue = this.model.parameters.testingBatchSize * iterationsForBatch;
 
         // First, lets make sure that there are enough objects in the two fetch queues
         while (this.testingFetchQueue.length < minimumTrainingObjectsInQueue)
@@ -506,7 +505,7 @@ class EBTrainModelTask {
             this.testingSetPosition = (this.testingSetPosition + 1) % this.testingSetEntries.length;
         }
 
-        const testingSampleEntries = this.testingFetchQueue.splice(0, this.testingBatchSize);
+        const testingSampleEntries = this.testingFetchQueue.splice(0, this.model.parameters.testingBatchSize );
 
         return Promise.all(underscore.pluck(testingSampleEntries, "promise")).then((results) =>
         {
