@@ -35,8 +35,6 @@ angular.module('eb').controller('EBArchitectureSelectFieldsController', function
                 {
                     $scope.setSchemaNeedsRefreshed(false);
 
-                    console.log(response.schema);
-
                     const originalInputSchema = $scope.architecture.inputSchema;
                     $scope.architecture.inputSchema = new shared.models.EBSchema(response.schema).clone();
                     if (originalInputSchema)
