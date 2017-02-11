@@ -76,20 +76,18 @@ class EBTorchProcess
                         {
                             return next(err);
                         }
-
                         //childProcess.execSync('rm -rf /home/bradley/eb/electric-brain/training/*');
                         //self.scriptFolder = '/home/bradley/eb/electric-brain/training/';
                         self.scriptFolder = temporaryFolder;
-
                         // Create a list of files that need to be written
                         const files = self.architecture.generateFiles(neuralNetworkComponentDispatch);
-
                         // Write out each of the files
-                        async.each(files, function(file, next)
+                        const WriteFilePromise = Promise.each (files,(file) =>
                         {
                             totalFiles += 1;
-                            fs.writeFile(path.join(self.scriptFolder, file.path), file.data, next);
-                        }, next);
+                            return fs.writeFile(path.join(self.scriptFolder, file.path), file.data);
+                        });
+                        return WriteFilePromise;
                     });
                 },
                 function writeLibraryFiles(next)
@@ -198,16 +196,12 @@ class EBTorchProcess
                 },
                 function handshake(next)
                 {
-                    async.each(self.processes, function(process, next)
+                    const WriteandWaitPromise = Promise.each(self.process,(process) =>
                     {
                         // Now we handshake with the process and get version / name information
-                        process.writeAndWaitForMatchingOutput({type: "handshake"}, {"type": "handshake"}, next);
-                        const promise = process.writeAndWaitForMatchingOutput({type: "handshake"}, {"type": "handshake"});
-                        promise.then(() =>
-                        {
-                            next(null);
-                        }, (err) => next(err));
-                    }, next);
+                        return process.writeAndWaitForMatchingOutput({type: "handshake"}, {"type": "handshake"});
+                    });
+                    return WriteandWaitPromise;
                 }
             ], callback);
         });
@@ -221,14 +215,11 @@ class EBTorchProcess
     killProcess()
     {
         const self = this;
-        return Promise.fromCallback((callback) =>
+        const WriteandWaitPromise = Promise.each(self.process,(process) =>
         {
-            async.each(self.processes, function(process, next)
-            {
-                process.process.kill();
-                next();
-            }, callback);
+            return process.process.kill();
         });
+        return WriteandWaitPromise;
     }
 
 
@@ -240,18 +231,12 @@ class EBTorchProcess
     reset()
     {
         const self = this;
-        return Promise.fromCallback((callback) =>
-        {
-            async.each(self.processes, function(process, next)
+
+        const WriteandWaitPromise = Promise.each(self.processes, (process) =>
             {
-                process.writeAndWaitForMatchingOutput({type: "reset"}, {type: "resetCompleted"}, next);
-                const promise = process.writeAndWaitForMatchingOutput({type: "reset"}, {type: "resetCompleted"});
-                promise.then(() =>
-                {
-                    next(null);
-                }, (err) => next(err));
-            }, callback);
-        });
+                return process.writeAndWaitForMatchingOutput({type: "reset"}, {type: "resetCompleted"});
+            });
+        return WriteandWaitPromise;
     }
 
     /**
@@ -296,34 +281,21 @@ class EBTorchProcess
     loadObject(id, input, output)
     {
         const self = this;
-        return Promise.fromCallback((callback) =>
+        const message = {
+            type: "store",
+            id: id,
+            input: input,
+            output: output
+        };
+        const WriteandWaitPromise = Promise.each(self.processes,(process) =>
         {
-            const message = {
-                type: "store",
-                id: id,
-                input: input,
-                output: output
-            };
-
-            async.each(self.processes, function(process, next)
-            {
-                const promise = process.writeAndWaitForMatchingOutput(message, {type: "stored"});
-                promise.then( () =>
-                {
-                    next(null);
-                }, (err) => next(err));
-            }, function(err)
-            {
-                if (err)
-                {
-                    return callback(err);
-                }
-
-                self.allLoadedEntries.push(id);
-
-                return callback();
-            });
+            return process.writeAndWaitForMatchingOutput(message, {type: "stored"});
         });
+        WriteandWaitPromise.then(() =>
+        {
+            self.allLoadedEntries.push(id);
+        });
+        return WriteandWaitPromise;
     }
 
 
@@ -336,33 +308,19 @@ class EBTorchProcess
     removeObject(id)
     {
         const self = this;
-
-        return Promise.fromCallback((callback) =>
+        const message = {
+            type: "forget",
+            id: id
+        };
+        const WriteandWaitPromise = Promise.each(self.processes, (process) =>
         {
-            const message = {
-                type: "forget",
-                id: id
-            };
-
-            async.each(self.processes, function(process, next)
-            {
-                const promise = process.writeAndWaitForMatchingOutput(message, {type: "forgotten"});
-                promise.then(() =>
-                {
-                    next(null);
-                }, (err) => next(err));
-            }, function(err)
-            {
-                if (err)
-                {
-                    return callback(err);
-                }
-
-                self.allLoadedEntries.splice(self.allLoadedEntries.indexOf(id), 1);
-
-                return callback();
-            });
+            return process.writeAndWaitForMatchingOutput(message, {type: "forgotten"});
         });
+        WriteandWaitPromise.then(() =>
+        {
+            self.allLoadedEntries.splice(self.allLoadedEntries.indexOf(id), 1);
+        });
+        return WriteandWaitPromise;
     }
 
 
@@ -607,23 +565,14 @@ class EBTorchProcess
     loadModelFile()
     {
         const self = this;
-
-        return Promise.fromCallback((callback) =>
+        const message = {
+            type: "load"
+        };
+        const WriteandWaitPromise = Promise.each(self.process, (process) =>
         {
-            const message = {
-                type: "load"
-            };
-
-            async.each(self.processes, function(process, next)
-            {
-                const promise = process.writeAndWaitForMatchingOutput(message, {type: "loaded"});
-                promise.then((result) =>
-                {
-                    return next(null);
-                }, (err) => next(err));
-            }, callback);
+            return process.writeAndWaitForMatchingOutput(message, {type: "loaded"});
         });
-
+        return WriteandWaitPromise;
     }
 }
 

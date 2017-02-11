@@ -145,18 +145,12 @@ class EBStdioJSONStreamProcess extends EventEmitter
     writeAndWaitForMatchingOutput(object, condition)
     {
         const self = this;
-        return Promise.fromCallback((callback) =>
+        const promise = self.write(object);
+        promise.then(() =>
         {
-            const promise = self.write(object);
-            promise.then(() =>
-            {
-                const promise = self.waitForMatchingOutput(condition);
-                promise.then(() =>
-                {
-                    callback(null);
-                }, (err) => callback(err));
-            }, (err) => callback(err));
+            return self.waitForMatchingOutput(condition);
         });
+        return promise;
     }
 
     /**
