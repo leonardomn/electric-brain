@@ -31,7 +31,7 @@ angular.module('eb').directive('ebSchemaFieldResults', function ebSchemaFieldRes
         
         function setupChart()
         {
-            const allValues = _.sortBy($scope.field.metadata.valueHistogram.values.map((value) => value.value), (v) => v);
+            const allValues = _.sortBy($scope.field.metadata.statistics.valueHistogram.values.map((value) => value.value), (v) => v);
             $scope.confusionMatrixChartConfig = {
                 options: {
                     chart: {type: 'heatmap'},
@@ -81,7 +81,7 @@ angular.module('eb').directive('ebSchemaFieldResults', function ebSchemaFieldRes
 
         function recomputeData()
         {
-            const allValues = $scope.field.metadata.valueHistogram.values.map((value) => value.value);
+            const allValues = $scope.field.metadata.statistics.valueHistogram.values.map((value) => value.value);
             const matrix = [];
 
             allValues.forEach(function(expectedValue, expectedValueIndex)
@@ -171,7 +171,7 @@ angular.module('eb').directive('ebSchemaFieldResults', function ebSchemaFieldRes
         {
             if (newValue)
             {
-                const allValues = $scope.field.metadata.valueHistogram.values.map((value) => value.value);
+                const allValues = $scope.field.metadata.statistics.valueHistogram.values.map((value) => value.value);
                 recomputeData();
                 setupChart();
             }

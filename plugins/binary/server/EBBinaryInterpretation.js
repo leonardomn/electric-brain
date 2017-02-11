@@ -291,6 +291,21 @@ class EBBinaryInterpretation extends EBInterpretationBase
             }
         };
     }
+
+
+    /**
+     * This method should return a schema for accumulating accuracy results from values in this interpretation
+     *
+     * @return {jsonschema} A schema representing whatever is needed to store results
+     */
+    static resultsSchema()
+    {
+        return {
+            "id": "EBBinaryInterpretation.resultsSchema",
+            "type": "object",
+            "properties": {}
+        };
+    }
 }
 
 module.exports = EBBinaryInterpretation;

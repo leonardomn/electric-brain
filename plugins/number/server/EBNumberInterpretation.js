@@ -196,6 +196,34 @@ class EBNumberInterpretation extends EBInterpretationBase
 
 
     /**
+     * This method should compare two values according to the given schema, in order to determine the accuracy
+     * of the neural network.
+     *
+     * @param {*} expected The value the network was expected to produce, e.g. the correct answer
+     * @param {*} actual The actual value the network produced.
+     * @param {EBSchema} schema The schema for the value to be compared
+     * @param {boolean} accumulateStatistics Whether or not statistics on the results should be accumulated into the EBSchema object.
+     * @return {number} accuracy The accuracy of the result. should be a number between 0 and 1
+     */
+    compareNetworkOutputs(expected, actual, schema, accumulateStatistics)
+    {
+        // Calculating accuracy here is a bit quack, but we try anyhow
+        if (expected !== 0)
+        {
+            return 1.0 - Math.max(0, Math.min(1, Math.abs((expected - actual) / expected)));
+        }
+        else if (actual !== 0)
+        {
+            return 1.0 - Math.max(0, Math.min(1, Math.abs((expected - actual) / actual)));
+        }
+        else
+        {
+            return 1;
+        }
+    }
+
+
+    /**
      * This method should create a new field accumulator, a subclass of EBFieldAnalysisAccumulatorBase.
      *
      * This accumulator can be used to analyze a bunch of values through the lens of this interpretation,
@@ -256,6 +284,21 @@ class EBNumberInterpretation extends EBInterpretationBase
             "type": "object",
             "properties": {
             }
+        };
+    }
+
+
+    /**
+     * This method should return a schema for accumulating accuracy results from values in this interpretation
+     *
+     * @return {jsonschema} A schema representing whatever is needed to store results
+     */
+    static resultsSchema()
+    {
+        return {
+            "id": "EBNumberInterpretation.resultsSchema",
+            "type": "object",
+            "properties": {}
         };
     }
 }

@@ -19,6 +19,7 @@
 "use strict";
 
 const
+    EBConfusionMatrix = require("../../../shared/models/EBConfusionMatrix"),
     EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
@@ -289,6 +290,38 @@ class EBStringInterpretation extends EBInterpretationBase
 
 
     /**
+     * This method should compare two values according to the given schema, in order to determine the accuracy
+     * of the neural network.
+     *
+     * @param {*} expected The value the network was expected to produce, e.g. the correct answer
+     * @param {*} actual The actual value the network produced.
+     * @param {EBSchema} schema The schema for the value to be compared
+     * @param {boolean} accumulateStatistics Whether or not statistics on the results should be accumulated into the EBSchema object.
+     * @return {number} accuracy The accuracy of the result. should be a number between 0 and 1
+     */
+    compareNetworkOutputs(expected, actual, schema, accumulateStatistics)
+    {
+        if (accumulateStatistics)
+        {
+            if (!schema.results.confusionMatrix)
+            {
+                schema.results.confusionMatrix = new EBConfusionMatrix();
+            }
+            schema.results.confusionMatrix.accumulateResult(expected, actual);
+        }
+
+        if (expected === actual)
+        {
+            return 1;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+
+    /**
      * This method should create a new field accumulator, a subclass of EBFieldAnalysisAccumulatorBase.
      *
      * This accumulator can be used to analyze a bunch of values through the lens of this interpretation,
@@ -362,6 +395,21 @@ class EBStringInterpretation extends EBInterpretationBase
                     "enum": ["classification", "sequence"]
                 }
             }
+        };
+    }
+
+
+    /**
+     * This method should return a schema for accumulating accuracy results from values in this interpretation
+     *
+     * @return {jsonschema} A schema representing whatever is needed to store results
+     */
+    static resultsSchema()
+    {
+        return {
+            "id": "EBStringInterpretation.resultsSchema",
+            "type": "object",
+            "properties": {"confusionMatrix": EBConfusionMatrix.schema()}
         };
     }
 }

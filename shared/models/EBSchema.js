@@ -1801,7 +1801,7 @@ class EBSchema
                 },
                 "results": {
                     "type": "object",
-                    "properties": {"confusionMatrix": EBConfusionMatrix.schema()}
+                    "additionalProperties": true
                 }
             },
             "dependencies": {
