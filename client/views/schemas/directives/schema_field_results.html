@@ -21,10 +21,7 @@
             </div>
             <div class="ibox-content">
                 <h3>Results</h3>
-
-                <div ng-if="field.results.confusionMatrix && field.results.confusionMatrix.expectedValues.length > 0">
-                    <highchart id="confusionMatrix" config="confusionMatrixChartConfig"></highchart>
-                </div>
+                <eb-dynamic-directive directive-name="eb-{{field.metadata.mainInterpretation}}-interpretation-results" field="field"></eb-dynamic-directive>
             </div>
         </div>
     </div>
