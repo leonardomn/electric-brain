@@ -120,6 +120,42 @@ class EBInterpretationBase
     }
 
 
+    /**
+     * This method should transform the given schema for input to the neural network.
+     *
+     * @param {EBSchema} schema The schema to be transformed
+     * @return {Promise} A promise that resolves to a new value.
+     */
+    transformSchemaForNeuralNetwork(schema)
+    {
+        return Promise.rejected(new Error("Unimplemented"));
+    }
+
+
+    /**
+     * This method should take output from the neural network and transform it back
+     *
+     * @param {*} value The value to be transformed
+     * @param {EBSchema} schema The schema for the value to be transformed
+     * @return {Promise} A promise that resolves to a new value
+     */
+    transformValueBackFromNeuralNetwork(value, schema)
+    {
+        return Promise.rejected(new Error("Unimplemented"));
+    }
+
+
+    /**
+     * This method should generate the default configuration for the given schema
+     *
+     * @param {EBSchema} schema The schema for the value to be transformed
+     * @return {object} An object which follows the schema returned from configurationSchema
+     */
+    generateDefaultConfiguration(schema)
+    {
+        throw new Error("Unimplemented");
+    }
+
 
 
     /**
@@ -134,7 +170,7 @@ class EBInterpretationBase
     {
         throw new Error("Unimplemented");
     }
-    
+
 
     /**
      * This method should return a schema for the metadata associated with this interpretation
@@ -142,6 +178,17 @@ class EBInterpretationBase
      * @return {jsonschema} A schema representing the metadata for this interpretation
      */
     static statisticsSchema()
+    {
+        throw Promise.rejected(new Error("Unimplemented"));
+    }
+
+
+    /**
+     * This method should return a schema for the configuration for this interpretation
+     *
+     * @return {jsonschema} A schema representing the configuration for this interpretation
+     */
+    static configurationSchema()
     {
         throw Promise.rejected(new Error("Unimplemented"));
     }

@@ -23,7 +23,6 @@ const
     EBCustomTransformationProcess = require('../components/architecture/EBCustomTransformationProcess'),
     EBRollingAverage = require("../../shared/models/EBRollingAverage"),
     EBTorchProcess = require('../components/architecture/EBTorchProcess'),
-    EBTorchTransformer = require('../../shared/components/architecture/EBTorchTransformer'),
     EBPerformanceData = require('../../shared/models/EBPerformanceData'),
     EBPerformanceTrace = require('../../shared/models/EBPerformanceTrace'),
     models = require("../../shared/models/models"),
@@ -145,7 +144,7 @@ class EBTrainModelTask {
             // Generate the code
             (next) =>
             {
-                const promise = self.trainingProcess.generateCode(self.application.neuralNetworkComponentDispatch);
+                const promise = self.trainingProcess.generateCode(self.application.interpretationRegistry, self.application.neuralNetworkComponentDispatch);
                 promise.then((totalFiles) =>
                 {
                     const codeGenerationResult = {
@@ -288,7 +287,7 @@ class EBTrainModelTask {
             const maxObjectsToLoadAtOnce = 100;
 
             const customTransformationStream = EBCustomTransformationProcess.createCustomTransformationStream(this.model.architecture);
-            const objectTransformationStream = this.model.architecture.getObjectTransformationStream();
+            const objectTransformationStream = this.model.architecture.getObjectTransformationStream(this.application.interpretationRegistry);
             objectTransformationStream.on('error', (err) =>
             {
                 console.log(err);
@@ -718,7 +717,7 @@ class EBTrainModelTask {
                         const output = outputs[index];
                         index += 1;
 
-                        self.model.architecture.convertNetworkOutputObject(output, (err, actualOutput) =>
+                        self.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, output, (err, actualOutput) =>
                         {
                             if (err)
                             {
@@ -886,7 +885,7 @@ class EBTrainModelTask {
                                     const output = outputs[index];
                                     index += 1;
 
-                                    self.model.architecture.convertNetworkOutputObject(output, (err, actualOutput) =>
+                                    self.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, output, (err, actualOutput) =>
                                     {
                                         if (err)
                                         {
@@ -955,16 +954,12 @@ class EBTrainModelTask {
      */
     saveTorchModelFile(callback)
     {
-        console.log("save1");
         const self = this;
         const promise = self.trainingProcess.getTorchModelFileStream();
-        console.log("save2");
         promise.then((stream) =>
         {
-            console.log("save3");
             stream.pipe(self.gridFS.openUploadStream(`model-${self.model._id}.t7`)).on('error', (error) =>
              {
-                 console.log("save4");
                  return callback(error);
              }).on('finish', () =>
              {

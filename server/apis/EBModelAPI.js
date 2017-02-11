@@ -427,7 +427,7 @@ class EBModelAPI extends EBAPIRoot
      */
     transformObject(req, res, next)
     {
-        this.models.find({_id: Number(req.params.id)}).toArray(function(err, objects)
+        this.models.find({_id: Number(req.params.id)}).toArray((err, objects) =>
         {
             if (err)
             {
@@ -442,7 +442,7 @@ class EBModelAPI extends EBAPIRoot
                 // console.log("starting", objects);
                 const model = new models.EBModel(objects[0]);
                 const object = req.body.object;
-                const stream = model.architecture.getObjectTransformationStream();
+                const stream = model.architecture.getObjectTransformationStream(this.application.interpretationRegistry);
                 stream.on('data', function(data)
                 {
                     return next(null, data);
@@ -527,7 +527,7 @@ class EBModelAPI extends EBAPIRoot
                     // Generate the code
                     function generateCode(next)
                     {
-                        const promise = modelProcess.generateCode(self.application.neuralNetworkComponentDispatch);
+                        const promise = modelProcess.generateCode(self.application.interpretationRegistry, self.application.neuralNetworkComponentDispatch);
                         promise.then(() =>
                         {
                             next(null);
@@ -572,7 +572,7 @@ class EBModelAPI extends EBAPIRoot
                     function(next)
                     {
                         const object = req.query.data;
-                        const stream = model.architecture.getObjectTransformationStream();
+                        const stream = model.architecture.getObjectTransformationStream(self.application.interpretationRegistry);
                         stream.on('data', function(data)
                         {
                             const promise = modelProcess.loadObject("1", data.input, data.output );
@@ -591,7 +591,7 @@ class EBModelAPI extends EBAPIRoot
                         promise.then((results) =>
                         {
                             const result = results[0];
-                            model.architecture.convertNetworkOutputObject(result, function(err, output)
+                            model.architecture.convertNetworkOutputObject(self.application.interpretationRegistry, result, function(err, output)
                             {
                                 if (err)
                                 {

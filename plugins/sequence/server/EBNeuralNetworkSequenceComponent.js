@@ -50,6 +50,9 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
      */
     getTensorSchema(schema)
     {
+        // Preliminary assertions
+        assert(schema.isArray);
+
         return new EBTensorSchema({
             "type": "array",
             "variableName": schema.variableName,
@@ -232,6 +235,9 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
      */
     generateInputStack(schema, inputNode)
     {
+        // Preliminary assertions
+        assert(schema.isArray);
+
         // Get the tensor-schema for this array
         const tensorSchema = this.getTensorSchema(schema);
         const moduleName = schema.machineVariablePath;
@@ -294,9 +300,8 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
      */
     generateOutputStack(outputSchema, inputNode, inputTensorSchema)
     {
-        // First, when outputting a sequence, we have to ensure that the same schema existed on
-        // the inputTensorSchema.
-        assert(inputTensorSchema.type === 'object');
+        // Preliminary assertions
+        assert(outputSchema.isArray);
 
         const moduleName = outputSchema.machineVariablePath;
 
@@ -304,7 +309,7 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
         const sequencePosition = inputTensorSchema.getPropertyIndex(`${moduleName}_lstmOutput`);
         assert(sequencePosition !== null);
         const sequenceTensorSchema = inputTensorSchema.properties[sequencePosition];
-        const sequenceExtractorNode = new EBTorchNode(new EBTorchModule('nn.SelectTable', sequencePosition), inputNode, `${moduleName}_extractSequence`);
+        const sequenceExtractorNode = new EBTorchNode(new EBTorchModule('nn.SelectTable', [sequencePosition + 1]), inputNode, `${moduleName}_extractSequence`);
 
         // Now create an output stack that we can apply to each item
         const subModuleName = `${moduleName}_itemOutputStack`;
@@ -340,8 +345,11 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
      */
     generateCriterion(outputSchema)
     {
+        // Preliminary assertions
+        assert(outputSchema.isArray);
+
         // Get the item criterion
-        const itemCriterion = this.neuralNetworkComponentDispatch.generateCriterion(outputSchema);
+        const itemCriterion = this.neuralNetworkComponentDispatch.generateCriterion(outputSchema.items);
         return new EBTorchModule("nn.SequencerCriterion", [itemCriterion]);
     }
 

@@ -416,7 +416,14 @@ class EBArchitectureAPI extends EBAPIRoot
                             return next(err);
                         }
 
-                        const result = {schema: schemaDetector.getSchema()};
+                        const schema = schemaDetector.getSchema();
+
+                        schema.walk((field) =>
+                        {
+                            field.configuration.interpretation = self.application.interpretationRegistry.getInterpretation(field.metadata.mainInterpretation).generateDefaultConfiguration(field);
+                        });
+
+                        const result = {schema: schema};
                         return next(null, result);
                     });
                 }, (err) => next(err));
@@ -452,7 +459,7 @@ class EBArchitectureAPI extends EBAPIRoot
                 async.series([
                     function generateCode(next)
                     {
-                        const promise = process.generateCode(self.application.neuralNetworkComponentDispatch);
+                        const promise = process.generateCode(self.application.interpretationRegistry, self.application.neuralNetworkComponentDispatch);
                         promise.then(() =>
                         {
                             next(null);

@@ -22,6 +22,7 @@ const
     EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
+    EBSchema = require('../../../shared/models/EBSchema'),
     EBValueHistogram = require("../../../shared/models/EBValueHistogram"),
     underscore = require('underscore');
 
@@ -31,11 +32,14 @@ const
 class EBBooleanInterpretation extends EBInterpretationBase
 {
     /**
-     * Constructor
+     * Constructor. Requires the interpretation registry in order to recurse properly
+     *
+     * @param {EBInterpretationRegistry} interpretationRegistry The registry
      */
-    constructor()
+    constructor(interpretationRegistry)
     {
         super('boolean');
+        this.interpretationRegistry = interpretationRegistry;
     }
 
 
@@ -145,6 +149,67 @@ class EBBooleanInterpretation extends EBInterpretationBase
 
 
     /**
+     * This method should transform the given schema for input to the neural network.
+     *
+     * @param {EBSchema} schema The schema to be transformed
+     * @return {Promise} A promise that resolves to a new value.
+     */
+    transformSchemaForNeuralNetwork(schema)
+    {
+        // Convert to a number
+        return new EBSchema({
+            title: schema.title,
+            type: "number"
+        });
+    }
+
+
+    /**
+     * This method should prepare a given value for input into the neural network
+     *
+     * @param {*} value The value to be transformed
+     * @param {EBSchema} schema The schema for the value
+     * @return {Promise} A promise that resolves to a new value.
+     */
+    transformValueForNeuralNetwork(value)
+    {
+        if (value)
+        {
+            return 1;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+
+    /**
+     * This method should take output from the neural network and transform it back
+     *
+     * @param {*} value The value to be transformed
+     * @param {EBSchema} schema The schema for the value to be transformed
+     * @return {Promise} A promise that resolves to a new value
+     */
+    transformValueBackFromNeuralNetwork(value, schema)
+    {
+        return Boolean(Math.round(value));
+    }
+
+
+    /**
+     * This method should generate the default configuration for the given schema
+     *
+     * @param {EBSchema} schema The schema for the value to be transformed
+     * @return {object} An object which follows the schema returned from configurationSchema
+     */
+    generateDefaultConfiguration(schema)
+    {
+        return {};
+    }
+
+
+    /**
      * This method should create a new field accumulator, a subclass of EBFieldAnalysisAccumulatorBase.
      *
      * This accumulator can be used to analyze a bunch of values through the lens of this interpretation,
@@ -205,10 +270,26 @@ class EBBooleanInterpretation extends EBInterpretationBase
     static statisticsSchema()
     {
         return {
-            "id": "EBFieldMetadata",
+            "id": "EBBooleanInterpretation.statisticsSchema",
             "type": "object",
             "properties": {
                 valueHistogram: EBValueHistogram.schema()
+            }
+        };
+    }
+
+
+    /**
+     * This method should return a schema for the configuration for this interpretation
+     *
+     * @return {jsonschema} A schema representing the configuration for this interpretation
+     */
+    static configurationSchema()
+    {
+        return {
+            "id": "EBBooleanInterpretation.configurationSchema",
+            "type": "object",
+            "properties": {
             }
         };
     }

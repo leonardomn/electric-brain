@@ -31,11 +31,14 @@ const
 class EBNumberInterpretation extends EBInterpretationBase
 {
     /**
-     * Constructor
+     * Constructor. Requires the interpretation registry in order to recurse properly
+     *
+     * @param {EBInterpretationRegistry} interpretationRegistry The registry
      */
-    constructor()
+    constructor(interpretationRegistry)
     {
         super('number');
+        this.interpretationRegistry = interpretationRegistry;
     }
 
 
@@ -139,14 +142,56 @@ class EBNumberInterpretation extends EBInterpretationBase
      */
     transformExample(value)
     {
-        if (value.length > 50)
-        {
-            return Promise.resolve(value.substr(0, 50) + "...");
-        }
-        else
-        {
-            return Promise.resolve(value);
-        }
+        return Promise.resolve(value);
+    }
+
+
+    /**
+     * This method should transform the given schema for input to the neural network.
+     *
+     * @param {EBSchema} schema The schema to be transformed
+     * @return {Promise} A promise that resolves to a new value.
+     */
+    transformSchemaForNeuralNetwork(schema)
+    {
+        return schema;
+    }
+
+
+    /**
+     * This method should prepare a given value for input into the neural network
+     *
+     * @param {EBSchema} value The value to be transformed
+     * @return {Promise} A promise that resolves to a new value.
+     */
+    transformValueForNeuralNetwork(value)
+    {
+        return Number(value);
+    }
+
+
+    /**
+     * This method should take output from the neural network and transform it back
+     *
+     * @param {*} value The value to be transformed
+     * @param {EBSchema} schema The schema for the value to be transformed
+     * @return {Promise} A promise that resolves to a new value
+     */
+    transformValueBackFromNeuralNetwork(value, schema)
+    {
+        return value;
+    }
+
+
+    /**
+     * This method should generate the default configuration for the given schema
+     *
+     * @param {EBSchema} schema The schema for the value to be transformed
+     * @return {object} An object which follows the schema returned from configurationSchema
+     */
+    generateDefaultConfiguration(schema)
+    {
+        return {};
     }
 
 
@@ -190,10 +235,26 @@ class EBNumberInterpretation extends EBInterpretationBase
     static statisticsSchema()
     {
         return {
-            "id": "EBFieldMetadata",
+            "id": "EBNumberInterpretation.statisticsSchema",
             "type": "object",
             "properties": {
                 numberHistogram: EBNumberHistogram.schema()
+            }
+        };
+    }
+
+
+    /**
+     * This method should return a schema for the configuration for this interpretation
+     *
+     * @return {jsonschema} A schema representing the configuration for this interpretation
+     */
+    static configurationSchema()
+    {
+        return {
+            "id": "EBNumberInterpretation.configurationSchema",
+            "type": "object",
+            "properties": {
             }
         };
     }

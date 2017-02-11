@@ -38,7 +38,7 @@ class EBValueHistogram
         {
             rawHistogram = {};
         }
-        
+
         if (rawHistogram.values)
         {
             self.values = rawHistogram.values;
@@ -46,6 +46,15 @@ class EBValueHistogram
         else
         {
             self.values = [];
+        }
+
+        if (rawHistogram.cardinality)
+        {
+            self.cardinality = rawHistogram.cardinality;
+        }
+        else
+        {
+            self.cardinality = null;
         }
     }
 
@@ -80,6 +89,7 @@ class EBValueHistogram
         });
 
         histogram.values = underscore.sortBy(histogram.values, (item) => -item.frequency);
+        histogram.cardinality = histogram.values.length / values.length;
 
         return new EBValueHistogram(histogram);
     }

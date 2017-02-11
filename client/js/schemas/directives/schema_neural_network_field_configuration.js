@@ -25,26 +25,7 @@ angular.module('eb').directive('ebSchemaFieldNeuralNetworkConfiguration', functi
 {
     function controller($scope, $element, $attrs)
     {
-        $scope.$watch('field.configuration.neuralNetwork.image.layers', function(newValue, oldValue)
-        {
-            if (newValue)
-            {
-                const inputWidth = $scope.field.configuration.neuralNetwork.image.inputWidth;
-                const inputHeight = $scope.field.configuration.neuralNetwork.image.inputHeight;
-
-                // Make sure that all of the values are kept within acceptable bounds
-                $scope.field.configuration.neuralNetwork.image.layers.forEach(function(layer)
-                {
-                    layer._maxConvolutionalKernelSize = Math.min(layer.inputWidth - 1, layer.inputHeight - 1);
-                    layer.convolutionPadSize = Math.min(layer.convolutionKernelSize, layer.convolutionPadSize) || 0;
-
-                    layer._maxPoolingKernelSize = Math.min(layer.convolutionOutputWidth - 1, layer.convolutionOutputHeight - 1);
-                    layer.poolingPadSize = Math.min(layer.poolingKernelSize, layer.poolingPadSize) || 0;
-                });
-
-                shared.models.EBSchemaNeuralNetworkConfiguration.recomputeConvolutionalLayerSizes(inputWidth, inputHeight, $scope.field.configuration.neuralNetwork.image.layers);
-            }
-        }, true);
+        
     }
 
     return {

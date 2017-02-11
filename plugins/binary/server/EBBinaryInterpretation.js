@@ -22,6 +22,7 @@ const
     EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
+    EBSchema = require('./../../../shared/models/EBSchema'),
     EBValueHistogram = require('../../../shared/models/EBValueHistogram'),
     fileType = require('file-type'),
     underscore = require('underscore');
@@ -32,11 +33,14 @@ const
 class EBBinaryInterpretation extends EBInterpretationBase
 {
     /**
-     * Constructor
+     * Constructor. Requires the interpretation registry in order to recurse properly
+     *
+     * @param {EBInterpretationRegistry} interpretationRegistry The registry
      */
-    constructor()
+    constructor(interpretationRegistry)
     {
         super('binary');
+        this.interpretationRegistry = interpretationRegistry;
     }
 
 
@@ -144,6 +148,79 @@ class EBBinaryInterpretation extends EBInterpretationBase
 
 
     /**
+     * This method should transform the given schema for input to the neural network.
+     *
+     * @param {EBSchema} schema The schema to be transformed
+     * @return {Promise} A promise that resolves to a new value.
+     */
+    transformSchemaForNeuralNetwork(schema)
+    {
+        // Vanilla 8bit sequence representation
+        return new EBSchema({
+            title: schema.title,
+            type: "array",
+            items: {
+                title: `${schema.title}.[]`,
+                type: "object",
+                properties: {
+                    byte: {
+                        title: `${schema.title}.[].byte`,
+                        type: "number",
+                        enum: underscore.range(0, 255),
+                        configuration: {included: true}
+                    }
+                },
+                configuration: {included: true}
+            },
+            configuration: {included: true}
+        });
+    }
+
+
+    /**
+     * This method should prepare a given value for input into the neural network
+     *
+     * @param {EBSchema} value The value to be transformed
+     * @return {Promise} A promise that resolves to a new value.
+     */
+    transformValueForNeuralNetwork(value)
+    {
+        const bytes = [];
+        for (let n = 0; n < value.length; n += 1)
+        {
+            bytes.push({byte: value[n]});
+        }
+        return bytes;
+    }
+
+
+    /**
+     * This method should take output from the neural network and transform it back
+     *
+     * @param {*} value The value to be transformed
+     * @param {EBSchema} schema The schema for the value to be transformed
+     * @return {Promise} A promise that resolves to a new value
+     */
+    transformValueBackFromNeuralNetwork(value, schema)
+    {
+        let output = new Buffer(value.map((value) => value.byte));
+        return output;
+    }
+
+
+    /**
+     * This method should generate the default configuration for the given schema
+     *
+     * @param {EBSchema} schema The schema for the value to be transformed
+     * @return {object} An object which follows the schema returned from configurationSchema
+     */
+    generateDefaultConfiguration(schema)
+    {
+        return {};
+    }
+
+
+    /**
      * This method should create a new field accumulator, a subclass of EBFieldAnalysisAccumulatorBase.
      *
      * This accumulator can be used to analyze a bunch of values through the lens of this interpretation,
@@ -190,10 +267,27 @@ class EBBinaryInterpretation extends EBInterpretationBase
     static statisticsSchema()
     {
         return {
-            "id": "EBFieldMetadata",
+            "id": "EBBinaryInterpretation.statisticsSchema",
             "type": "object",
             "properties": {
                 binaryMimeTypeHistogram: EBValueHistogram.schema()
+            }
+        };
+    }
+
+
+    /**
+     * This method should return a schema for the configuration for this interpretation
+     *
+     * @return {jsonschema} A schema representing the configuration for this interpretation
+     */
+    static configurationSchema()
+    {
+        return {
+            "id": "EBBinaryInterpretation.configurationSchema",
+            "type": "object",
+            "properties": {
+
             }
         };
     }

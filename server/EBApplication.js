@@ -25,6 +25,7 @@ const
     express = require("express"),
     EBDataSourcePluginDispatch = require("./components/datasource/EBDataSourcePluginDispatch"),
     EBNeuralNetworkComponentDispatch = require("../shared/components/architecture/EBNeuralNetworkComponentDispatch"),
+    EBInterpretationRegistry = require("./components/datasource/EBInterpretationRegistry"),
     flattener = require('./middleware/flattener'),
     fs = require("fs"),
     http = require('http'),
@@ -81,9 +82,16 @@ class EBApplication
         // Set up the main data source plugin
         this.dataSourcePluginDispatch = new EBDataSourcePluginDispatch();
         this.neuralNetworkComponentDispatch = new EBNeuralNetworkComponentDispatch();
+        this.interpretationRegistry = new EBInterpretationRegistry();
 
         this.plugins.forEach((plugin) =>
         {
+            const interpretationNames = Object.keys(plugin.interpretations || {});
+            interpretationNames.forEach((name) =>
+            {
+                this.interpretationRegistry.addInterpretation(new plugin.interpretations[name](this.interpretationRegistry));
+            });
+            
             const neuralNetworkComponentNames = Object.keys(plugin.neuralNetworkComponents || {});
             neuralNetworkComponentNames.forEach((name) =>
             {
