@@ -23,7 +23,6 @@ const
     EBCustomTransformationProcess = require('../components/architecture/EBCustomTransformationProcess'),
     EBRollingAverage = require("../../shared/models/EBRollingAverage"),
     EBTorchProcess = require('../components/architecture/EBTorchProcess'),
-    EBTorchTransformer = require('../../shared/components/architecture/EBTorchTransformer'),
     EBPerformanceData = require('../../shared/models/EBPerformanceData'),
     EBPerformanceTrace = require('../../shared/models/EBPerformanceTrace'),
     models = require("../../shared/models/models"),
@@ -145,7 +144,7 @@ class EBTrainModelTask {
             // Generate the code
             (next) =>
             {
-                const promise = self.trainingProcess.generateCode(self.application.neuralNetworkComponentDispatch);
+                const promise = self.trainingProcess.generateCode(self.application.interpretationRegistry, self.application.neuralNetworkComponentDispatch);
                 promise.then((totalFiles) =>
                 {
                     const codeGenerationResult = {
@@ -288,7 +287,7 @@ class EBTrainModelTask {
             const maxObjectsToLoadAtOnce = 100;
 
             const customTransformationStream = EBCustomTransformationProcess.createCustomTransformationStream(this.model.architecture);
-            const objectTransformationStream = this.model.architecture.getObjectTransformationStream();
+            const objectTransformationStream = this.model.architecture.getObjectTransformationStream(this.application.interpretationRegistry);
             objectTransformationStream.on('error', (err) =>
             {
                 console.log(err);
@@ -600,7 +599,7 @@ class EBTrainModelTask {
                                     {
                                         const expected = zippedObjects[0];
                                         const actual = zippedObjects[1];
-                                        self.getAccuracyFromOutput(expected.output, actual).then((trainingAccuracy) =>
+                                        self.getAccuracyFromOutput(expected.output, actual, false).then((trainingAccuracy) =>
                                         {
                                             trainingAccuracies.push(trainingAccuracy);
                                             return next();
@@ -718,14 +717,14 @@ class EBTrainModelTask {
                         const output = outputs[index];
                         index += 1;
 
-                        self.model.architecture.convertNetworkOutputObject(output, (err, actualOutput) =>
+                        self.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, output, (err, actualOutput) =>
                         {
                             if (err)
                             {
                                 return next(err);
                             }
 
-                            self.getAccuracyFromOutput(object.original, actualOutput).then((accuracy) =>
+                            self.getAccuracyFromOutput(object.original, actualOutput, true).then((accuracy) =>
                             {
                                 accuracies.push(accuracy);
                                 return next();
@@ -761,45 +760,19 @@ class EBTrainModelTask {
      *
      * @param {object} expected The expected output object
      * @param {object} actual The actual output object produced by machine learning
+     * @param {boolean} accumulateResult Whether to accumulate the result of this comparison into the schema for display on the frontend
      * @return {Promise} A promise that will resolve to the accuracy
      */
-    getAccuracyFromOutput(expected, actual)
+    getAccuracyFromOutput(expected, actual, accumulateResult)
     {
         return Promise.fromCallback((next) =>
         {
-            let correctClassifications = 0;
-            let totalClassifications = 0;
-            const numberPredictionErrors = [];
+            const accuracies = [];
             this.model.architecture.outputSchema.walkObjectsAsync([expected, actual], (fieldName, values, fieldSchema, parents, parentSchema, next) =>
             {
                 if (fieldSchema.isField && fieldSchema.configuration.included)
                 {
-                    if (fieldSchema.isString)
-                    {
-                        totalClassifications += 1;
-                        if (values[0] === values[1])
-                        {
-                            correctClassifications += 1;
-                        }
-
-                        fieldSchema.results.confusionMatrix.accumulateResult(values[0], values[1]);
-                    }
-                    else
-                    {
-                        // Calculating accuracy here is a bit quack, but we try anyhow
-                        if (values[0] !== 0)
-                        {
-                            numberPredictionErrors.push(Math.max(0, Math.min(1, Math.abs((values[0] - values[1]) / values[0]))));
-                        }
-                        else if (values[1] !== 0)
-                        {
-                            numberPredictionErrors.push(Math.max(0, Math.min(1, Math.abs((values[0] - values[1]) / values[1]))));
-                        }
-                        else
-                        {
-                            numberPredictionErrors.push(0);
-                        }
-                    }
+                    accuracies.push(this.application.interpretationRegistry.getInterpretation(fieldSchema.metadata.mainInterpretation).compareNetworkOutputs(values[0], values[1], fieldSchema, accumulateResult));
                 }
 
                 return next();
@@ -810,10 +783,7 @@ class EBTrainModelTask {
                     return next(err);
                 }
 
-                const totalPredictionAccuracy = underscore.reduce(numberPredictionErrors, (total, error) => total + (1.0 - error), 0);
-                const accuracy = (correctClassifications + totalPredictionAccuracy) / (totalClassifications + numberPredictionErrors.length);
-
-                return next(null, accuracy);
+                return next(null, math.mean(accuracies));
             });
         });
     }
@@ -886,14 +856,14 @@ class EBTrainModelTask {
                                     const output = outputs[index];
                                     index += 1;
 
-                                    self.model.architecture.convertNetworkOutputObject(output, (err, actualOutput) =>
+                                    self.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, output, (err, actualOutput) =>
                                     {
                                         if (err)
                                         {
                                             return next(err);
                                         }
 
-                                        self.getAccuracyFromOutput(object.original, actualOutput).then((accuracy) =>
+                                        self.getAccuracyFromOutput(object.original, actualOutput, true).then((accuracy) =>
                                         {
                                             accuracies.push(accuracy);
 
@@ -955,16 +925,12 @@ class EBTrainModelTask {
      */
     saveTorchModelFile(callback)
     {
-        console.log("save1");
         const self = this;
         const promise = self.trainingProcess.getTorchModelFileStream();
-        console.log("save2");
         promise.then((stream) =>
         {
-            console.log("save3");
             stream.pipe(self.gridFS.openUploadStream(`model-${self.model._id}.t7`)).on('error', (error) =>
              {
-                 console.log("save4");
                  return callback(error);
              }).on('finish', () =>
              {

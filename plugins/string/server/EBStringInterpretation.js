@@ -19,10 +19,12 @@
 "use strict";
 
 const
+    EBConfusionMatrix = require("../../../shared/models/EBConfusionMatrix"),
     EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
     EBNumberHistogram = require('../../../shared/models/EBNumberHistogram'),
+    EBSchema = require("../../../shared/models/EBSchema"),
     EBValueHistogram = require('../../../shared/models/EBValueHistogram'),
     underscore = require('underscore');
 
@@ -32,11 +34,14 @@ const
 class EBStringInterpretation extends EBInterpretationBase
 {
     /**
-     * Constructor
+     * Constructor. Requires the interpretation registry in order to recurse properly
+     *
+     * @param {EBInterpretationRegistry} interpretationRegistry The registry
      */
-    constructor()
+    constructor(interpretationRegistry)
     {
         super('string');
+        this.interpretationRegistry = interpretationRegistry;
     }
 
 
@@ -55,6 +60,16 @@ class EBStringInterpretation extends EBInterpretationBase
         return [];
     }
 
+    
+    /**
+     * This method returns the raw javascript type of value that this interpretation applies to.
+     *
+     * @return {string} Can be one of: 'object', 'array', 'number', 'string', 'boolean', 'binary'
+     */
+    getJavascriptType(value)
+    {
+        return 'string';
+    }
 
 
     /**
@@ -107,20 +122,149 @@ class EBStringInterpretation extends EBInterpretationBase
     }
 
 
+    /**
+     * This method should transform the given schema for input to the neural network.
+     *
+     * @param {EBSchema} schema The schema to be transformed
+     * @return {Promise} A promise that resolves to a new value.
+     */
+    transformSchemaForNeuralNetwork(schema)
+    {
+        // Decide whether to represent this string as an enum or a sequence
+        const representAsEnum = schema.configuration.interpretation.mode === 'classification';
+        if (representAsEnum)
+        {
+            schema.type = ['number'];
+            schema.enum = [null];
+            schema.metadata.statistics.valueHistogram.values.forEach((number, index) =>
+            {
+                schema.enum.push(index);
+            });
+            return schema;
+        }
+        else
+        {
+            // Vanilla ascii sequence representation
+            const asciiLength = 128;
+            return new EBSchema({
+                title: schema.title,
+                type: "array",
+                items: {
+                    title: `${schema.title}.[]`,
+                    type: "object",
+                    properties: {
+                        character: {
+                            title: `${schema.title}.[].character`,
+                            type: "number",
+                            enum: underscore.range(0, asciiLength),
+                            configuration: {included: true}
+                        }
+                    },
+                    configuration: {included: true}
+                },
+                configuration: {included: true}
+            });
+        }
+    }
 
 
     /**
-     * This method should return information about fields that need to be graphed on
-     * the frontend for this interpretation.
+     * This method should prepare a given value for input into the neural network
      *
      * @param {*} value The value to be transformed
-     * @return {Promise} A promise that resolves to an array of statistics
+     * @param {EBSchema} schema The schema for the value to be transformed
+     * @return {Promise} A promise that resolves to a new value.
      */
-    listStatistics(value)
+    transformValueForNeuralNetwork(value, schema)
     {
-        return Promise.resolve([]);
+        // Decide whether to represent this string as an enum or a sequence
+        const representAsEnum = schema.configuration.interpretation.mode === 'classification';
+        if (representAsEnum)
+        {
+            const values = underscore.map(schema.metadata.statistics.valueHistogram.values, (value) => value.value);
+            const index = values.indexOf(value);
+            if (index === -1)
+            {
+                console.log('enum value not found: ', value);
+                // console.log(self.values);
+                return 0;
+            }
+            else
+            {
+                return index + 1;
+            }
+        }
+        else
+        {
+            const output = [];
+            const asciiLength = 128;
+            for (let characterIndex = 0; characterIndex < value.toString().length; characterIndex += 1)
+            {
+                let charCode = value.toString().charCodeAt(characterIndex);
+                if (charCode >= asciiLength)
+                {
+                    charCode = 0;
+                }
+
+                output.push({character: charCode});
+            }
+            return output;
+        }
     }
 
+
+    /**
+     * This method should take output from the neural network and transform it back
+     *
+     * @param {*} value The value to be transformed
+     * @param {EBSchema} schema The schema for the value to be transformed
+     * @return {Promise} A promise that resolves to a new value
+     */
+    transformValueBackFromNeuralNetwork(value, schema)
+    {
+        // Decide whether to represent this string as an enum or a sequence
+        const representAsEnum = schema.configuration.interpretation.mode === 'classification';
+        if (representAsEnum)
+        {
+            if (value === 0)
+            {
+                return null;
+            }
+            else
+            {
+                const values = underscore.map(schema.metadata.statistics.valueHistogram.values, (value) => value.value);
+                return values[value - 1];
+            }
+        }
+        else
+        {
+            let output = "";
+            value.forEach((character) =>
+            {
+                output += String.fromCharCode(character.character);
+            });
+            return output;
+        }
+    }
+
+
+    /**
+     * This method should generate the default configuration for the given schema
+     *
+     * @param {EBSchema} schema The schema for the value to be transformed
+     * @return {object} An object which follows the schema returned from configurationSchema
+     */
+    generateDefaultConfiguration(schema)
+    {
+        if (schema.metadata.statistics.valueHistogram.cardinality > 0.6)
+        {
+            return {mode: "sequence"};
+        }
+        else
+        {
+            return {mode: "classification"};
+        }
+    }
 
 
 
@@ -141,6 +285,38 @@ class EBStringInterpretation extends EBInterpretationBase
         else
         {
             return Promise.resolve(value);
+        }
+    }
+
+
+    /**
+     * This method should compare two values according to the given schema, in order to determine the accuracy
+     * of the neural network.
+     *
+     * @param {*} expected The value the network was expected to produce, e.g. the correct answer
+     * @param {*} actual The actual value the network produced.
+     * @param {EBSchema} schema The schema for the value to be compared
+     * @param {boolean} accumulateStatistics Whether or not statistics on the results should be accumulated into the EBSchema object.
+     * @return {number} accuracy The accuracy of the result. should be a number between 0 and 1
+     */
+    compareNetworkOutputs(expected, actual, schema, accumulateStatistics)
+    {
+        if (accumulateStatistics)
+        {
+            if (!schema.results.confusionMatrix)
+            {
+                schema.results.confusionMatrix = new EBConfusionMatrix();
+            }
+            schema.results.confusionMatrix.accumulateResult(expected, actual);
+        }
+
+        if (expected === actual)
+        {
+            return 1;
+        }
+        else
+        {
+            return 0;
         }
     }
 
@@ -178,14 +354,9 @@ class EBStringInterpretation extends EBInterpretationBase
                 }
             }
 
-            getFieldMetadata()
+            getFieldStatistics()
             {
-                const metadata = new EBFieldMetadata();
-
-                metadata.types.push('string');
-                metadata.valueHistogram = EBValueHistogram.computeHistogram(this.values);
-
-                return metadata;
+                return {valueHistogram: EBValueHistogram.computeHistogram(this.values)};
             }
         })();
     }
@@ -196,15 +367,49 @@ class EBStringInterpretation extends EBInterpretationBase
      *
      * @return {jsonschema} A schema representing the metadata for this interpretation
      */
-    static metadataSchema()
+    static statisticsSchema()
     {
         return {
-            "id": "EBFieldMetadata",
+            "id": "EBStringInterpretation.statisticsSchema",
             "type": "object",
             "properties": {
-                imageWidthHistogram: EBNumberHistogram.schema(),
-                imageHeightHistogram: EBNumberHistogram.schema()
+                valueHistogram: EBValueHistogram.schema()
             }
+        };
+    }
+
+
+    /**
+     * This method should return a schema for the configuration for this interpretation
+     *
+     * @return {jsonschema} A schema representing the configuration for this interpretation
+     */
+    static configurationSchema()
+    {
+        return {
+            "id": "EBStringInterpretation.configurationSchema",
+            "type": "object",
+            "properties": {
+                mode: {
+                    "type": "string",
+                    "enum": ["classification", "sequence"]
+                }
+            }
+        };
+    }
+
+
+    /**
+     * This method should return a schema for accumulating accuracy results from values in this interpretation
+     *
+     * @return {jsonschema} A schema representing whatever is needed to store results
+     */
+    static resultsSchema()
+    {
+        return {
+            "id": "EBStringInterpretation.resultsSchema",
+            "type": "object",
+            "properties": {"confusionMatrix": EBConfusionMatrix.schema()}
         };
     }
 }

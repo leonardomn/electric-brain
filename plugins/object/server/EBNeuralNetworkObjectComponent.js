@@ -254,6 +254,9 @@ class EBNeuralNetworkObjectComponent extends EBNeuralNetworkComponentBase
      */
     generateInputStack(schema, inputNode)
     {
+        // Preliminary assertions
+        assert(schema.isObject);
+        
         const moduleName = schema.machineVariablePath || "root";
         // For each variable, create a node that pulls it out of the input
         const children = schema.children;
@@ -308,9 +311,8 @@ class EBNeuralNetworkObjectComponent extends EBNeuralNetworkComponentBase
      */
     generateOutputStack(outputSchema, inputNode, inputTensorSchema)
     {
-        // First, when outputting a sequence, we have to ensure that the same schema existed on
-        // the inputTensorSchema.
-        assert(inputTensorSchema.type === 'object');
+        // Preliminary assertions
+        assert(outputSchema.isObject);
 
         const moduleName = outputSchema.machineVariablePath || "root";
 
@@ -357,6 +359,9 @@ class EBNeuralNetworkObjectComponent extends EBNeuralNetworkComponentBase
      */
     generateCriterion(outputSchema)
     {
+        // Preliminary assertions
+        assert(outputSchema.isObject);
+
         // For each variable, create the criterion
         const children = outputSchema.children;
         const criterions = [];

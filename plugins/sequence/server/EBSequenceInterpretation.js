@@ -20,6 +20,7 @@
 
 const
     EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
+    EBNumberHistogram = require('../../../shared/models/EBNumberHistogram'),
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
     underscore = require('underscore');
@@ -30,11 +31,14 @@ const
 class EBSequenceInterpretation extends EBInterpretationBase
 {
     /**
-     * Constructor
+     * Constructor. Requires the interpretation registry in order to recurse properly
+     *
+     * @param {EBInterpretationRegistry} interpretationRegistry The registry
      */
-    constructor()
+    constructor(interpretationRegistry)
     {
         super('sequence');
+        this.interpretationRegistry = interpretationRegistry;
     }
 
 
@@ -51,6 +55,19 @@ class EBSequenceInterpretation extends EBInterpretationBase
     getUpstreamInterpretations()
     {
         return [];
+    }
+
+
+
+
+    /**
+     * This method returns the raw javascript type of value that this interpretation applies to.
+     *
+     * @return {string} Can be one of: 'object', 'array', 'number', 'string', 'boolean', 'binary'
+     */
+    getJavascriptType()
+    {
+        return 'array';
     }
 
 
@@ -108,21 +125,6 @@ class EBSequenceInterpretation extends EBInterpretationBase
 
 
     /**
-     * This method should return information about fields that need to be graphed on
-     * the frontend for this interpretation.
-     *
-     * @param {*} value The value to be transformed
-     * @return {Promise} A promise that resolves to an array of statistics
-     */
-    listStatistics(value)
-    {
-        return Promise.resolve([]);
-    }
-
-
-
-
-    /**
      * This method should transform an example into a value that is small enough to be
      * stored with the schema and shown on the frontend. Information can be destroyed
      * in this transformation in order to allow the data to be stored easily.
@@ -133,6 +135,71 @@ class EBSequenceInterpretation extends EBInterpretationBase
     transformExample(value)
     {
         return Promise.resolve(null);
+    }
+
+
+    /**
+     * This method should transform the given schema for input to the neural network.
+     *
+     * @param {EBSchema} schema The schema to be transformed
+     * @return {Promise} A promise that resolves to a new value.
+     */
+    transformSchemaForNeuralNetwork(schema)
+    {
+        return schema.transform((subSchema) =>
+        {
+            // Get the schema's main interpretation
+            const interpretation = this.interpretationRegistry.getInterpretation(subSchema.metadata.mainInterpretation);
+            return interpretation.transformSchemaForNeuralNetwork(subSchema);
+        });
+    }
+
+
+    /**
+     * This method should prepare a given value for input into the neural network
+     *
+     * @param {*} value The value to be transformed
+     * @param {EBSchema} schema The schema for the value to be transformed
+     * @return {Promise} A promise that resolves to a new value.
+     */
+    transformValueForNeuralNetwork(value, schema)
+    {
+        return schema.transformObject(value, (key, value, subSchema, parent, parentSchema) =>
+        {
+            // Get the schema's main interpretation
+            const interpretation = this.interpretationRegistry.getInterpretation(subSchema.metadata.mainInterpretation);
+            return interpretation.transformValueForNeuralNetwork(value, subSchema);
+        });
+    }
+
+
+    /**
+     * This method should take output from the neural network and transform it back
+     *
+     * @param {*} value The value to be transformed
+     * @param {EBSchema} schema The schema for the value to be transformed
+     * @return {Promise} A promise that resolves to a new value
+     */
+    transformValueBackFromNeuralNetwork(value, schema)
+    {
+        return schema.transformObject(value, (key, value, subSchema, parent, parentSchema) =>
+        {
+            // Get the schema's main interpretation
+            const interpretation = this.interpretationRegistry.getInterpretation(subSchema.metadata.mainInterpretation);
+            return interpretation.transformValueBackFromNeuralNetwork(value, subSchema);
+        });
+    }
+
+
+    /**
+     * This method should generate the default configuration for the given schema
+     *
+     * @param {EBSchema} schema The schema for the value to be transformed
+     * @return {object} An object which follows the schema returned from configurationSchema
+     */
+    generateDefaultConfiguration(schema)
+    {
+        return {};
     }
 
 
@@ -160,12 +227,9 @@ class EBSequenceInterpretation extends EBInterpretationBase
                 this.arrayLengths.push(value.length);
             }
 
-            getFieldMetadata()
+            getFieldStatistics()
             {
-                const metadata = new EBFieldMetadata();
-                self.metadata.types.push('array');
-                self.metadata.arrayLengthHistogram = EBNumberHistogram.computeHistogram(self.arrayLengths);
-                return metadata;
+                return {arrayLengthHistogram: EBNumberHistogram.computeHistogram(this.arrayLengths)};
             }
         })();
     }
@@ -176,14 +240,46 @@ class EBSequenceInterpretation extends EBInterpretationBase
      *
      * @return {jsonschema} A schema representing the metadata for this interpretation
      */
-    static metadataSchema()
+    static statisticsSchema()
     {
         return {
-            "id": "EBFieldMetadata",
+            "id": "EBSequenceInterpretation.statisticsSchema",
             "type": "object",
             "properties": {
                 arrayLengthHistogram: EBNumberHistogram.schema()
             }
+        };
+    }
+
+
+    /**
+     * This method should return a schema for the configuration for this interpretation
+     *
+     * @return {jsonschema} A schema representing the configuration for this interpretation
+     */
+    static configurationSchema()
+    {
+        return {
+            "id": "EBSequenceInterpretation.configurationSchema",
+            "type": "object",
+            "properties": {
+                lstmInternalSize: {"type": "number"}
+            }
+        };
+    }
+
+
+    /**
+     * This method should return a schema for accumulating accuracy results from values in this interpretation
+     *
+     * @return {jsonschema} A schema representing whatever is needed to store results
+     */
+    static resultsSchema()
+    {
+        return {
+            "id": "EBSequenceInterpretation.resultsSchema",
+            "type": "object",
+            "properties": {}
         };
     }
 }

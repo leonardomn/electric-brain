@@ -28,7 +28,6 @@ const
     EBTorchModule = require("./EBTorchModule"),
     EBTorchNode = require("./EBTorchNode"),
     EBTorchCustomModule = require("./EBTorchCustomModule"),
-    EBTorchTransformer = require("../components/architecture/EBTorchTransformer"),
     stream = require('stream'),
     trainingScriptTemplate = require("../../build/torch/training_script"),
     underscore = require('underscore');
@@ -79,9 +78,6 @@ class EBArchitecture
                 self[key] = rawArchitecture[key];
             }
         });
-
-        self[_inputTorchTransformer] = new EBTorchTransformer();
-        self[_outputTorchTransformer] = new EBTorchTransformer();
     }
 
     /**
@@ -107,19 +103,16 @@ class EBArchitecture
      * This method returns a NodeJS stream that can be used to transform objects into the inputs
      * and outputs for the neural network
      *
+     * @param {EBInterpretationRegistry} registry The registry for the transformation stream
      * @returns {Stream} A standard NodeJS transformation stream that you can write() to, read()
      *                   from, and pipe() wherever you want
      */
-    getObjectTransformationStream()
+    getObjectTransformationStream(registry)
     {
         const self = this;
 
-        // First, reduce the inputSchema to only variables that have been marked as included.
-        self[_inputTorchTransformer].updateInputSchema(self.inputSchema.filterIncluded());
-        self[_outputTorchTransformer].updateInputSchema(self.outputSchema.filterIncluded());
-
-        const inputSchema = self[_inputTorchTransformer].outputSchema;
-        const outputSchema = self[_outputTorchTransformer].outputSchema;
+        const inputSchema = self.neuralNetworkInputSchema(registry);
+        const outputSchema = self.neuralNetworkOutputSchema(registry);
 
         // Set a default value of 0 for everything
         inputSchema.walk(function(schema)
@@ -151,41 +144,33 @@ class EBArchitecture
                 const inputObject = deepcopy(object);
                 const outputObject = deepcopy(object);
 
-                // Next, apply transformations
-                self[_inputTorchTransformer].transform(inputObject, function(err, transformedInputObject)
+                try
                 {
-                    if (err)
+                    const transformedInputObject = registry.getInterpretation('object').transformValueForNeuralNetwork(inputObject, self.inputSchema.filterIncluded());
+                    const transformedOutputObject = registry.getInterpretation('object').transformValueForNeuralNetwork(outputObject, self.outputSchema.filterIncluded());
+
+                    try
                     {
-                        return next(err);
+                        transform.push({
+                            input: filterInputFunction(transformedInputObject),
+                            output: filterOutputFunction(transformedOutputObject),
+                            original: object
+                        });
+
+                        return next();
                     }
-
-                    // Next, apply transformations
-                    self[_outputTorchTransformer].transform(outputObject, function(err, transformedOutputObject)
+                    catch (err)
                     {
-                        if (err)
-                        {
-                            return next(err);
-                        }
+                        console.error(`Object in our database is not valid according to our data schema: ${err.toString()}`);
+                        console.error(err.stack);
 
-                        try
-                        {
-                            transform.push({
-                                input: filterInputFunction(transformedInputObject),
-                                output: filterOutputFunction(transformedOutputObject),
-                                original: object
-                            });
-
-                            return next();
-                        }
-                        catch (err)
-                        {
-                            console.error(`Object in our database is not valid according to our data schema: ${err.toString()}`);
-                            console.error(err.stack);
-
-                            return next();
-                        }
-                    });
-                });
+                        return next();
+                    }
+                }
+                catch(err)
+                {
+                    console.log(err);
+                }
             }
         });
     }
@@ -194,17 +179,16 @@ class EBArchitecture
      * This method returns a NodeJS stream that can be used to transform outputs from the network
      * back into their original output objects
      *
+     * @param {EBInterpretationRegistry} registry The registry for the transformation stream
      * @returns {Stream} A standard NodeJS transformation stream that you can write() to, read()
      *                   from, and pipe() wherever you want
      */
-    getNetworkOutputTransformationStream()
+    getNetworkOutputTransformationStream(registry)
     {
         const self = this;
 
         // First, reduce the inputSchema to only variables that have been marked as included.
-        self[_outputTorchTransformer].updateInputSchema(self.outputSchema.filterIncluded());
-
-        const outputSchema = self[_outputTorchTransformer].outputSchema;
+        const outputSchema = self.neuralNetworkOutputSchema(registry);
 
         return new stream.Transform({
             highWaterMark: 1,
@@ -217,25 +201,19 @@ class EBArchitecture
                 const outputObject = deepcopy(object);
                 
                 // Next, apply transformations
-                self[_outputTorchTransformer].transformBack(outputObject, function(err, transformedOutputObject)
+                const transformedOutputObject = registry.getInterpretation('object').transformValueBackFromNeuralNetwork(outputObject, outputSchema);
+                
+                try
                 {
-                    if (err)
-                    {
-                        return next(err);
-                    }
-
-                    try
-                    {
-                        transform.push(transformedOutputObject);
-                        return next();
-                    }
-                    catch (err)
-                    {
-                        console.error(`Object in our database is not valid according to our data schema: ${err.toString()}`);
-                        console.error(err.stack);
-                        return next();
-                    }
-                });
+                    transform.push(transformedOutputObject);
+                    return next();
+                }
+                catch (err)
+                {
+                    console.error(`Object in our database is not valid according to our data schema: ${err.toString()}`);
+                    console.error(err.stack);
+                    return next();
+                }
             }
         });
     }
@@ -243,13 +221,14 @@ class EBArchitecture
     /**
      * This method converts a single network output back to its original
      *
+     * @param {EBInterpretationRegistry} registry The interpretation registry
      * @param {object} networkOutput The output from the network
      * @param {function(err, transformed)} callback Which will receive the transformed object
      */
-    convertNetworkOutputObject(networkOutput, next)
+    convertNetworkOutputObject(registry, networkOutput, next)
     {
         const self = this;
-        const stream = self.getNetworkOutputTransformationStream();
+        const stream = self.getNetworkOutputTransformationStream(registry);
         stream.on("data", (output) =>
         {
             return next(null, output);
@@ -356,46 +335,48 @@ class EBArchitecture
         // Yay!
         return true;
     }
+    
 
 
     /**
      * Returns the schema for the input of the neural network
      *
+     * @param {EBInterpretationRegistry} registry The registry for the interpretations
      * @returns {EBSchema} The schema object for the inputs to the neural network.
      */
-    get neuralNetworkInputSchema()
+    neuralNetworkInputSchema(registry)
     {
-        this[_inputTorchTransformer].updateInputSchema(this.inputSchema.filterIncluded());
-        return this[_inputTorchTransformer].outputSchema;
+        return registry.getInterpretation('object').transformSchemaForNeuralNetwork(this.inputSchema.filterIncluded());
     }
 
 
     /**
      * Returns the output for the input of the neural network
      *
+     * @param {EBInterpretationRegistry} registry The registry for interpretations
      * @returns {EBSchema} The schema object for the outputs to the neural network
      */
-    get neuralNetworkOutputSchema()
+    neuralNetworkOutputSchema(registry)
     {
-        this[_outputTorchTransformer].updateInputSchema(this.outputSchema.filterIncluded());
-        return this[_outputTorchTransformer].outputSchema;
+        return registry.getInterpretation('object').transformSchemaForNeuralNetwork(this.outputSchema.filterIncluded());
     }
 
     /**
      * This method generates all the files for this neural network architecture
      *
+     * @param {EBInterpretationRegistry} registry The registry for the transformation stream
      * @param {EBNeuralNetworkComponentDispatch} neuralNetworkComponentDispatch A reference the the globally initialized componentDispatch method
      * @returns {[object]} The an array of objects describing the generated files.
      *                     Each object has two properties, 'path' for the files
      *                     path and filename, and 'data' for the contents of the
      *                     file
      */
-    generateFiles(neuralNetworkComponentDispatch)
+    generateFiles(registry, neuralNetworkComponentDispatch)
     {
         const self = this;
         
-        const inputSchema = self.neuralNetworkInputSchema;
-        const outputSchema = self.neuralNetworkOutputSchema;
+        const inputSchema = this.neuralNetworkInputSchema(registry);
+        const outputSchema = this.neuralNetworkOutputSchema(registry);
 
         const rootModuleName = `${self.machineName}Module`;
         const rootCriterionName = `${self.machineName}Criterion`;

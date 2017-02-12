@@ -31,11 +31,14 @@ const
 class EBNumberInterpretation extends EBInterpretationBase
 {
     /**
-     * Constructor
+     * Constructor. Requires the interpretation registry in order to recurse properly
+     *
+     * @param {EBInterpretationRegistry} interpretationRegistry The registry
      */
-    constructor()
+    constructor(interpretationRegistry)
     {
         super('number');
+        this.interpretationRegistry = interpretationRegistry;
     }
 
 
@@ -52,6 +55,19 @@ class EBNumberInterpretation extends EBInterpretationBase
     getUpstreamInterpretations()
     {
         return ['string'];
+    }
+
+
+
+
+    /**
+     * This method returns the raw javascript type of value that this interpretation applies to.
+     *
+     * @return {string} Can be one of: 'object', 'array', 'number', 'string', 'boolean', 'binary'
+     */
+    getJavascriptType()
+    {
+        return 'number';
     }
 
 
@@ -117,21 +133,6 @@ class EBNumberInterpretation extends EBInterpretationBase
 
 
     /**
-     * This method should return information about fields that need to be graphed on
-     * the frontend for this interpretation.
-     *
-     * @param {*} value The value to be transformed
-     * @return {Promise} A promise that resolves to an array of statistics
-     */
-    listStatistics(value)
-    {
-        return Promise.resolve([]);
-    }
-
-
-
-
-    /**
      * This method should transform an example into a value that is small enough to be
      * stored with the schema and shown on the frontend. Information can be destroyed
      * in this transformation in order to allow the data to be stored easily.
@@ -141,13 +142,83 @@ class EBNumberInterpretation extends EBInterpretationBase
      */
     transformExample(value)
     {
-        if (value.length > 50)
+        return Promise.resolve(value);
+    }
+
+
+    /**
+     * This method should transform the given schema for input to the neural network.
+     *
+     * @param {EBSchema} schema The schema to be transformed
+     * @return {Promise} A promise that resolves to a new value.
+     */
+    transformSchemaForNeuralNetwork(schema)
+    {
+        return schema;
+    }
+
+
+    /**
+     * This method should prepare a given value for input into the neural network
+     *
+     * @param {EBSchema} value The value to be transformed
+     * @return {Promise} A promise that resolves to a new value.
+     */
+    transformValueForNeuralNetwork(value)
+    {
+        return Number(value);
+    }
+
+
+    /**
+     * This method should take output from the neural network and transform it back
+     *
+     * @param {*} value The value to be transformed
+     * @param {EBSchema} schema The schema for the value to be transformed
+     * @return {Promise} A promise that resolves to a new value
+     */
+    transformValueBackFromNeuralNetwork(value, schema)
+    {
+        return value;
+    }
+
+
+    /**
+     * This method should generate the default configuration for the given schema
+     *
+     * @param {EBSchema} schema The schema for the value to be transformed
+     * @return {object} An object which follows the schema returned from configurationSchema
+     */
+    generateDefaultConfiguration(schema)
+    {
+        return {};
+    }
+
+
+    /**
+     * This method should compare two values according to the given schema, in order to determine the accuracy
+     * of the neural network.
+     *
+     * @param {*} expected The value the network was expected to produce, e.g. the correct answer
+     * @param {*} actual The actual value the network produced.
+     * @param {EBSchema} schema The schema for the value to be compared
+     * @param {boolean} accumulateStatistics Whether or not statistics on the results should be accumulated into the EBSchema object.
+     * @return {number} accuracy The accuracy of the result. should be a number between 0 and 1
+     */
+    compareNetworkOutputs(expected, actual, schema, accumulateStatistics)
+    {
+        // Calculating accuracy here is a bit quack, but we try anyhow
+        if (expected !== 0)
         {
-            return Promise.resolve(value.substr(0, 50) + "...");
+            return 1.0 - Math.max(0, Math.min(1, Math.abs((expected - actual) / expected)));
+        }
+        else if (actual !== 0)
+        {
+            return 1.0 - Math.max(0, Math.min(1, Math.abs((expected - actual) / actual)));
         }
         else
         {
-            return Promise.resolve(value);
+            return 1;
         }
     }
 
@@ -176,14 +247,9 @@ class EBNumberInterpretation extends EBInterpretationBase
                 this.values.push(value);
             }
 
-            getFieldMetadata()
+            getFieldStatistics()
             {
-                const metadata = new EBFieldMetadata();
-                
-                metadata.types.push('number');
-                metadata.numberHistogram = EBNumberHistogram.computeHistogram(this.values);
-                
-                return metadata;
+                return {numberHistogram: EBNumberHistogram.computeHistogram(this.values)};
             }
         })();
     }
@@ -194,14 +260,45 @@ class EBNumberInterpretation extends EBInterpretationBase
      *
      * @return {jsonschema} A schema representing the metadata for this interpretation
      */
-    static metadataSchema()
+    static statisticsSchema()
     {
         return {
-            "id": "EBFieldMetadata",
+            "id": "EBNumberInterpretation.statisticsSchema",
             "type": "object",
             "properties": {
                 numberHistogram: EBNumberHistogram.schema()
             }
+        };
+    }
+
+
+    /**
+     * This method should return a schema for the configuration for this interpretation
+     *
+     * @return {jsonschema} A schema representing the configuration for this interpretation
+     */
+    static configurationSchema()
+    {
+        return {
+            "id": "EBNumberInterpretation.configurationSchema",
+            "type": "object",
+            "properties": {
+            }
+        };
+    }
+
+
+    /**
+     * This method should return a schema for accumulating accuracy results from values in this interpretation
+     *
+     * @return {jsonschema} A schema representing whatever is needed to store results
+     */
+    static resultsSchema()
+    {
+        return {
+            "id": "EBNumberInterpretation.resultsSchema",
+            "type": "object",
+            "properties": {}
         };
     }
 }
