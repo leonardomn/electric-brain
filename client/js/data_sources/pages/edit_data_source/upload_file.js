@@ -61,6 +61,7 @@ angular.module('eb').controller('EBDataSourceUploadFileController', function EBD
                         $scope.uploading = false;
                         $scope.dataSource.name = $scope.file.name;
                         $scope.dataSource.type = 'csv';
+                        $scope.dataSource.sequencingColumnName = $scope.sequencingColumnName;
                         $scope.dataSource.file = (/.*\/(.*)/g).exec(upload.url)[1];
                         $state.go('new_data_source.select_fields', {refreshSchema: true});
                     }, config.thresholdDelay);

@@ -20,6 +20,7 @@
 
 const async = require('async'),
     mongodb = require('mongodb'),
+    Promse = require('bluebird'),
     underscore = require('underscore');
 
 const testingSetMongoURI = "mongodb://localhost:27017/electric_brain_testing";
@@ -174,7 +175,7 @@ function getRandomString()
  */
 function saveObjects(collectionName, objects, next)
 {
-    mongodb.MongoClient.connect(testingSetMongoURI, function(connectError, db)
+    mongodb.MongoClient.connect(testingSetMongoURI, {promiseLibrary: Promise}, function(connectError, db)
     {
         if (connectError)
         {

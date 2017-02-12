@@ -41,5 +41,12 @@
                 <uib-progressbar ng-if="uploading" max="bytesTotal" value="bytesUploaded" type="success"><b>{{bytesUploaded / (1024*1024) | number:2}}mb / {{bytesTotal / (1024*1024) | number:2}}mb</b></uib-progressbar>
             </div>
         </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <p>Sequencing Column</p>
+                <input ng-model="sequencingColumnName" type="text">
+            </div>
+        </div>
     </div>
 </div>

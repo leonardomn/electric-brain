@@ -73,6 +73,7 @@ class EBDataSource
                     "enum": ["mongo", "csv"]
                 },
                 "file": {"type": "string"},
+                "sequencingColumnName": {"type": "string"},
                 "database": {
                     "type": "object",
                     "properties": {

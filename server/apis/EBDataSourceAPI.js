@@ -25,6 +25,7 @@ const
     idUtilities = require("../utilities/id"),
     models = require('../../shared/models/models'),
     mongodb = require('mongodb'),
+    Promise = require('bluebird'),
     queryUtilities = require("../../shared/utilities/query"),
     schemaUtilities = require("../models/schema_utilities"),
     tus = require('tus-node-server'),
@@ -372,7 +373,7 @@ class EBDataSourceAPI extends EBAPIRoot
      */
     getDatabaseInfo(req, res, next)
     {
-        mongodb.MongoClient.connect(req.query.database.uri, function(connectError, db)
+        mongodb.MongoClient.connect(req.query.database.uri, {promiseLibrary: Promise}, function(connectError, db)
         {
             if (connectError)
             {

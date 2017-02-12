@@ -92,7 +92,6 @@ class EBCSVPlugin extends EBDataSourcePlugin
     lookupTables(dataSource)
     {
         console.log("lookup tables");
-
     }
 
 
@@ -105,7 +104,13 @@ class EBCSVPlugin extends EBDataSourcePlugin
      */
     breakApartCSV(dataSource)
     {
-        const objectsPerGrouping = 1000;
+        const seenObject = {};
+        let objectsPerGrouping = 1000;
+        if (dataSource.sequencingColumnName)
+        {
+            objectsPerGrouping = 25000;
+        }
+
         return this.indexPromise.then(() =>
         {
             return this.csvMetadata.find({ebCSVFile: dataSource.file}).toArray().then((results) =>
@@ -122,20 +127,85 @@ class EBCSVPlugin extends EBDataSourcePlugin
                             headers: true
                         });
 
-                        const cargo = async.cargo((objects, next) =>
-                        {
-                            objects.forEach(function(object)
-                            {
-                                object.ebCSVFile = dataSource.file;
-                                object.ebRowIndex = objectIndex;
-                                objectIndex += 1;
-                            });
 
-                            this.csvRows.insertMany(objects).then(function(success)
+                        const processObjects = (objects) =>
+                        {
+                            if (dataSource.sequencingColumnName)
                             {
-                                next();
-                            }, (error) => next(error));
-                        }, objectsPerGrouping);
+                                // Group all of the fresh objects to insert vs all
+                                // of the objects where we are appending an entry
+                                // to an existing objects sequence
+                                const column = dataSource.sequencingColumnName;
+                                const sortedObjects = {};
+                                objects.forEach((object) =>
+                                {
+                                    if (!sortedObjects[object[column]])
+                                    {
+                                        sortedObjects[object[column]] = [];
+                                    }
+
+                                    sortedObjects[object[column]].push(object);
+                                });
+
+                                const promises = [];
+                                Object.keys(sortedObjects).forEach((objectSequenceKey) =>
+                                {
+                                    if (seenObject[objectSequenceKey])
+                                    {
+                                        const query = {[column]: objectSequenceKey};
+                                        const update = {
+                                            $push: {
+                                                sequence: {
+                                                    $each: sortedObjects[objectSequenceKey].map((appendObject) => underscore.omit(appendObject, column))
+                                                }
+                                            }
+                                        };
+                                        const options = {upsert: true};
+
+                                        // console.log(update);
+
+                                        // Append all of the values to the append object
+                                        const promise = this.csvRows.update(query, update, options);
+
+                                        promises.push(promise);
+                                        return promise;
+                                    }
+                                    else
+                                    {
+                                        const object = {
+                                            [column]: objectSequenceKey,
+                                            sequence: sortedObjects[objectSequenceKey].map((appendObject) => underscore.omit(appendObject, column)),
+                                            ebCSVFile: dataSource.file,
+                                            ebRowIndex: objectIndex
+                                        };
+
+                                        objectIndex += 1;
+
+                                        // Append all of the values to the append object
+                                        const promise = this.csvRows.insert(object);
+
+                                        seenObject[objectSequenceKey] = true;
+                                        promises.push(promise);
+                                    }
+                                });
+
+                                return Promise.all(promises);
+                            }
+                            else
+                            {
+                                objects.forEach(function(object)
+                                {
+                                    object.ebCSVFile = dataSource.file;
+                                    object.ebRowIndex = objectIndex;
+                                    objectIndex += 1;
+                                });
+
+                                return this.csvRows.insertMany(objects);
+                            }
+                        };
+
+                        const cargo = async.cargo((objects, next) => processObjects(objects).then(() => next(), (err) => next(err)), objectsPerGrouping);
+                        let queue = [];
 
                         csvStream.on("data", function (data)
                         {
@@ -181,6 +251,11 @@ class EBCSVPlugin extends EBDataSourcePlugin
                                     resolve();
                                 };
                             }
+                        });
+
+                        cargo.error = ((error, task) =>
+                        {
+                            console.error(error);
                         });
 
                         stream.on("error", (error) =>

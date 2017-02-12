@@ -32,6 +32,7 @@ const
     httpStatus = require('http-status-codes'),
     mongodb = require('mongodb'),
     path = require('path'),
+    Promise = require('bluebird'),
     socketio = require('socket.io'),
     socketioAMQP = require("socket.io-amqp"),
     tasks = require("./tasks/tasks");
@@ -108,7 +109,7 @@ class EBApplication
     initializeDatabase(done)
     {
         const self = this;
-        mongodb.MongoClient.connect(config.mongo.uri, (err, db) =>
+        mongodb.MongoClient.connect(config.mongo.uri, {promiseLibrary: Promise}, (err, db) =>
         {
             if (err)
             {

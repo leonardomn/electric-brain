@@ -403,6 +403,8 @@ class EBSchemaDetector
         const sortedFields = underscore.sortBy(fields, (field) => (field.name));
         const schema = assembleSchema("", sortedFields, 1);
 
+        console.log(schema);
+
         return new models.EBSchema(schema);
     }
 }

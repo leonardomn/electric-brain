@@ -21,7 +21,8 @@
 const
     async = require('async'),
     fs = require('fs'),
-    mongodb = require('mongodb');
+    mongodb = require('mongodb'),
+    Promise = require('bluebird');
 
 const dataSetMongoURI = "mongodb://localhost:27017/example_datasets";
 
@@ -32,7 +33,7 @@ const dataSetMongoURI = "mongodb://localhost:27017/example_datasets";
  */
 module.exports.loadDataset = function loadDataset(next)
 {
-    mongodb.MongoClient.connect(dataSetMongoURI, function(connectError, db)
+    mongodb.MongoClient.connect(dataSetMongoURI, {promiseLibrary: Promise}, function(connectError, db)
     {
         if (connectError)
         {
