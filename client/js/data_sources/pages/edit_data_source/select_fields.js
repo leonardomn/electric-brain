@@ -44,21 +44,33 @@ angular.module('eb').controller('EBDataSourceSelectFieldsController', function E
         EBLoaderService.showLoaderWith('page', promise);
     }
 
-    $scope.onSaveClicked = function onSaveClicked()
+
+    function createAndSave()
     {
         if ($stateParams.id === 'new')
         {
             const promise = EBDataSourceService.createDataSource($scope.dataSource).then(function success(body)
             {
                 EBNavigationBarService.refreshNavigationBar();
-                $state.go('edit_data_source', {id: body.data._id});
             });
+            return promise;
         }
         else
         {
             const promise = EBDataSourceService.saveDataSource($scope.dataSource);
             return promise;
         }
+    }
+
+
+    $scope.onSaveClicked = function onSaveClicked()
+    {
+        const promise = createAndSave();
+        promise.then((body) =>
+        {
+            $state.go('edit_data_source', {id: body.data._id});
+        });
+        return promise;
     };
 
     $scope.onDeleteClicked = function onDeleteClicked()
@@ -73,10 +85,11 @@ angular.module('eb').controller('EBDataSourceSelectFieldsController', function E
 
     $scope.onContinue = function onContinue()
     {
-        return EBDataSourceService.saveDataSource($scope.dataSource).then(function success(body)
+        const promise = createAndSave();
+        promise.then(() =>
         {
-            EBNavigationBarService.refreshNavigationBar();
             $state.go('edit_architecture');
         });
+        return promise;
     };
 });
