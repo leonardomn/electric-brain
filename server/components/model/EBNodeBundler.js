@@ -26,6 +26,7 @@ const
     fs = require('fs'),
     models = require('../../../shared/models/models'),
     mongodb = require('mongodb'),
+    Promise = require('bluebird'),
     path = require('path'),
     temp = require('temp');
 

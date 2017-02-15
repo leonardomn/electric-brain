@@ -18,6 +18,8 @@
 
 "use strict";
 
+const Promise = require('bluebird');
+
 /**
  * This is a base class for various ways of bundling up trained EBModel's into an easy to embed model.
  */
