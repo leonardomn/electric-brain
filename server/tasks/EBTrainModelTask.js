@@ -758,19 +758,15 @@ class EBTrainModelTask {
                             const output = outputs[index];
                             index += 1;
 
-                            self.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, output, (err, actualOutput) =>
+                            const promise = self.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, output);
+                            promise.then((actualOutput) =>
                             {
-                                if (err)
-                                {
-                                    return next(err);
-                                }
-
                                 self.getAccuracyFromOutput(object.original, actualOutput, true).then((accuracy) =>
                                 {
                                     accuracies.push(accuracy);
                                     return next();
                                 }, (err) => next(err));
-                            });
+                            }, (err) => next(err));
                         }, (err) =>
                         {
                             if (err)
@@ -896,13 +892,9 @@ class EBTrainModelTask {
                                         const output = outputs[index];
                                         index += 1;
 
-                                        self.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, output, (err, actualOutput) =>
+                                        const promise = self.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, output);
+                                        promise.then((actualOutput) =>
                                         {
-                                            if (err)
-                                            {
-                                                return next(err);
-                                            }
-
                                             self.getAccuracyFromOutput(object.original, actualOutput, true).then((accuracy) =>
                                             {
                                                 accuracies.push(accuracy);
@@ -922,7 +914,7 @@ class EBTrainModelTask {
                                                     return next();
                                                 }
                                             }, (err) => next(err));
-                                        });
+                                        }, (err) => next(err));
                                     }, (err) =>
                                     {
                                         if (err)

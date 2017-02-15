@@ -586,15 +586,12 @@ class EBModelAPI extends EBAPIRoot
                         promise.then((results) =>
                         {
                             const result = results[0];
-                            model.architecture.convertNetworkOutputObject(self.application.interpretationRegistry, result, function(err, output)
-                            {
-                                if (err)
-                                {
-                                    return next(err);
-                                }
-                                resultObject = output;
-                                return next();
-                            });
+                            const promise = model.architecture.convertNetworkOutputObject(self.application.interpretationRegistry, result);
+                            return promise;
+                        }).then((output) =>
+                        {
+                            resultObject = output;
+                            return next();
                         }, (err) => next(err));
                     },
                     // Kill the process we started
