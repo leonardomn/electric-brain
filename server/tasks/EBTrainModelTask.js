@@ -75,119 +75,141 @@ class EBTrainModelTask {
      *  @param {beaver.Task} task The Beaver task object
      *  @param {object} args The arguments for this task. It should only contain a single argument,
      *                       the MongoID of the EBModel object that needs to be trained.
-     *  @param {function(err)} callback The callback after the task has finished running
+     *  @return {Promise} Resolves a promise after the task has finished running
      */
-    run(task, args, callback)
+    run(task, args)
     {
         const self = this;
+        return Promise.fromCallback((callback) =>
+        {
+            self.task = task;
 
-        self.task = task;
-
-        async.series([
-            // First log the start
-            self.task.log.bind(self.task, `Starting the task to train the model with _id: ${args._id}`),
-            // Load the model object
-            (next) =>
-            {
-                // Retrieve the model object that this task refers to
-                self.models.find({_id: args._id}).toArray((err, objects) =>
+            async.series([
+                // First log the start
+                self.task.log.bind(self.task, `Starting the task to train the model with _id: ${args._id}`),
+                // Load the model object
+                (next) =>
                 {
-                    if (err)
-                    {
-                        return next(err);
-                    }
-                    else if (objects.length === 0)
-                    {
-                        return next(new Error("EBModel not found!"));
-                    }
-                    else
-                    {
-                        self.model = new models.EBModel(objects[0]);
-                        self.trainingProcess = new EBTorchProcess(self.model.architecture);
-                        return next();
-                    }
-                });
-            },
-            // Short circuit: is this a retry? Set running to false and exit.
-            (next) =>
-            {
-                if (self.model.running)
-                {
-                    self.models.update({_id: args._id}, {$set: {running: false}}, (err) =>
+                    // Retrieve the model object that this task refers to
+                    self.models.find({_id: args._id}).toArray((err, objects) =>
                     {
                         if (err)
                         {
                             return next(err);
                         }
-                        else
+                        else if (objects.length === 0)
                         {
-                            return next(new Error("This model has already started training. It must have failed."))
-                        }
-                    });
-                }
-                else
-                {
-                    self.model.running = true;
-                    self.models.update({_id: args._id}, {$set: {running: true}}, (err) =>
-                    {
-                        if (err)
-                        {
-                            return next(err);
+                            return next(new Error("EBModel not found!"));
                         }
                         else
                         {
+                            self.model = new models.EBModel(objects[0]);
+                            self.trainingProcess = new EBTorchProcess(self.model.architecture);
                             return next();
                         }
                     });
-                }
-            },
-            // Generate the code
-            (next) =>
-            {
-                const promise = self.trainingProcess.generateCode(self.application.interpretationRegistry, self.application.neuralNetworkComponentDispatch);
-                promise.then((totalFiles) =>
+                },
+                // Short circuit: is this a retry? Set running to false and exit.
+                (next) =>
                 {
-                    const codeGenerationResult = {
-                        status: 'complete',
-                        percentageComplete: 100,
-                        totalFiles: totalFiles
-                    };
+                    if (self.model.running)
+                    {
+                        self.models.update({_id: args._id}, {$set: {running: false}}, (err) =>
+                        {
+                            if (err)
+                            {
+                                return next(err);
+                            }
+                            else
+                            {
+                                return next(new Error("This model has already started training. It must have failed."))
+                            }
+                        });
+                    }
+                    else
+                    {
+                        self.model.running = true;
+                        self.models.update({_id: args._id}, {$set: {running: true}}, (err) =>
+                        {
+                            if (err)
+                            {
+                                return next(err);
+                            }
+                            else
+                            {
+                                return next();
+                            }
+                        });
+                    }
+                },
+                // Generate the code
+                (next) =>
+                {
+                    const promise = self.trainingProcess.generateCode(self.application.interpretationRegistry, self.application.neuralNetworkComponentDispatch);
+                    promise.then((totalFiles) =>
+                    {
+                        const codeGenerationResult = {
+                            status: 'complete',
+                            percentageComplete: 100,
+                            totalFiles: totalFiles
+                        };
 
-                    self.updateStepResult('codeGeneration', codeGenerationResult, next);
-                }, (err) => next(err));
-            },
-            // Start up the process
-            (next) =>
-            {
-                const promise = self.trainingProcess.startProcess();
-                promise.then( () =>
+                        const promise = self.updateStepResult('codeGeneration', codeGenerationResult);
+                        promise.then(() =>
+                        {
+                            next(null);
+                        }, (err) => next(err));
+                    }, (err) => next(err));
+                },
+                // Start up the process
+                (next) =>
                 {
-                    next(null);
-                }, (err) => next(err));
-            },
-            // Scan the data, analyze it for input
-            (next) =>
-            {
-                self.scanData(self.numberOfObjectsToSample, next);
-            },
-            // Save the model in its vanilla state. This just ensures that other
-            // functionality that depends on downloading the torch model file
-            // works from the first iteration of training
-            (next) =>
-            {
-                self.saveTorchModelFile(next);
-            },
-            // Training model
-            (next) =>
-            {
-                self.trainModel(next);
-            },
-            // Test model
-            (next) =>
-            {
-                self.testModel(next);
-            }
-        ], callback);
+                    const promise = self.trainingProcess.startProcess();
+                    promise.then(() =>
+                    {
+                        next(null);
+                    }, (err) => next(err));
+                },
+                // Scan the data, analyze it for input
+                (next) =>
+                {
+                    const promise = self.scanData(self.numberOfObjectsToSample);
+                    promise.then(()=>
+                        {
+                            next(null);
+                        }, (err) => next(err));
+                },
+                // Save the model in its vanilla state. This just ensures that other
+                // functionality that depends on downloading the torch model file
+                // works from the first iteration of training
+                (next) =>
+                {
+                   const promise= self.saveTorchModelFile();
+                   promise.then(() =>
+                       {
+                           next(null);
+                       }, (err) => next(err));
+                },
+                // Training model
+                (next) =>
+                {
+                    const promise = self.trainModel();
+                    promise.then(() =>
+                    {
+                        next(null);
+                    }, (err) => next(err));
+                },
+                // Test model
+                (next) =>
+                {
+                   const promise =self.testModel();
+                   promise.then(()=>
+                   {
+                       next(null);
+                   }, (err) => next(err));
+                }
+            ], callback);
+        });
     }
 
 
@@ -196,65 +218,68 @@ class EBTrainModelTask {
      *
      * @param {string} stepName The name of the step being updated. Should be the same as the the field names in EBModel
      * @param {object} result An object with the results
-     * @param {function(err)} callback Callback after the process is started and ready to receive commands
+     * @return {Promise} Resolves a promise after the process is started and ready to receive commands
      */
-    updateStepResult(stepName, result, callback)
+    updateStepResult(stepName, result)
     {
         const self = this;
-
-        if (!self.isFrontendUpdateScheduled)
+        return Promise.fromCallback((callback) =>
         {
-            self.isFrontendUpdateScheduled = true;
-            let frontendUpdateDelay = 0;
-            if (self.lastFrontendUpdateTime)
+
+            if (!self.isFrontendUpdateScheduled)
             {
-                frontendUpdateDelay = Math.max(0, self.frontendUpdateInterval - (Date.now() - self.lastFrontendUpdateTime.getTime()));
-            }
-
-            setTimeout(() =>
-            {
-                self.isFrontendUpdateScheduled = false;
-                self.lastFrontendUpdateTime = new Date();
-
-                self.socketio.to('general').emit(`model-${self.model._id.toString()}`, {
-                    event: 'update',
-                    model: self.model
-                });
-            }, frontendUpdateDelay);
-        }
-
-        if (!self.isDatabaseUpdateScheduled)
-        {
-            self.isDatabaseUpdateScheduled = true;
-            let databaseUpdateDelay = 0;
-            if (self.lastDatabaseUpdateTime)
-            {
-                databaseUpdateDelay = Math.max(0, self.databaseUpdateInterval - (Date.now() - self.lastDatabaseUpdateTime.getTime()));
-            }
-
-            setTimeout(() =>
-            {
-                self.isDatabaseUpdateScheduled = false;
-                self.lastDatabaseUpdateTime = new Date();
-
-
-                self.model[stepName] = result;
-                self.models.updateOne({_id: self.model._id}, {
-                    $set: {
-                        [stepName]: result,
-                        architecture: self.model.architecture
-                    }
-                }, (err) =>
+                self.isFrontendUpdateScheduled = true;
+                let frontendUpdateDelay = 0;
+                if (self.lastFrontendUpdateTime)
                 {
-                    if (err)
-                    {
-                        console.error(err);
-                    }
-                });
-            }, databaseUpdateDelay);
-        }
+                    frontendUpdateDelay = Math.max(0, self.frontendUpdateInterval - (Date.now() - self.lastFrontendUpdateTime.getTime()));
+                }
 
-        return callback();
+                setTimeout(() =>
+                {
+                    self.isFrontendUpdateScheduled = false;
+                    self.lastFrontendUpdateTime = new Date();
+
+                    self.socketio.to('general').emit(`model-${self.model._id.toString()}`, {
+                        event: 'update',
+                        model: self.model
+                    });
+                }, frontendUpdateDelay);
+            }
+
+            if (!self.isDatabaseUpdateScheduled)
+            {
+                self.isDatabaseUpdateScheduled = true;
+                let databaseUpdateDelay = 0;
+                if (self.lastDatabaseUpdateTime)
+                {
+                    databaseUpdateDelay = Math.max(0, self.databaseUpdateInterval - (Date.now() - self.lastDatabaseUpdateTime.getTime()));
+                }
+
+                setTimeout(() =>
+                {
+                    self.isDatabaseUpdateScheduled = false;
+                    self.lastDatabaseUpdateTime = new Date();
+
+
+                    self.model[stepName] = result;
+                    self.models.updateOne({_id: self.model._id}, {
+                        $set: {
+                            [stepName]: result,
+                            architecture: self.model.architecture
+                        }
+                    }, (err) =>
+                    {
+                        if (err)
+                        {
+                            console.error(err);
+                        }
+                    });
+                }, databaseUpdateDelay);
+            }
+
+            return callback();
+        });
     }
 
     /**
@@ -263,7 +288,7 @@ class EBTrainModelTask {
      * @param {string} id The ID of the object to be stored
      * @param {object} input The input data for the object
      * @param {object} output The output data for the object
-     * @param {function(err)} callback The callback after the object has been successfully stored
+     * @return {Promise} Resolves a promise after the object has been successfully stored
      */
     loadObject(id, input, output)
     {
@@ -346,111 +371,126 @@ class EBTrainModelTask {
      * This method goes through all of the data in the sample, registering it as being either in the training set or the testing set.
      *
      * @param {number} count The number of objects to sample
-     * @param {function(err)} callback The callback after all of the data is sampled
+     *@return {Promise} Resolves a promise after all of the data is sampled
      */
-    scanData(count, callback)
+    scanData(count)
     {
         const self = this;
+        return Promise.fromCallback((callback) =>
+        {
 
-        const dataScanningResults = {
-            status: "in_progress",
-            percentageComplete: 0,
-            totalObjects: 0,
-            scannedObjects: 0
-        };
+            const dataScanningResults = {
+                status: "in_progress",
+                percentageComplete: 0,
+                totalObjects: 0,
+                scannedObjects: 0
+            };
 
-        const objectsBetweenUpdate = 1000;
+            const objectsBetweenUpdate = 1000;
 
-        let lastUpdateTime = new Date();
+            let lastUpdateTime = new Date();
 
-        const steps = [
-            (next) =>
-            {
-                self.updateStepResult('dataScanning', dataScanningResults, next);
-            },
-            (next) =>
-            {
-                self.application.dataSourcePluginDispatch.count(self.model.architecture.dataSource).then((count) =>
+            const steps = [
+                (next) =>
                 {
-                    dataScanningResults.totalObjects = Math.min(self.numberOfObjectsToSample, count);
-                    return next();
-                }, (err) => next(err));
-            },
-            (next) =>
-            {
-                const trainingSetEntries = [];
-                const testingSetEntries = [];
-
-                // Get a random sample of data from the data source.
-                const dataSource = self.model.architecture.dataSource;
-                self.application.dataSourcePluginDispatch.sample(count, dataSource, (object) =>
+                    const promise = self.updateStepResult('dataScanning', dataScanningResults);
+                    promise.then(()=>
+                    {
+                        next(null);
+                    }, (err)=> next(err));
+                },
+                (next) =>
                 {
-                    // Decide whether to put this entry into the training set
-                    // or the testing set.
-                    // First see how many entries we expect in each set
-                    const total = trainingSetEntries.length + testingSetEntries.length;
-                    const expectedTestingSetEntries = Math.ceil(self.testingSetPortion * total);
-                    const expectedTrainingSetEntries = Math.floor((1.0 - self.testingSetPortion) * total);
-
-                    // Compute the difference between the actual size and the expected size
-                    const testingDifference = expectedTestingSetEntries - testingSetEntries.length;
-                    const trainingDifference = expectedTrainingSetEntries - trainingSetEntries.length;
-
-                    // Which ever one is larger, we put the item in that group
-                    if (testingDifference < trainingDifference)
+                    self.application.dataSourcePluginDispatch.count(self.model.architecture.dataSource).then((count) =>
                     {
-                        trainingSetEntries.push(object.id);
-                    }
-                    else
-                    {
-                        testingSetEntries.push(object.id);
-                    }
+                        dataScanningResults.totalObjects = Math.min(self.numberOfObjectsToSample, count);
+                        return next();
+                    }, (err) => next(err));
+                },
+                (next) =>
+                {
+                    const trainingSetEntries = [];
+                    const testingSetEntries = [];
 
-                    dataScanningResults.scannedObjects += 1;
-
-                    if ((dataScanningResults.scannedObjects % 100) === 0)
+                    // Get a random sample of data from the data source.
+                    const dataSource = self.model.architecture.dataSource;
+                    self.application.dataSourcePluginDispatch.sample(count, dataSource, (object) =>
                     {
-                        const timeTaken = Date.now() - lastUpdateTime.getTime();
-                        self.rollingAverageTimeToLoad100Entries.accumulate(timeTaken);
-                        lastUpdateTime = new Date();
-                    }
+                        // Decide whether to put this entry into the training set
+                        // or the testing set.
+                        // First see how many entries we expect in each set
+                        const total = trainingSetEntries.length + testingSetEntries.length;
+                        const expectedTestingSetEntries = Math.ceil(self.testingSetPortion * total);
+                        const expectedTrainingSetEntries = Math.floor((1.0 - self.testingSetPortion) * total);
 
-                    if ((dataScanningResults.scannedObjects % objectsBetweenUpdate) === 0)
-                    {
-                        return Promise.fromCallback((next) =>
+                        // Compute the difference between the actual size and the expected size
+                        const testingDifference = expectedTestingSetEntries - testingSetEntries.length;
+                        const trainingDifference = expectedTrainingSetEntries - trainingSetEntries.length;
+
+                        // Which ever one is larger, we put the item in that group
+                        if (testingDifference < trainingDifference)
                         {
-                            // Add a multiplier for safe measure. People generally prefer the system to
-                            // overestimate slightly.
-                            const multiplier = 1.1;
-                            dataScanningResults.timeToLoadEntry = (self.rollingAverageTimeToLoad100Entries.average * multiplier) / 100;
-                            dataScanningResults.percentageComplete = (dataScanningResults.scannedObjects * 100) / dataScanningResults.totalObjects;
-                            self.updateStepResult('dataScanning', dataScanningResults, next);
-                        });
-                    }
+                            trainingSetEntries.push(object.id);
+                        }
+                        else
+                        {
+                            testingSetEntries.push(object.id);
+                        }
 
-                    else
+                        dataScanningResults.scannedObjects += 1;
+
+                        if ((dataScanningResults.scannedObjects % 100) === 0)
+                        {
+                            const timeTaken = Date.now() - lastUpdateTime.getTime();
+                            self.rollingAverageTimeToLoad100Entries.accumulate(timeTaken);
+                            lastUpdateTime = new Date();
+                        }
+
+                        if ((dataScanningResults.scannedObjects % objectsBetweenUpdate) === 0)
+                        {
+                            return Promise.fromCallback((next) =>
+                            {
+                                // Add a multiplier for safe measure. People generally prefer the system to
+                                // overestimate slightly.
+                                const multiplier = 1.1;
+                                dataScanningResults.timeToLoadEntry = (self.rollingAverageTimeToLoad100Entries.average * multiplier) / 100;
+                                dataScanningResults.percentageComplete = (dataScanningResults.scannedObjects * 100) / dataScanningResults.totalObjects;
+                                const promise = self.updateStepResult('dataScanning', dataScanningResults);
+                                promise.then(() =>
+                                {
+                                    next(null);
+                                }, (err) => next(err));
+                            });
+                        }
+
+                        else
+                        {
+                            return Promise.resolve(null);
+                        }
+                    }).then(() =>
                     {
-                        return Promise.resolve(null);
-                    }
-                }).then(() =>
+                        // Shuffle the list of IDs so that they are in a random order
+                        this.trainingSetEntries = underscore.shuffle(trainingSetEntries);
+                        this.testingSetEntries = underscore.shuffle(testingSetEntries);
+
+                        next();
+                    }, (err) => next(err));
+                },
+                (next) =>
                 {
-                    // Shuffle the list of IDs so that they are in a random order
-                    this.trainingSetEntries = underscore.shuffle(trainingSetEntries);
-                    this.testingSetEntries = underscore.shuffle(testingSetEntries);
+                    dataScanningResults.status = 'complete';
+                    dataScanningResults.percentageComplete = 100;
 
-                    next();
-                }, (err) => next(err));
-            },
-            (next) =>
-            {
-                dataScanningResults.status = 'complete';
-                dataScanningResults.percentageComplete = 100;
+                   const promise = self.updateStepResult('dataScanning', dataScanningResults);
+                   promise.then(() =>
+                   {
+                       next(null);
+                   }, (err) => next(err));
+                }
+            ];
 
-                self.updateStepResult('dataScanning', dataScanningResults, next);
-            }
-        ];
-
-        async.series(steps, callback);
+            async.series(steps, callback);
+        });
     }
 
     fetchTrainingBatch()
@@ -521,160 +561,159 @@ class EBTrainModelTask {
     /**
      * This method runs the core training routine
      *
-     * @param {function(err)} callback The callback after training is complete
+     * @return {Promise} Resolves a promise after training is complete
      */
-    trainModel(callback)
+    trainModel()
     {
         const self = this;
-        const trainingIterations = 50000;
-        const saveFrequency = 1000;
-        const trainingResult = {
-            status: 'in_progress',
-            percentageComplete: 0,
-            completedIterations: 0,
-            totalIterations: trainingIterations,
-            currentLoss: 0,
-            currentAccuracy: 0,
-            currentTimePerIteration: 0,
-            iterations: [],
-            performance: new EBPerformanceData()
-        };
-
-        let lastIterationTime = new Date();
-
-        const iterationsForBatch = 25;
-
-        self.updateStepResult('training', trainingResult, (err) =>
+        return Promise.fromCallback((callback) =>
         {
-            if (err)
-            {
-                return callback(err);
-            }
+            const trainingIterations = 50000;
+            const saveFrequency = 1000;
+            const trainingResult = {
+                status: 'in_progress',
+                percentageComplete: 0,
+                completedIterations: 0,
+                totalIterations: trainingIterations,
+                currentLoss: 0,
+                currentAccuracy: 0,
+                currentTimePerIteration: 0,
+                iterations: [],
+                performance: new EBPerformanceData()
+            };
 
-            // Reset the model with random parameters
-            const promise = self.trainingProcess.reset();
+            let lastIterationTime = new Date();
+
+            const iterationsForBatch = 25;
+
+            const promise = self.updateStepResult('training', trainingResult);
             promise.then(() =>
             {
-                // The number of iterations run so far
-                async.whilst(
-                    () =>
-                    {
-                        return trainingResult.completedIterations < trainingIterations;
-                    },
-                    (next) =>
-                    {
-                        const performanceTrace = new EBPerformanceTrace();
-
-                        this.fetchTrainingBatch().then((sample) =>
+                // Reset the model with random parameters
+                const promise = self.trainingProcess.reset();
+                promise.then(() =>
+                {
+                    // The number of iterations run so far
+                    async.whilst(
+                        () =>
                         {
-                            performanceTrace.addTrace('fetch-batch');
-                            async.mapSeries(sample, (object, next) =>
+                            return trainingResult.completedIterations < trainingIterations;
+                        },
+                        (next) =>
+                        {
+                            const performanceTrace = new EBPerformanceTrace();
+
+                            this.fetchTrainingBatch().then((sample) =>
                             {
-                                this.loadObject(object.id, object.input, object.output).then(() => next(), (err) => next(err));
-                            }, (err) =>
-                            {
-                                if (err)
+                                performanceTrace.addTrace('fetch-batch');
+                                async.mapSeries(sample, (object, next) =>
                                 {
-                                    return next(err);
-                                }
-
-                                performanceTrace.addTrace('load-object');
-
-                                const promise = self.trainingProcess.executeTrainingIteration(underscore.pluck(sample, "id"));
-                                promise.then((result) =>
+                                    this.loadObject(object.id, object.input, object.output).then(() => next(), (err) => next(err));
+                                }, (err) =>
                                 {
-                                    performanceTrace.addTrace('training-iteration');
-
-                                    // At the end of each iteration, update the current training results
-                                    trainingResult.completedIterations += 1;
-                                    trainingResult.percentageComplete = (trainingResult.completedIterations * 100) / trainingResult.totalIterations;
-                                    trainingResult.currentLoss = result.loss;
-
-                                    // Update the time per iteration
-                                    trainingResult.currentTimePerIteration = trainingResult.performance.total();
-
-                                    const trainingAccuracies = [];
-                                    let index = 0;
-                                    async.eachSeries(underscore.zip(sample, result.objects), (zippedObjects, next) =>
+                                    if (err)
                                     {
-                                        const expected = zippedObjects[0];
-                                        const actual = zippedObjects[1];
-                                        self.getAccuracyFromOutput(expected.output, actual, false).then((trainingAccuracy) =>
-                                        {
-                                            trainingAccuracies.push(trainingAccuracy);
-                                            return next();
-                                        }, (err) => next(err));
-                                    }, (err) =>
+                                        return next(err);
+                                    }
+
+                                    performanceTrace.addTrace('load-object');
+
+                                    const promise = self.trainingProcess.executeTrainingIteration(underscore.pluck(sample, "id"));
+                                    promise.then((result) =>
                                     {
-                                        if (err)
-                                        {
-                                            return next(err);
-                                        }
+                                        performanceTrace.addTrace('training-iteration');
 
-                                        const removeObjectPromise = Promise.each(sample, (object) =>
-                                        {
-                                            return this.trainingProcess.removeObject(object.id);
-                                        });
-                                        removeObjectPromise.then(() =>
-                                        {
-                                            performanceTrace.addTrace('remove-object');
+                                        // At the end of each iteration, update the current training results
+                                        trainingResult.completedIterations += 1;
+                                        trainingResult.percentageComplete = (trainingResult.completedIterations * 100) / trainingResult.totalIterations;
+                                        trainingResult.currentLoss = result.loss;
 
-                                            self.testIteration((err, accuracy) =>
+                                        // Update the time per iteration
+                                        trainingResult.currentTimePerIteration = trainingResult.performance.total();
+
+                                        const trainingAccuracies = [];
+                                        let index = 0;
+                                        async.eachSeries(underscore.zip(sample, result.objects), (zippedObjects, next) =>
+                                        {
+                                            const expected = zippedObjects[0];
+                                            const actual = zippedObjects[1];
+                                            self.getAccuracyFromOutput(expected.output, actual, false).then((trainingAccuracy) =>
                                             {
-                                                if (err)
-                                                {
-                                                    return next(err);
-                                                }
-
-                                                performanceTrace.addTrace('testing-iteration');
-
-                                                const trainingAccuracy = math.mean(trainingAccuracies);
-                                                self.rollingAverageAccuracy.accumulate(accuracy);
-                                                self.rollingAverageTrainingaccuracy.accumulate(trainingAccuracy * 100);
-                                                trainingResult.currentAccuracy = self.rollingAverageAccuracy.average;
-                                                trainingResult.iterations.push({
-                                                    loss: result.loss,
-                                                    accuracy: self.rollingAverageAccuracy.average,
-                                                    trainingAccuracy: self.rollingAverageTrainingaccuracy.average
-                                                });
-
-                                                self.updateStepResult('training', trainingResult, (err) =>
-                                                {
-                                                    if (err)
-                                                    {
-                                                        return next(err);
-                                                    }
-
-                                                    performanceTrace.addTrace('save-to-db');
-                                                    trainingResult.performance.accumulate(performanceTrace);
-
-                                                    if ((trainingResult.completedIterations % saveFrequency) === 0)
-                                                    {
-                                                        self.saveTorchModelFile(next);
-                                                    }
-                                                    else
-                                                    {
-                                                        return next();
-                                                    }
-                                                });
+                                                trainingAccuracies.push(trainingAccuracy);
+                                                return next();
                                             }, (err) => next(err));
+                                        }, (err) =>
+                                        {
+                                            if (err)
+                                            {
+                                                return next(err);
+                                            }
+
+                                            const removeObjectPromise = Promise.each(sample, (object) =>
+                                            {
+                                                return this.trainingProcess.removeObject(object.id);
+                                            });
+                                            removeObjectPromise.then(() =>
+                                            {
+                                                performanceTrace.addTrace('remove-object');
+
+                                                const promise = self.testIteration();
+                                                promise.then((accuracy) =>
+                                                {
+                                                    performanceTrace.addTrace('testing-iteration');
+
+                                                    const trainingAccuracy = math.mean(trainingAccuracies);
+                                                    self.rollingAverageAccuracy.accumulate(accuracy);
+                                                    self.rollingAverageTrainingaccuracy.accumulate(trainingAccuracy * 100);
+                                                    trainingResult.currentAccuracy = self.rollingAverageAccuracy.average;
+                                                    trainingResult.iterations.push({
+                                                        loss: result.loss,
+                                                        accuracy: self.rollingAverageAccuracy.average,
+                                                        trainingAccuracy: self.rollingAverageTrainingaccuracy.average
+                                                    });
+
+                                                    const promise = self.updateStepResult('training', trainingResult);
+                                                    promise.then(() =>
+                                                    {
+                                                        performanceTrace.addTrace('save-to-db');
+                                                        trainingResult.performance.accumulate(performanceTrace);
+
+                                                        if ((trainingResult.completedIterations % saveFrequency) === 0)
+                                                        {
+                                                           const promise = self.saveTorchModelFile();
+                                                           promise.then(() =>
+                                                           {
+                                                               next(null);
+                                                           }, (err) => next (err));
+                                                        }
+                                                        else
+                                                        {
+                                                            return next();
+                                                        }
+                                                    }, (err) => next(err));
+                                                }, (err) => next(err));
+                                            });
                                         });
-                                    });
-                                }, (err) => next(err));
-                            });
-                        }, (err) => next(err));
-                    }, (err) =>
-                    {
-                        if (err)
+                                    }, (err) => next(err));
+                                });
+                            }, (err) => next(err));
+                        }, (err) =>
                         {
-                            return callback(err);
-                        }
+                            if (err)
+                            {
+                                return callback(err);
+                            }
 
-                        trainingResult.status = "complete";
-                        trainingResult.percentageComplete = 100;
+                            trainingResult.status = "complete";
+                            trainingResult.percentageComplete = 100;
 
-                        self.updateStepResult('training', trainingResult, callback);
-                    });
+                            const promise = self.updateStepResult('training', trainingResult);
+                            promise.then(() =>
+                            {
+                                callback(null);
+                            }, (err) => callback(err));
+                        });
+                }, (err) => callback(err));
             }, (err) => callback(err));
         });
     }
@@ -684,73 +723,76 @@ class EBTrainModelTask {
      *
      * It is run continuously as the network operates to continuously monitor how its doing.
      *
-     * @param {function(err, accuracy)} callback The callback that will be provided with the accuracy.
+     * @return {Promise} Resolves a promise that will be provided with the accuracy.
      */
-    testIteration(callback)
+    testIteration()
     {
         const self = this;
-
-        const accuracies = [];
-
-        this.fetchTestingBatch().then((sample) =>
+        return Promise.fromCallback((callback) =>
         {
-            async.mapSeries(sample, (object, next) =>
-            {
-                const promise = this.loadObject(object.id, object.input, object.output);
-                promise.then(() =>
-                {
-                    next(null);
-                }, (err)=>next(err));
-            }, (err) =>
-            {
-                if (err)
-                {
-                    return callback(err);
-                }
 
-                const promise = self.trainingProcess.processObjects(underscore.pluck(sample, "id"));
-                promise.then((outputs) =>
+            const accuracies = [];
+
+            this.fetchTestingBatch().then((sample) =>
+            {
+                async.mapSeries(sample, (object, next) =>
                 {
-                    let index = 0;
-                    async.eachSeries(sample, (object, next) =>
+                    const promise = this.loadObject(object.id, object.input, object.output);
+                    promise.then(() =>
                     {
-                        const output = outputs[index];
-                        index += 1;
+                        next(null);
+                    }, (err) => next(err));
+                }, (err) =>
+                {
+                    if (err)
+                    {
+                        return callback(err);
+                    }
 
-                        self.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, output, (err, actualOutput) =>
+                    const promise = self.trainingProcess.processObjects(underscore.pluck(sample, "id"));
+                    promise.then((outputs) =>
+                    {
+                        let index = 0;
+                        async.eachSeries(sample, (object, next) =>
+                        {
+                            const output = outputs[index];
+                            index += 1;
+
+                            self.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, output, (err, actualOutput) =>
+                            {
+                                if (err)
+                                {
+                                    return next(err);
+                                }
+
+                                self.getAccuracyFromOutput(object.original, actualOutput, true).then((accuracy) =>
+                                {
+                                    accuracies.push(accuracy);
+                                    return next();
+                                }, (err) => next(err));
+                            });
+                        }, (err) =>
                         {
                             if (err)
                             {
-                                return next(err);
+                                return callback(err);
                             }
 
-                            self.getAccuracyFromOutput(object.original, actualOutput, true).then((accuracy) =>
+                            const removeObjectPromise = Promise.each(sample, (object) =>
                             {
-                                accuracies.push(accuracy);
-                                return next();
-                            }, (err) => next(err));
+                                return this.trainingProcess.removeObject(object.id);
+
+                            });
+                            removeObjectPromise.then(() =>
+                            {
+                                const accuracy = math.mean(accuracies);
+
+                                return callback(null, accuracy);
+
+                            }, (err) => callback(err));
                         });
-                    }, (err) =>
-                    {
-                        if (err)
-                        {
-                            return callback(err);
-                        }
-
-                        const removeObjectPromise = Promise.each(sample, (object) =>
-                        {
-                            return this.trainingProcess.removeObject(object.id);
-
-                        });
-                        removeObjectPromise.then(() =>
-                        {
-                            const accuracy = math.mean(accuracies);
-
-                            return callback(null, accuracy);
-
-                        }, (err) => callback(err));
-                    });
-                }, (err) => callback(err));
+                    }, (err) => callback(err));
+                });
             });
         });
     }
@@ -792,128 +834,135 @@ class EBTrainModelTask {
     /**
      * This method tests the model against all objects in the training set
      *
-     * @param {function(err)} callback The callback after training is complete
+     * @return {Promise} Resolves a promise  after training is complete
      */
-    testModel(callback)
+    testModel()
     {
         const self = this;
-        const testingResult = {
-            status: 'in_progress',
-            percentageComplete: 0,
-            totalObjects: self.testingSetEntries.length,
-            completedObjects: 0,
-            accuracies: []
-        };
-
-        const objectsBetweenUpdate = 100;
-
-        // Reset our position within the training set
-        this.testingSetPosition = 0;
-        let processedObjects = 0;
-
-        const accuracies = [];
-
-        self.updateStepResult('testing', testingResult, (err) =>
+        return Promise.fromCallback((callback) =>
         {
-            if (err)
+            const testingResult = {
+                status: 'in_progress',
+                percentageComplete: 0,
+                totalObjects: self.testingSetEntries.length,
+                completedObjects: 0,
+                accuracies: []
+            };
+
+            const objectsBetweenUpdate = 100;
+
+            // Reset our position within the training set
+            this.testingSetPosition = 0;
+            let processedObjects = 0;
+
+            const accuracies = [];
+
+            const promise = self.updateStepResult('testing', testingResult);
+            promise.then(() =>
             {
-                return callback(err);
-            }
-
-            // Start plowing through the training set
-            // The number of iterations run so far
-            async.whilst(
-                () =>
-                {
-                    return processedObjects < this.testingSetEntries.length;
-                },
-                (next) =>
-                {
-                    const start = new Date();
-
-                    this.fetchTestingBatch().then((sample) =>
+                // Start plowing through the training set
+                // The number of iterations run so far
+                async.whilst(
+                    () =>
                     {
-                        async.mapSeries(sample, (object, next) =>
-                        {
-                            const promise = this.loadObject(object.id, object.input, object.output);
-                            promise.then(()=>
-                            {
-                                next(null);
-                            },(err)=>next(err));
-                        }, (err) =>
-                        {
-                            if (err)
-                            {
-                                return next(err);
-                            }
+                        return processedObjects < this.testingSetEntries.length;
+                    },
+                    (next) =>
+                    {
+                        const start = new Date();
 
-                            const promise = self.trainingProcess.processObjects(underscore.pluck(sample, "id"));
-                            promise.then((outputs) =>
+                        this.fetchTestingBatch().then((sample) =>
+                        {
+                            async.mapSeries(sample, (object, next) =>
                             {
-                                let index = 0;
-                                async.eachSeries(sample, (object, next) =>
+                                const promise = this.loadObject(object.id, object.input, object.output);
+                                promise.then(() =>
                                 {
-                                    const output = outputs[index];
-                                    index += 1;
+                                    next(null);
+                                }, (err) => next(err));
+                            }, (err) =>
+                            {
+                                if (err)
+                                {
+                                    return next(err);
+                                }
 
-                                    self.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, output, (err, actualOutput) =>
+                                const promise = self.trainingProcess.processObjects(underscore.pluck(sample, "id"));
+                                promise.then((outputs) =>
+                                {
+                                    let index = 0;
+                                    async.eachSeries(sample, (object, next) =>
+                                    {
+                                        const output = outputs[index];
+                                        index += 1;
+
+                                        self.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, output, (err, actualOutput) =>
+                                        {
+                                            if (err)
+                                            {
+                                                return next(err);
+                                            }
+
+                                            self.getAccuracyFromOutput(object.original, actualOutput, true).then((accuracy) =>
+                                            {
+                                                accuracies.push(accuracy);
+
+                                                processedObjects += 1;
+
+                                                if (processedObjects % objectsBetweenUpdate === 0)
+                                                {
+                                                    const promise = this.updateStepResult('testing', testingResult);
+                                                    promise.then(() =>
+                                                    {
+                                                        next(null);
+                                                    }, (err) => next(err));
+                                                }
+                                                else
+                                                {
+                                                    return next();
+                                                }
+                                            }, (err) => next(err));
+                                        });
+                                    }, (err) =>
                                     {
                                         if (err)
                                         {
                                             return next(err);
                                         }
 
-                                        self.getAccuracyFromOutput(object.original, actualOutput, true).then((accuracy) =>
+                                        const removeObjectPromise = Promise.each(sample, (object) =>
                                         {
-                                            accuracies.push(accuracy);
+                                            return this.trainingProcess.removeObject(object.id);
 
-                                            processedObjects += 1;
+                                        });
+                                        removeObjectPromise.then(() =>
+                                        {
+                                            testingResult.accuracy = math.mean(accuracies);
+                                            testingResult.completedObjects += 1;
+                                            testingResult.percentageComplete = (testingResult.completedObjects * 100) / testingResult.totalObjects;
 
-                                            if (processedObjects % objectsBetweenUpdate === 0)
-                                            {
-                                                this.updateStepResult('testing', testingResult, next);
-                                            }
-                                            else
-                                            {
-                                                return next();
-                                            }
+                                            return next(null);
                                         }, (err) => next(err));
                                     });
-                                }, (err) =>
-                                {
-                                    if (err)
-                                    {
-                                        return next(err);
-                                    }
-
-                                    const removeObjectPromise = Promise.each(sample, (object) =>
-                                    {
-                                        return this.trainingProcess.removeObject(object.id);
-
-                                    });
-                                    removeObjectPromise.then(() =>
-                                    {
-                                        testingResult.accuracy = math.mean(accuracies);
-                                        testingResult.completedObjects += 1;
-                                        testingResult.percentageComplete = (testingResult.completedObjects * 100) / testingResult.totalObjects;
-
-                                        return next(null);
-                                    }, (err) => next(err));
-                                });
-                            }, (err) => next(err));
+                                }, (err) => next(err));
+                            });
                         });
-                    });
-                }, (err) =>
-                {
-                    if (err)
+                    }, (err) =>
                     {
-                        return callback(err);
-                    }
+                        if (err)
+                        {
+                            return callback(err);
+                        }
 
-                    testingResult.percentageComplete = 100;
-                    testingResult.status = 'complete';
-                    this.updateStepResult('testing', testingResult, callback);
-                });
+                        testingResult.percentageComplete = 100;
+                        testingResult.status = 'complete';
+                        const promise = this.updateStepResult('testing', testingResult);
+                        promise.then(() =>
+                        {
+                            callback(null);
+                        }, (err) => callback(err));
+                    });
+            }, (err) => callback(err));
         });
     }
 
@@ -921,22 +970,25 @@ class EBTrainModelTask {
     /**
      * This saves the trained torch model file
      *
-     * @param {function(err)} callback The callback after the file has been saved
+     * @return {Promise} Resolves a promise  after the file has been saved
      */
-    saveTorchModelFile(callback)
+    saveTorchModelFile()
     {
         const self = this;
-        const promise = self.trainingProcess.getTorchModelFileStream();
-        promise.then((stream) =>
+        return Promise.fromCallback((callback) =>
         {
-            stream.pipe(self.gridFS.openUploadStream(`model-${self.model._id}.t7`)).on('error', (error) =>
-             {
-                 return callback(error);
-             }).on('finish', () =>
-             {
-                return callback();
-             });
-        }, (err) => callback(err));
+            const promise = self.trainingProcess.getTorchModelFileStream();
+            promise.then((stream) =>
+            {
+                stream.pipe(self.gridFS.openUploadStream(`model-${self.model._id}.t7`)).on('error', (error) =>
+                {
+                    return callback(error);
+                }).on('finish', () =>
+                {
+                    return callback();
+                });
+            }, (err) => callback(err));
+        });
     }
 }
 
