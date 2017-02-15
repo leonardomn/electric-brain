@@ -234,11 +234,11 @@ class EBArchitecture
             const stream = self.getNetworkOutputTransformationStream(registry);
             stream.on("data", (output) =>
             {
-                return next(null, output);
+                return callback(null, output);
             });
             stream.on("error", (error) =>
             {
-                return next(error);
+                return callback(error);
             });
             stream.end(networkOutput);
         });
