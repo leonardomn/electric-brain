@@ -475,18 +475,13 @@ class EBModelAPI extends EBAPIRoot
             }
             else
             {
-                self.bundler.createBundle(model, function(err, buffer)
+                const promise = self.bundler.createBundle(model);
+                promise.then((buffer) =>
                 {
-                    if (err)
-                    {
-                        return next(err);
-                    }
-
-
                     res.type('application/zip');
                     res.set('Content-Disposition', 'inline; filename="bundle.zip"');
                     res.end(buffer);
-                });
+                }, (err) => next(err));
             }
         });
     }

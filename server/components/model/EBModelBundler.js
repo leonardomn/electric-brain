@@ -31,9 +31,12 @@ class EBModelBundler
      * @param {EBModel} model The model object to be bundled
      * @param {function(err, buffer)} callback The callback to receive the resulting bundle
      */
-    createBundle(model, callback)
+    createBundle(model)
     {
-        throw new Error("EBModelBundler::createBundle is unimplemented");
+        return Promise.fromCallback((callback) =>
+        {
+            throw new Error("EBModelBundler::createBundle is unimplemented");
+        });
     }
 }
 
