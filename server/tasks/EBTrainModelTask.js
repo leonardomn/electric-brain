@@ -700,7 +700,7 @@ class EBTrainModelTask {
                 promise.then(() =>
                 {
                     next(null);
-                }, (err)=>next(err));
+                }, (err) => next(err));
             }, (err) =>
             {
                 if (err)
