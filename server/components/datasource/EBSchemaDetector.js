@@ -270,6 +270,7 @@ class EBSchemaDetector
     getSchema()
     {
         const fields = [];
+        const mappedFields = {};
 
         // First step, we create a flat list of values
         for (const field of this.fieldAccumulators.keys())
@@ -292,6 +293,8 @@ class EBSchemaDetector
                     metadata: fieldMetadata
                 });
             }
+
+            mappedFields[`${field}.`] = fieldMetadata;
         }
 
         const getFieldHead = (fieldName) =>
@@ -312,7 +315,11 @@ class EBSchemaDetector
             let schemaFields = allSchemaFields;
 
             const variablePath = root.substr(0, root.length - 1);
-            const schema = {title: variablePath};
+            const schema = {
+                title: variablePath,
+                metadata: mappedFields[root]
+            };
+
             const removeRoot = (id) =>
             {
                 return id.substr(root.length);
@@ -333,9 +340,6 @@ class EBSchemaDetector
             // Otherwise, we need to remove any fields that refer
             // directly to the root, if they exist
             schemaFields = underscore.filter(schemaFields, (field) => (`${field.name}.` !== root));
-
-            // Grab the metadata for this field
-            schema.metadata = this.fieldAccumulators.get(variablePath).metadata;
 
             // Decide whether we are dealing with an object or an array
             if (getFieldHead(removeRoot(schemaFields[0].name)) === '[]')
