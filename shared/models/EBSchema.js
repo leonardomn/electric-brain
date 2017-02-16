@@ -89,13 +89,9 @@ class EBSchema
             else if (key === 'configuration')
             {
                 self.configuration = {
-                    included: rawSchema.configuration.included
+                    included: rawSchema.configuration.included,
+                    interpretation: rawSchema.configuration.interpretation
                 };
-
-                if(rawSchema.configuration.neuralNetwork)
-                {
-                    self.configuration.neuralNetwork = new EBSchemaNeuralNetworkConfiguration(rawSchema.configuration.neuralNetwork);
-                }
             }
             else if (key === 'results')
             {
@@ -146,12 +142,6 @@ class EBSchema
         if (!self.metadata.variableName)
         {
             self.updateVariableNamesAndPaths();
-        }
-
-        if (!self.configuration.neuralNetwork)
-        {
-            // Generate the default neural network configuration
-            self.configuration.neuralNetwork = EBSchemaNeuralNetworkConfiguration.generateDefaultConfigurationForField(self);
         }
     }
 
@@ -1803,12 +1793,15 @@ class EBSchema
                     "type": "object",
                     "properties": {
                         "included": {"type": "boolean"},
-                        "neuralNetwork": EBSchemaNeuralNetworkConfiguration.schema()
+                        "interpretation": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
                     }
                 },
                 "results": {
                     "type": "object",
-                    "properties": {"confusionMatrix": EBConfusionMatrix.schema()}
+                    "additionalProperties": true
                 }
             },
             "dependencies": {

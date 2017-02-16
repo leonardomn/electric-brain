@@ -147,8 +147,6 @@ angular.module('eb').service('EBDataSourceService', function EBDataSourceService
             },
             transformResponse(data, headersGetter, status)
             {
-                console.log(data);
-
                 return JSON.parse(data);
             }
         });

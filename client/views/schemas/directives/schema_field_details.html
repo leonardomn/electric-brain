@@ -18,7 +18,7 @@
 
 <div class="row schema-field-details">
     <div class="col-xs-12">
-        <div class="ibox" ng-if="field.isString || field.isNumber">
+        <div class="ibox">
             <div class="ibox-title">
                 <h5>Interpretation Chain</h5>
             </div>
@@ -36,32 +36,7 @@
                 <h5>{{field.title}}</h5>
             </div>
             <div class="ibox-content">
-                <h3>Type</h3>
-                {{field.type.join(", ")}}
-                <br/>
-                <div>
-                    <!-- If we have cardinality information for this field, display it -->
-                    <div ng-if="field.metadata.total > 0">
-                        <h3>Cardinality</h3>
-                        <p>{{(field.metadata.cardinality * 100).toFixed(2)}}%</p>
-                        <span>{{field.metadata.distinct}}&nbsp;/&nbsp;{{field.metadata.total}}</span>
-                        <br/>
-                    </div>
-
-                    <eb-dynamic-directive directive-name="eb-{{field.metadata.mainInterpretation}}-interpretation-metadata" field="field"></eb-dynamic-directive>
-
-                    <!-- Show some examples of the field -->
-                    <div ng-if="field.metadata.examples.length > 0">
-                        <h3>Examples</h3>
-                        <div class="schema-field-examples">
-                            <div ng-repeat="example in field.metadata.examples.slice(0, 10)" class="schema-details-example-value">
-                                <span ng-if="field.isString || field.isNumber || field.isBoolean" class="label label-default">{{example | json}}</span>
-                                <span ng-if="field.isBinary"><img src="data:image/png;base64, {{example}}"></span>
-                            </div>
-                        </div>
-                    </div>
-                    <br/>
-                </div>
+                <eb-dynamic-directive directive-name="eb-{{field.metadata.mainInterpretation}}-interpretation-metadata" field="field"></eb-dynamic-directive>
             </div>
         </div>
     </div>

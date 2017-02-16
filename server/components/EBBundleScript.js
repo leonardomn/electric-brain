@@ -159,7 +159,8 @@ class EBBundleScript
                     {
                         async.mapSeries(results, (result, next) =>
                         {
-                            this.model.architecture.convertNetworkOutputObject(result, (err, output) =>
+                            // TODO: FIX ME
+                            this.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, result, (err, output) =>
                             {
                                 if (err)
                                 {
