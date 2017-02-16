@@ -196,12 +196,12 @@ class EBTorchProcess
                 },
                 function handshake(next)
                 {
-                    const WriteandWaitPromise = Promise.each(self.process,(process) =>
+                    const writeAndWaitPromise = Promise.each(self.process,(process) =>
                     {
                         // Now we handshake with the process and get version / name information
                         return process.writeAndWaitForMatchingOutput({type: "handshake"}, {"type": "handshake"});
                     });
-                    return WriteandWaitPromise;
+                    return writeAndWaitPromise;
                 }
             ], callback);
         });
@@ -215,11 +215,11 @@ class EBTorchProcess
     killProcess()
     {
         const self = this;
-        const WriteandWaitPromise = Promise.each(self.process,(process) =>
+        const writeAndWaitPromise = Promise.each(self.process,(process) =>
         {
             return process.process.kill();
         });
-        return WriteandWaitPromise;
+        return writeAndWaitPromise;
     }
 
 
@@ -232,11 +232,11 @@ class EBTorchProcess
     {
         const self = this;
 
-        const WriteandWaitPromise = Promise.each(self.processes, (process) =>
+        const writeAndWaitPromise = Promise.each(self.processes, (process) =>
             {
                 return process.writeAndWaitForMatchingOutput({type: "reset"}, {type: "resetCompleted"});
             });
-        return WriteandWaitPromise;
+        return writeAndWaitPromise;
     }
 
     /**
@@ -287,15 +287,15 @@ class EBTorchProcess
             input: input,
             output: output
         };
-        const WriteandWaitPromise = Promise.each(self.processes,(process) =>
+        const writeAndWaitPromise = Promise.each(self.processes,(process) =>
         {
             return process.writeAndWaitForMatchingOutput(message, {type: "stored"});
         });
-        WriteandWaitPromise.then(() =>
+        writeAndWaitPromise.then(() =>
         {
             self.allLoadedEntries.push(id);
         });
-        return WriteandWaitPromise;
+        return writeAndWaitPromise;
     }
 
 
@@ -312,15 +312,15 @@ class EBTorchProcess
             type: "forget",
             id: id
         };
-        const WriteandWaitPromise = Promise.each(self.processes, (process) =>
+        const writeAndWaitPromise = Promise.each(self.processes, (process) =>
         {
             return process.writeAndWaitForMatchingOutput(message, {type: "forgotten"});
         });
-        WriteandWaitPromise.then(() =>
+        writeAndWaitPromise.then(() =>
         {
             self.allLoadedEntries.splice(self.allLoadedEntries.indexOf(id), 1);
         });
-        return WriteandWaitPromise;
+        return writeAndWaitPromise;
     }
 
 
@@ -568,11 +568,11 @@ class EBTorchProcess
         const message = {
             type: "load"
         };
-        const WriteandWaitPromise = Promise.each(self.process, (process) =>
+        const writeAndWaitPromise = Promise.each(self.process, (process) =>
         {
             return process.writeAndWaitForMatchingOutput(message, {type: "loaded"});
         });
-        return WriteandWaitPromise;
+        return writeAndWaitPromise;
     }
 }
 
