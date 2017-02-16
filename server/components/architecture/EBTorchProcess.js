@@ -82,12 +82,12 @@ class EBTorchProcess
                         // Create a list of files that need to be written
                         const files = self.architecture.generateFiles(neuralNetworkComponentDispatch);
                         // Write out each of the files
-                        const WriteFilePromise = Promise.each(files,(file) =>
+                        const writeFilePromise = Promise.each(files,(file) =>
                         {
                             totalFiles += 1;
                             return Promise.fromCallback((next) => fs.writeFile(path.join(self.scriptFolder, file.path), file.data, next));
                         });
-                        WriteFilePromise.then(() => next());
+                        writeFilePromise.then(() => next());
                     });
                 },
                 function writeLibraryFiles(next)
