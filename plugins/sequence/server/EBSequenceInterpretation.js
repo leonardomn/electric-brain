@@ -20,7 +20,6 @@
 
 const
     EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
-    EBNumberHistogram = require('../../../shared/models/EBNumberHistogram'),
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
     EBNumberHistogram = require('../../../shared/models/EBNumberHistogram'),
