@@ -197,12 +197,12 @@ class EBTorchProcess
                 },
                 function handshake(next)
                 {
-                    const writeAndWaitPromise = Promise.each(self.process,(process) =>
+                    const writeAndWaitPromise = Promise.each(self.processes, (process) =>
                     {
                         // Now we handshake with the process and get version / name information
                         return process.writeAndWaitForMatchingOutput({type: "handshake"}, {"type": "handshake"});
                     });
-                    return writeAndWaitPromise;
+                    writeAndWaitPromise.then(() => next(), (err) => next(err));
                 }
             ], callback);
         });
@@ -216,7 +216,7 @@ class EBTorchProcess
     killProcess()
     {
         const self = this;
-        const writeAndWaitPromise = Promise.each(self.process,(process) =>
+        const writeAndWaitPromise = Promise.each(self.processes,(process) =>
         {
             return process.process.kill();
         });
@@ -569,7 +569,7 @@ class EBTorchProcess
         const message = {
             type: "load"
         };
-        const writeAndWaitPromise = Promise.each(self.process, (process) =>
+        const writeAndWaitPromise = Promise.each(self.processes, (process) =>
         {
             return process.writeAndWaitForMatchingOutput(message, {type: "loaded"});
         });
