@@ -43,21 +43,19 @@ class EBFieldAnalysisAccumulatorBase
      * This method accumulates a value into the field metadata.
      *
      * @param {anything} value The value that should be analyzed
-     * @param {boolean} keepForExample Whether or not this value should be
-     *                                 kept as an "example" value.
      *                                 
      * @returns {Promise} A Promise when the value has been analyzed.
      */
-    accumulateValue(value, keepForExample)
+    accumulateValue(value)
     {
         return Promise.rejected(new Error("Unimplemented"));
     }
 
 
     /**
-     * This method should return an EBFieldMetadata object for this field
+     * This method should return an object containing interpretation-specific statistics on this field.
      */
-    getFieldMetadata()
+    getFieldStatistics()
     {
         return Promise.rejected(new Error("Unimplemented"));
     }

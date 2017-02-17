@@ -22,6 +22,7 @@ const
     EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
+    EBSchema = require("../../../shared/models/EBSchema"),
     EBValueHistogram = require('../../../shared/models/EBValueHistogram'),
     Promise = require('bluebird'),
     underscore = require('underscore');
@@ -31,14 +32,38 @@ const
  * only hexidecimal characters. It will be converted into binary
  * data.
  */
-class EBHexInterpretation extends EBInterpretationBase
+class EBHexInterpretation extends EBInterpretationBase 
 {
     /**
-     * Constructor
+     * Constructor. Requires the interpretation registry in order to recurse properly
+     *
+     * @param {EBInterpretationRegistry} interpretationRegistry The registry
      */
-    constructor()
+    constructor(interpretationRegistry)
     {
         super('hex');
+        this.interpretationRegistry = interpretationRegistry;
+
+        this.mapping = {
+            "0": 0,
+            "1": 1,
+            "2": 2,
+            "3": 3,
+            "4": 4,
+            "5": 5,
+            "6": 6,
+            "7": 7,
+            "8": 8,
+            "9": 9,
+            "a": 10,
+            "b": 11,
+            "c": 12,
+            "d": 13,
+            "e": 14,
+            "f": 15
+        };
+
+        this.inverseMapping = underscore.invert(this.mapping);
     }
 
 
@@ -59,6 +84,19 @@ class EBHexInterpretation extends EBInterpretationBase
 
 
 
+
+    /**
+     * This method returns the raw javascript type of value that this interpretation applies to.
+     *
+     * @return {string} Can be one of: 'object', 'array', 'number', 'string', 'boolean', 'binary'
+     */
+    getJavascriptType()
+    {
+        return 'string';
+    }
+
+
+
     /**
      * This method should look at the given value and decide whether it can be handled by this
      * interpretation.
@@ -69,7 +107,7 @@ class EBHexInterpretation extends EBInterpretationBase
      */
     checkValue(value)
     {
-        if(underscore.isString(value) && /^(?:[abcdef0123456789]{2})+$/i.test(value))
+        if (underscore.isString(value) && /^(?:[abcdef0123456789]{2})+$/i.test(value))
         {
             return Promise.resolve(true);
         }
@@ -111,21 +149,6 @@ class EBHexInterpretation extends EBInterpretationBase
 
 
     /**
-     * This method should return information about fields that need to be graphed on
-     * the frontend for this interpretation.
-     *
-     * @param {*} value The value to be transformed
-     * @return {Promise} A promise that resolves to an array of statistics
-     */
-    listStatistics(value)
-    {
-        return Promise.resolve([]);
-    }
-
-
-
-
-    /**
      * This method should transform an example into a value that is small enough to be
      * stored with the schema and shown on the frontend. Information can be destroyed
      * in this transformation in order to allow the data to be stored easily.
@@ -137,12 +160,102 @@ class EBHexInterpretation extends EBInterpretationBase
     {
         if (value.length > 50)
         {
-            return Promise.resolve(value.substr(0, 50) + "...");
+            return Promise.resolve(value.substr(0, 50).toString('hex') + "...");
         }
         else
         {
-            return Promise.resolve(value);
+            return Promise.resolve(value.toString('hex'));
         }
+    }
+
+
+    /**
+     * This method should transform the given schema for input to the neural network.
+     *
+     * @param {EBSchema} schema The schema to be transformed
+     * @return {Promise} A promise that resolves to a new value.
+     */
+    transformSchemaForNeuralNetwork(schema)
+    {
+        // Straight up hexadecimal representation
+        return new EBSchema({
+            title: schema.title,
+            type: "array",
+            items: {
+                title: `${schema.title}.[]`,
+                type: "object",
+                properties: {
+                    hex: {
+                        title: `${schema.title}.[].hex`,
+                        type: "number",
+                        enum: underscore.range(0, 16),
+                        configuration: {included: true}
+                    }
+                },
+                configuration: {included: true}
+            },
+            configuration: {included: true}
+        });
+    }
+
+
+    /**
+     * This method should prepare a given value for input into the neural network
+     *
+     * @param {EBSchema} value The value to be transformed
+     * @return {Promise} A promise that resolves to a new value.
+     */
+    transformValueForNeuralNetwork(value)
+    {
+        const hexValues = [];
+        for (let n = 0; n < value.length; n += 1)
+        {
+            if (this.mapping[value[n].toLowerCase()])
+            {
+                hexValues.push({hex: value[n].toLowerCase()});
+            }
+            else
+            {
+                throw new Error(`Unknown hexadecimal character: ${value[n]}`);
+            }
+        }
+        return hexValues;
+    }
+
+
+    /**
+     * This method should take output from the neural network and transform it back
+     *
+     * @param {*} value The value to be transformed
+     * @param {EBSchema} schema The schema for the value to be transformed
+     * @return {Promise} A promise that resolves to a new value
+     */
+    transformValueBackFromNeuralNetwork(value, schema)
+    {
+        // TODO: Special hack here.
+        if (underscore.isString(value))
+        {
+            return value;
+        }
+
+        let output = "";
+        value.forEach((value) =>
+        {
+            output += this.inverseMapping[value.hex];
+        });
+        return output;
+    }
+
+
+    /**
+     * This method should generate the default configuration for the given schema
+     *
+     * @param {EBSchema} schema The schema for the value to be transformed
+     * @return {object} An object which follows the schema returned from configurationSchema
+     */
+    generateDefaultConfiguration(schema)
+    {
+        return {};
     }
 
 
@@ -176,15 +289,10 @@ class EBHexInterpretation extends EBInterpretationBase
                     this.values.push(value);
                 }
             }
-
-            getFieldMetadata()
+            
+            getFieldStatistics()
             {
-                const metadata = new EBFieldMetadata();
-
-                metadata.types.push('string');
-                metadata.valueHistogram = EBValueHistogram.computeHistogram(this.values);
-
-                return metadata;
+                return {valueHistogram: EBValueHistogram.computeHistogram(this.values)};
             }
         })();
     }
@@ -195,14 +303,45 @@ class EBHexInterpretation extends EBInterpretationBase
      *
      * @return {jsonschema} A schema representing the metadata for this interpretation
      */
-    static metadataSchema()
+    static statisticsSchema()
     {
         return {
-            "id": "EBFieldMetadata",
+            "id": "EBHexInterpretation.statisticsSchema",
             "type": "object",
             "properties": {
                 valueHistogram: EBValueHistogram.schema()
             }
+        };
+    }
+
+
+    /**
+     * This method should return a schema for the configuration for this interpretation
+     *
+     * @return {jsonschema} A schema representing the configuration for this interpretation
+     */
+    static configurationSchema()
+    {
+        return {
+            "id": "EBHexInterpretation.configurationSchema",
+            "type": "object",
+            "properties": {
+            }
+        };
+    }
+
+
+    /**
+     * This method should return a schema for accumulating accuracy results from values in this interpretation
+     *
+     * @return {jsonschema} A schema representing whatever is needed to store results
+     */
+    static resultsSchema()
+    {
+        return {
+            "id": "EBHexInterpretation.resultsSchema",
+            "type": "object",
+            "properties": {}
         };
     }
 }

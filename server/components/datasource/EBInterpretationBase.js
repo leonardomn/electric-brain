@@ -50,6 +50,19 @@ class EBInterpretationBase
 
 
     /**
+     * This method returns the raw javascript type of value that this interpretation applies to.
+     *
+     * @return {string} Can be one of: 'object', 'array', 'number', 'string', 'boolean', 'binary'
+     */
+    getJavascriptType(value)
+    {
+        throw new Error("Unimplemented");
+    }
+
+
+
+
+    /**
      * This method should look at the given value and decide whether it can be handled by this
      * interpretation.
      *
@@ -95,21 +108,6 @@ class EBInterpretationBase
 
 
     /**
-     * This method should return information about fields that need to be graphed on
-     * the frontend for this interpretation.
-     *
-     * @param {*} value The value to be transformed
-     * @return {Promise} A promise that resolves to an array of statistics
-     */
-    listStatistics(value)
-    {
-        return Promise.rejected(new Error("Unimplemented"));
-    }
-
-
-
-
-    /**
      * This method should transform an example into a value that is small enough to be
      * stored with the schema and shown on the frontend.
      *
@@ -122,6 +120,57 @@ class EBInterpretationBase
     }
 
 
+    /**
+     * This method should transform the given schema for input to the neural network.
+     *
+     * @param {EBSchema} schema The schema to be transformed
+     * @return {Promise} A promise that resolves to a new value.
+     */
+    transformSchemaForNeuralNetwork(schema)
+    {
+        return Promise.rejected(new Error("Unimplemented"));
+    }
+
+
+    /**
+     * This method should take output from the neural network and transform it back
+     *
+     * @param {*} value The value to be transformed
+     * @param {EBSchema} schema The schema for the value to be transformed
+     * @return {Promise} A promise that resolves to a new value
+     */
+    transformValueBackFromNeuralNetwork(value, schema)
+    {
+        return Promise.rejected(new Error("Unimplemented"));
+    }
+
+
+    /**
+     * This method should generate the default configuration for the given schema
+     *
+     * @param {EBSchema} schema The schema for the value to be transformed
+     * @return {object} An object which follows the schema returned from configurationSchema
+     */
+    generateDefaultConfiguration(schema)
+    {
+        throw new Error("Unimplemented");
+    }
+
+
+    /**
+     * This method should compare two values according to the given schema, in order to determine the accuracy
+     * of the neural network.
+     *
+     * @param {*} expected The value the network was expected to produce, e.g. the correct answer
+     * @param {*} actual The actual value the network produced.
+     * @param {EBSchema} schema The schema for the value to be compared
+     * @param {boolean} accumulateStatistics Whether or not statistics on the results should be accumulated into the EBSchema object.
+     * @return {number} accuracy The accuracy of the result. should be a number between 0 and 1
+     */
+    compareNetworkOutputs(expected, actual, schema, accumulateStatistics)
+    {
+        throw new Error("Unimplemented");
+    }
 
 
     /**
@@ -136,14 +185,36 @@ class EBInterpretationBase
     {
         throw new Error("Unimplemented");
     }
-    
+
 
     /**
      * This method should return a schema for the metadata associated with this interpretation
      *
      * @return {jsonschema} A schema representing the metadata for this interpretation
      */
-    static metadataSchema()
+    static statisticsSchema()
+    {
+        throw Promise.rejected(new Error("Unimplemented"));
+    }
+
+
+    /**
+     * This method should return a schema for the configuration for this interpretation
+     *
+     * @return {jsonschema} A schema representing the configuration for this interpretation
+     */
+    static configurationSchema()
+    {
+        throw Promise.rejected(new Error("Unimplemented"));
+    }
+
+
+    /**
+     * This method should return a schema for accumulating accuracy results from values in this interpretation
+     *
+     * @return {jsonschema} A schema representing whatever is needed to store results
+     */
+    static resultsSchema()
     {
         throw Promise.rejected(new Error("Unimplemented"));
     }

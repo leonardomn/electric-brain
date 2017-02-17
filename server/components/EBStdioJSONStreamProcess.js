@@ -22,6 +22,7 @@ const
     childProcess = require('child_process'),
     chunkingStreams = require('chunking-streams'),
     EventEmitter = require('events'),
+    Promise = require('bluebird'),
     stream = require('stream'),
     underscore = require('underscore');
 
@@ -81,12 +82,16 @@ class EBStdioJSONStreamProcess extends EventEmitter
      * Write a message to the sub-process. A convenience method for inputStream.write()
      *
      * @param {object} object The object to be sent to the sub-process
-     * @param {function(err)} [callback] The optional callback which will be called after the message has been written
+     * @return {Promise} Resolves a promise after the message has been written
      */
-    write(object, callback)
+    write(object)
     {
-        this.input.write(object, callback);
+        return Promise.fromCallback((callback) =>
+        {
+            this.input.write(object, callback);
+        });
     }
+
 
     /**
      * Waits for a message from the outputStream that exactly matches the given condition object.
@@ -97,34 +102,35 @@ class EBStdioJSONStreamProcess extends EventEmitter
      * Very useful for quickly implementing RPC schemes with the sub-process
      *
      * @param {object} condition The condition object which will be waited for.
-     * @param {function(err, result)} callback The callback that will be called once a message that matches the condition is seen. No further messages will be examined.
+     * @return {Promise} Resolves a promise once a message that matches the condition is seen. No further messages will be examined.
      */
-    waitForMatchingOutput(condition, callback)
+    waitForMatchingOutput(condition)
     {
         const self = this;
-
-        const predicate = underscore.matcher(condition);
-        
-        let errorHandler;
-        const dataHandler = (data) =>
+        return Promise.fromCallback((callback) =>
         {
-            if (predicate(data))
+            const predicate = underscore.matcher(condition);
+            let errorHandler;
+            const dataHandler = (data) =>
+            {
+                if (predicate(data))
+                {
+                    self.removeListener('error', errorHandler);
+                    self.output.removeListener('data', dataHandler);
+                    return callback(null, data);
+                }
+            };
+
+            errorHandler = (error) =>
             {
                 self.removeListener('error', errorHandler);
                 self.output.removeListener('data', dataHandler);
-                return callback(null, data);
-            }
-        };
-        
-        errorHandler = (error) =>
-        {
-            self.removeListener('error', errorHandler);
-            self.output.removeListener('data', dataHandler);
-            return callback(error, null);
-        };
-        
-        self.output.on('data', dataHandler);
-        self.once('error', errorHandler);
+                return callback(error, null);
+            };
+
+            self.output.on('data', dataHandler);
+            self.once('error', errorHandler);
+        });
     }
 
     /**
@@ -134,20 +140,17 @@ class EBStdioJSONStreamProcess extends EventEmitter
      *
      * @param {object} object The object to be sent to the sub-process
      * @param {object} condition The condition object used for waiting. See EBStdioJSONStreamProcess.waitForMatchingOutput
-     * @param {function(err)} [callback] The optional callback which will be called after the message has been written
+     * @return {Promise} Resolves a promise after the message has been written
      */
-    writeAndWaitForMatchingOutput(object, condition, callback)
+    writeAndWaitForMatchingOutput(object, condition)
     {
         const self = this;
-        self.write(object, function(err)
+        const promise = self.write(object);
+        promise.then(() =>
         {
-            if (err)
-            {
-                return callback(err);
-            }
-            
-            self.waitForMatchingOutput(condition, callback);
+            return self.waitForMatchingOutput(condition);
         });
+        return promise;
     }
 
     /**
@@ -158,97 +161,101 @@ class EBStdioJSONStreamProcess extends EventEmitter
      * @param {[string]} args A list of arguments to be passed into the process
      * @param {object} options Options for the sub process. This is exactly the same as child_process.spawn.
      *
-     * @param {function(err, process)} callback Callback to be called after the sub-process is started with the EBStdioJSONStreamProcess object.
+     * @return {Promise} Resolves a promise after the sub-process is started with the EBStdioJSONStreamProcess object.
      */
-    static spawn(command, args, options, callback)
+    static spawn(command, args, options)
     {
-        const jsonStreamProcess = new EBStdioJSONStreamProcess();
+        return Promise.fromCallback((callback) =>
+        {
+            const jsonStreamProcess = new EBStdioJSONStreamProcess();
 
-        // Start up the process
-        jsonStreamProcess.process = childProcess.spawn(command, args, options);
+            // Start up the process
+            jsonStreamProcess.process = childProcess.spawn(command, args, options);
 
-        jsonStreamProcess.input = new stream.Transform({
-            objectMode: true,
-            transform: function(chunk, encoding, next)
-            {
-                this.push(`${JSON.stringify(chunk)}\n`);
-                return next();
-            }
-        });
-
-        jsonStreamProcess.input.pipe(jsonStreamProcess.process.stdin);
-
-        jsonStreamProcess.output = new stream.Transform({
-            objectMode: true,
-            transform: function(chunk, encoding, next)
-            {
-                // Take its output and interpret it as a JSON object
-                try
+            jsonStreamProcess.input = new stream.Transform({
+                objectMode: true,
+                transform: function(chunk, encoding, next)
                 {
-                    this.push(JSON.parse(chunk.toString()));
+                    this.push(`${JSON.stringify(chunk)}\n`);
                     return next();
                 }
-                catch (err)
+            });
+
+            jsonStreamProcess.input.pipe(jsonStreamProcess.process.stdin);
+
+            jsonStreamProcess.output = new stream.Transform({
+                objectMode: true,
+                transform: function(chunk, encoding, next)
                 {
-                    console.error(`error`, `Error from sub-process "${command} ${args.join(' ')}". Output is not valid JSON: ${chunk}`);
-                    console.error(err);
-                    return next();
+                    // Take its output and interpret it as a JSON object
+                    try
+                    {
+                        this.push(JSON.parse(chunk.toString()));
+                        return next();
+                    }
+                    catch (err)
+                    {
+                        console.error(`error`, `Error from sub-process "${command} ${args.join(' ')}". Output is not valid JSON: ${chunk}`);
+                        console.error(err);
+                        return next();
+                    }
                 }
-            }
+            });
+
+            // Create a new chunker on the standard output to chunk it into single lines, each line containing a JSON object.
+            const lineChunker = new chunkingStreams.LineCounter({
+                numLines: 1,
+                flushTail: false
+            });
+
+            // Pipe the output through the chunker into the output stream which decodes it as JSON
+            jsonStreamProcess.process.stdout.pipe(lineChunker);
+            lineChunker.pipe(jsonStreamProcess.output);
+
+            jsonStreamProcess.process.stderr.on('data', (data) =>
+            {
+                console.error(data.toString());
+            });
+
+            jsonStreamProcess.process.stdin.on('error', (err) =>
+            {
+                jsonStreamProcess.emit('error', err);
+            });
+
+            jsonStreamProcess.process.stdout.on('error', (err) =>
+            {
+                jsonStreamProcess.emit('error', err);
+            });
+
+            jsonStreamProcess.process.stderr.on('error', (err) =>
+            {
+                jsonStreamProcess.emit('error', err);
+            });
+
+            jsonStreamProcess.process.on('close', (exitCode) =>
+            {
+                jsonStreamProcess.emit('close', exitCode);
+            });
+
+            jsonStreamProcess.process.on('disconnect', () =>
+            {
+                jsonStreamProcess.emit('disconnect');
+            });
+
+            jsonStreamProcess.process.on('error', (error) =>
+            {
+                jsonStreamProcess.emit('error', error);
+            });
+
+            jsonStreamProcess.process.on('exit', () =>
+            {
+                jsonStreamProcess.emit('exit');
+            });
+
+            callback(null, jsonStreamProcess);
         });
-
-        // Create a new chunker on the standard output to chunk it into single lines, each line containing a JSON object.
-        const lineChunker = new chunkingStreams.LineCounter({
-            numLines: 1,
-            flushTail: false
-        });
-
-        // Pipe the output through the chunker into the output stream which decodes it as JSON
-        jsonStreamProcess.process.stdout.pipe(lineChunker);
-        lineChunker.pipe(jsonStreamProcess.output);
-
-        jsonStreamProcess.process.stderr.on('data', (data) =>
-        {
-            console.error(data.toString());
-        });
-
-        jsonStreamProcess.process.stdin.on('error', (err) =>
-        {
-            jsonStreamProcess.emit('error', err);
-        });
-
-        jsonStreamProcess.process.stdout.on('error', (err) =>
-        {
-            jsonStreamProcess.emit('error', err);
-        });
-
-        jsonStreamProcess.process.stderr.on('error', (err) =>
-        {
-            jsonStreamProcess.emit('error', err);
-        });
-
-        jsonStreamProcess.process.on('close', (exitCode) =>
-        {
-            jsonStreamProcess.emit('close', exitCode);
-        });
-
-        jsonStreamProcess.process.on('disconnect', () =>
-        {
-            jsonStreamProcess.emit('disconnect');
-        });
-
-        jsonStreamProcess.process.on('error', (error) =>
-        {
-            jsonStreamProcess.emit('error', error);
-        });
-
-        jsonStreamProcess.process.on('exit', () =>
-        {
-            jsonStreamProcess.emit('exit');
-        });
-
-        callback(null, jsonStreamProcess);
     }
+
 }
 
 module.exports = EBStdioJSONStreamProcess;

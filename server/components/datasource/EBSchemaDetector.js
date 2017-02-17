@@ -19,6 +19,7 @@
 "use strict";
 const
     async = require('async'),
+    EBFieldMetadata = require("../../../shared/models/EBFieldMetadata"),
     models = require('../../../shared/models/models'),
     path = require('path'),
     Promise = require('bluebird'),
@@ -40,6 +41,7 @@ class EBSchemaDetector
     {
         this.fieldAccumulators = new Map();
         this.interpretationChains = new Map();
+        this.exampleValues = new Map();
         this.objectsAccumulated = 0;
 
         this.interpretations = [];
@@ -116,7 +118,7 @@ class EBSchemaDetector
                         return {
                             result: result,
                             interpretation: interpretation
-                        }
+                        };
                     });
                 }).then((interpretationResults) =>
                 {
@@ -196,6 +198,11 @@ class EBSchemaDetector
                 this.fieldAccumulators.set(rootVariablePath, {});
             }
 
+            if (!this.exampleValues.has(rootVariablePath))
+            {
+                this.exampleValues.set(rootVariablePath, {});
+            }
+
             return this.detectInterpretationChain(value).then((chain) =>
             {
                 const chainId = chain.map((chain) => chain.name).join("=>");
@@ -213,6 +220,10 @@ class EBSchemaDetector
                 {
                     this.fieldAccumulators.get(rootVariablePath)[lastInterpretation.name] = this.interpretationMap[lastInterpretation.name].createFieldAccumulator();
                 }
+                if (!this.exampleValues.get(rootVariablePath)[lastInterpretation.name])
+                {
+                    this.exampleValues.get(rootVariablePath)[lastInterpretation.name] = [];
+                }
 
                 // Put the variable through the transformation for each interpretation, and on the last
                 // one, we accumulate it for statistical purposes
@@ -222,16 +233,27 @@ class EBSchemaDetector
                     return interpretation.transformValue(currentValue).then((transformedValue) =>
                     {
                         currentValue = transformedValue;
-                    })
+                    });
                 }).then(() =>
                 {
-                    let  keep = keepForExample;
-                    if (underscore.isArray(currentValue) || underscore.isObject(currentValue))
+                    return this.fieldAccumulators.get(rootVariablePath)[lastInterpretation.name].accumulateValue(currentValue);
+                }).then(() =>
+                {
+                    const examplesArray = this.exampleValues.get(rootVariablePath)[lastInterpretation.name];
+                    if (keepForExample)
                     {
-                        keep = false;
+                        return lastInterpretation.transformExample(currentValue).then((transformed) =>
+                        {
+                            if (transformed !== null)
+                            {
+                                examplesArray.push(transformed);
+                            }
+                        });
                     }
-
-                    return this.fieldAccumulators.get(rootVariablePath)[lastInterpretation.name].accumulateValue(currentValue, keep);
+                    else
+                    {
+                        return Promise.resolve();
+                    }
                 }).then(() =>
                 {
                     // Recurse into children.
@@ -239,7 +261,7 @@ class EBSchemaDetector
                     {
                         return Promise.each(currentValue, (arrayValue) =>
                         {
-                            return recurse(`${rootVariablePath}.[]`, arrayValue)
+                            return recurse(`${rootVariablePath}.[]`, arrayValue);
                         });
                     }
                     else if (underscore.isObject(currentValue) && !(currentValue instanceof Buffer))
@@ -279,11 +301,19 @@ class EBSchemaDetector
 
             // Determine which interpretation chain is the dominant one
             const dominantInterpretationChain = underscore.max(Object.keys(interpretationChains), (chain) => interpretationChains[chain]).split('=>');
-            const mainInterpretation = dominantInterpretationChain[dominantInterpretationChain.length - 1];
-            const fieldAccumulator = this.fieldAccumulators.get(field)[mainInterpretation];
-            const fieldMetadata = fieldAccumulator.getFieldMetadata();
+            const mainInterpretationName = dominantInterpretationChain[dominantInterpretationChain.length - 1];
+            const mainInterpretation = this.interpretationMap[mainInterpretationName];
+            const fieldAccumulator = this.fieldAccumulators.get(field)[mainInterpretationName];
+            
+            const fieldMetadata = new EBFieldMetadata();
+            const fieldPortions = field.split('.');
+            fieldMetadata.types = [mainInterpretation.getJavascriptType()];
+            fieldMetadata.examples = this.exampleValues.get(field)[mainInterpretationName];
+            fieldMetadata.variableName = fieldPortions[fieldPortions.length - 1];
+            fieldMetadata.variablePath = field;
             fieldMetadata.interpretationChain = dominantInterpretationChain;
-            fieldMetadata.mainInterpretation = mainInterpretation;
+            fieldMetadata.mainInterpretation = mainInterpretationName;
+            fieldMetadata.statistics = fieldAccumulator.getFieldStatistics();
             
             // Only include this in fields if its a field
             if (fieldMetadata.types.indexOf('object') === -1 && fieldMetadata.types.indexOf('array') === -1)

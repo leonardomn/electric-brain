@@ -32,11 +32,14 @@ const
 class EBObjectInterpretation extends EBInterpretationBase
 {
     /**
-     * Constructor
+     * Constructor. Requires the interpretation registry in order to recurse properly
+     *
+     * @param {EBInterpretationRegistry} interpretationRegistry The registry
      */
-    constructor()
+    constructor(interpretationRegistry)
     {
         super('object');
+        this.interpretationRegistry = interpretationRegistry;
     }
 
 
@@ -53,6 +56,18 @@ class EBObjectInterpretation extends EBInterpretationBase
     getUpstreamInterpretations()
     {
         return [];
+    }
+
+
+
+    /**
+     * This method returns the raw javascript type of value that this interpretation applies to.
+     *
+     * @return {string} Can be one of: 'object', 'array', 'number', 'string', 'boolean', 'binary'
+     */
+    getJavascriptType()
+    {
+        return 'object';
     }
 
 
@@ -108,22 +123,6 @@ class EBObjectInterpretation extends EBInterpretationBase
 
 
 
-
-    /**
-     * This method should return information about fields that need to be graphed on
-     * the frontend for this interpretation.
-     *
-     * @param {*} value The value to be transformed
-     * @return {Promise} A promise that resolves to an array of statistics
-     */
-    listStatistics(value)
-    {
-        return Promise.resolve([]);
-    }
-
-
-
-
     /**
      * This method should transform an example into a value that is small enough to be
      * stored with the schema and shown on the frontend. Information can be destroyed
@@ -135,6 +134,71 @@ class EBObjectInterpretation extends EBInterpretationBase
     transformExample(value)
     {
         return Promise.resolve(null);
+    }
+
+
+    /**
+     * This method should transform the given schema for input to the neural network.
+     *
+     * @param {EBSchema} schema The schema to be transformed
+     * @return {Promise} A promise that resolves to a new value.
+     */
+    transformSchemaForNeuralNetwork(schema)
+    {
+        return schema.transform((subSchema) =>
+        {
+            // Get the schema's main interpretation
+            const interpretation = this.interpretationRegistry.getInterpretation(subSchema.metadata.mainInterpretation);
+            return interpretation.transformSchemaForNeuralNetwork(subSchema);
+        });
+    }
+
+
+    /**
+     * This method should prepare a given value for input into the neural network
+     *
+     * @param {*} value The value to be transformed
+     * @param {EBSchema} schema The schema for the value to be transformed
+     * @return {Promise} A promise that resolves to a new value.
+     */
+    transformValueForNeuralNetwork(value, schema)
+    {
+        return schema.transformObject(value, (key, value, subSchema, parent, parentSchema) =>
+        {
+            // Get the schema's main interpretation
+            const interpretation = this.interpretationRegistry.getInterpretation(subSchema.metadata.mainInterpretation);
+            return interpretation.transformValueForNeuralNetwork(value, subSchema);
+        });
+    }
+
+
+    /**
+     * This method should take output from the neural network and transform it back
+     *
+     * @param {*} value The value to be transformed
+     * @param {EBSchema} schema The schema for the value to be transformed
+     * @return {Promise} A promise that resolves to a new value
+     */
+    transformValueBackFromNeuralNetwork(value, schema)
+    {
+        return schema.transformObject(value, (key, value, subSchema, parent, parentSchema) =>
+        {
+            // Get the schema's main interpretation
+            const interpretation = this.interpretationRegistry.getInterpretation(subSchema.metadata.mainInterpretation);
+            return interpretation.transformValueBackFromNeuralNetwork(value, subSchema);
+        });
+    }
+
+
+    /**
+     * This method should generate the default configuration for the given schema
+     *
+     * @param {EBSchema} schema The schema for the value to be transformed
+     * @return {object} An object which follows the schema returned from configurationSchema
+     */
+    generateDefaultConfiguration(schema)
+    {
+        return {};
     }
 
 
@@ -161,13 +225,9 @@ class EBObjectInterpretation extends EBInterpretationBase
                 // Do nothing.
             }
 
-            getFieldMetadata()
+            getFieldStatistics()
             {
-                const metadata = new EBFieldMetadata();
-
-                metadata.types.push('object');
-
-                return metadata;
+                return {};
             }
         })();
     }
@@ -178,10 +238,41 @@ class EBObjectInterpretation extends EBInterpretationBase
      *
      * @return {jsonschema} A schema representing the metadata for this interpretation
      */
-    static metadataSchema()
+    static statisticsSchema()
     {
         return {
-            "id": "EBFieldMetadata",
+            "id": "EBObjectInterpretation.statisticsSchema",
+            "type": "object",
+            "properties": {}
+        };
+    }
+
+
+    /**
+     * This method should return a schema for the configuration for this interpretation
+     *
+     * @return {jsonschema} A schema representing the configuration for this interpretation
+     */
+    static configurationSchema()
+    {
+        return {
+            "id": "EBObjectInterpretation.configurationSchema",
+            "type": "object",
+            "properties": {
+            }
+        };
+    }
+
+
+    /**
+     * This method should return a schema for accumulating accuracy results from values in this interpretation
+     *
+     * @return {jsonschema} A schema representing whatever is needed to store results
+     */
+    static resultsSchema()
+    {
+        return {
+            "id": "EBObjectInterpretation.resultsSchema",
             "type": "object",
             "properties": {}
         };
