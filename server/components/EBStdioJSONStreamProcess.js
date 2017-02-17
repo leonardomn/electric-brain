@@ -146,11 +146,10 @@ class EBStdioJSONStreamProcess extends EventEmitter
     {
         const self = this;
         const promise = self.write(object);
-        promise.then(() =>
+        return promise.then(() =>
         {
             return self.waitForMatchingOutput(condition);
         });
-        return promise;
     }
 
     /**

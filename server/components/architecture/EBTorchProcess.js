@@ -359,9 +359,9 @@ class EBTorchProcess
                     samples: processBatch.samples
                 };
                 const promise = processBatch.process.writeAndWaitForMatchingOutput(message, {type: "evaluationCompleted"});
-                promise.then(() =>
+                promise.then((result) =>
                 {
-                    next(null);
+                    next(null, result);
                 }, (err) => next(err));
             }, (err, results) =>
             {
@@ -423,9 +423,9 @@ class EBTorchProcess
                 };
 
                 const promise =  processBatch.process.writeAndWaitForMatchingOutput(message, {type: "iterationCompleted"});
-                promise.then(() =>
+                promise.then((result) =>
                 {
-                    next(null);
+                    next(null, result);
                 }, (err) => next(err));
             }, (err, results) =>
             {
@@ -553,7 +553,6 @@ class EBTorchProcess
 
                 return callback(null, stream);
             }, (err) => callback(err));
-
         });
     }
 
