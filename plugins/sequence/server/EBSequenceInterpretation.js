@@ -22,6 +22,7 @@ const
     EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
+    EBNumberHistogram = require('../../../shared/models/EBNumberHistogram'),
     underscore = require('underscore');
 
 /**
@@ -163,8 +164,8 @@ class EBSequenceInterpretation extends EBInterpretationBase
             getFieldMetadata()
             {
                 const metadata = new EBFieldMetadata();
-                self.metadata.types.push('array');
-                self.metadata.arrayLengthHistogram = EBNumberHistogram.computeHistogram(self.arrayLengths);
+                metadata.types.push('array');
+                metadata.arrayLengthHistogram = EBNumberHistogram.computeHistogram(this.arrayLengths);
                 return metadata;
             }
         })();
