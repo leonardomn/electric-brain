@@ -201,7 +201,7 @@ class EBArchitecture
                 const outputObject = deepcopy(object);
                 
                 // Next, apply transformations
-                const transformedOutputObject = registry.getInterpretation('object').transformValueBackFromNeuralNetwork(outputObject, outputSchema);
+                const transformedOutputObject = registry.getInterpretation('object').transformValueBackFromNeuralNetwork(outputObject, self.outputSchema.filterIncluded());
                 
                 try
                 {

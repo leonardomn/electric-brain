@@ -25,7 +25,6 @@
 (function()
 {
     angular.module('eb', [
-        'ngAnimate',
         'ui.router',
         'oc.lazyLoad',
         'ui.bootstrap',
@@ -40,14 +39,3 @@
         'angular-flot'
     ]);
 }());
-
-const originalPromise = Promise;
-Promise = function(func)
-{
-    const promise = new originalPromise(func);
-    promise.catch(function(error)
-    {
-        throw error;
-    });
-    return promise;
-}

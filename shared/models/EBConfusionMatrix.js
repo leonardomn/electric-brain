@@ -20,6 +20,7 @@
 const underscore = require('underscore');
 
 const _mapping = Symbol("_mapping");
+const _knownValues = Symbol("_knownValues");
 
 /**
  *  EBConfusionMatrix is a class that is used for keeping track of which classifications
@@ -39,6 +40,15 @@ class EBConfusionMatrix
         if (!data)
         {
             data = {};
+        }
+
+        if (data.knownValues)
+        {
+            self.knownValues = data.knownValues;
+        }
+        else
+        {
+            self.knownValues = [];
         }
 
         if (data.expectedValues)
@@ -65,6 +75,7 @@ class EBConfusionMatrix
         {
             self[_mapping][expectedValue.value] = expectedValue;
         });
+        self[_knownValues] = new Set();
     }
 
     /**
@@ -91,6 +102,17 @@ class EBConfusionMatrix
         {
             self[_mapping][expectedValue].actualValues.shift();
         }
+
+        if (!self[_knownValues].has(expectedValue))
+        {
+            self[_knownValues].add(expectedValue);
+            self.knownValues.push(expectedValue);
+        }
+        if (!self[_knownValues].has(actualValue))
+        {
+            self[_knownValues].add(actualValue);
+            self.knownValues.push(actualValue);
+        }
     }
 
 
@@ -106,6 +128,10 @@ class EBConfusionMatrix
             "type": "object",
             "properties": {
                 historySize: {type: "number"},
+                knownValues: {
+                    type: "array",
+                    items: {"type": "string"}
+                },
                 expectedValues: {
                     "type": "array",
                     "items": {

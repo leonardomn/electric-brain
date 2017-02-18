@@ -25,7 +25,139 @@ angular.module('eb').directive('ebNumberInterpretationConfiguration', function e
 {
     function controller($scope, $element, $attrs)
     {
+        $scope.$watch('field.configuration.interpretation.mode', function(newValue, oldValue)
+        {
+            if (newValue === 'discrete')
+            {
+                if (!$scope.field.configuration.interpretation.discreteValues)
+                {
+                    $scope.field.configuration.interpretation.discreteValues = [
+                        {
+                            top: null,
+                            bottom: 0,
+                            name: "discrete_value_1"
+                        },
+                        {
+                            top: 0,
+                            bottom: null,
+                            name: "discrete_value_2"
+                        }
+                    ];
+                }
+            }
+            else if (newValue === 'continuous')
+            {
+                if (!$scope.field.configuration.interpretation.scalingFunction)
+                {
+                    $scope.field.configuration.interpretation.scalingFunction = 'linear';
+                }
+            }
+        });
 
+
+        $scope.addDiscreteValue = function(index)
+        {
+            const previousDiscreteValue = $scope.field.configuration.interpretation.discreteValues[index - 1];
+            const nextDiscreteValue = $scope.field.configuration.interpretation.discreteValues[index];
+
+            // Find a unique name for the discrete value
+            let name = null;
+            let nameIndex = $scope.field.configuration.interpretation.discreteValues.length + 1;
+            while (!name)
+            {
+                const potentialName = `discrete_value_${nameIndex}`;
+                if (_.findWhere($scope.field.configuration.interpretation.discreteValues, {name: potentialName}))
+                {
+                    nameIndex += 1;
+                }
+                else
+                {
+                    name = potentialName;
+                }
+            }
+
+
+            const newDiscreteValue = {
+                top: previousDiscreteValue.bottom,
+                bottom: nextDiscreteValue.top,
+                name: name
+            };
+
+            $scope.field.configuration.interpretation.discreteValues.splice(index, 0, newDiscreteValue);
+        };
+
+        $scope.removeDiscreteValue = function(index)
+        {
+            const previousDiscreteValue = $scope.field.configuration.interpretation.discreteValues[index - 1];
+            const nextDiscreteValue = $scope.field.configuration.interpretation.discreteValues[index + 1];
+            const range = previousDiscreteValue.bottom - nextDiscreteValue.top;
+            const newPoint = previousDiscreteValue.bottom - (range / 2);
+            previousDiscreteValue.bottom = newPoint;
+            nextDiscreteValue.top = newPoint;
+            $scope.field.configuration.interpretation.discreteValues.splice(index, 1);
+        };
+
+        $scope.startEditingTop = function(scope, index)
+        {
+            scope.editingTop = true;
+            const discreteValue = $scope.field.configuration.interpretation.discreteValues[index];
+            scope.topEditValue = discreteValue.top;
+        };
+
+        $scope.startEditingBottom = function(scope, index)
+        {
+            scope.editingBottom = true;
+            const discreteValue = $scope.field.configuration.interpretation.discreteValues[index];
+            scope.bottomEditValue = discreteValue.bottom;
+        };
+
+        $scope.discreteValueTopChanged = function(newValue, index)
+        {
+            if (!isNaN(newValue))
+            {
+                newValue = Number(newValue);
+
+                const previousDiscreteValue = $scope.field.configuration.interpretation.discreteValues[index - 1];
+                const currentDiscreteValue = $scope.field.configuration.interpretation.discreteValues[index];
+
+                if (previousDiscreteValue.top !== null)
+                {
+                    newValue = Math.min(previousDiscreteValue.top, newValue);
+                }
+
+                if (currentDiscreteValue.bottom !== null)
+                {
+                    newValue = Math.max(newValue, currentDiscreteValue.bottom);
+                }
+
+                currentDiscreteValue.top = newValue;
+                previousDiscreteValue.bottom = newValue;
+            }
+        };
+
+        $scope.discreteValueBottomChanged = function(newValue, index)
+        {
+            if (!isNaN(newValue))
+            {
+                newValue = Number(newValue);
+
+                const currentDiscreteValue = $scope.field.configuration.interpretation.discreteValues[index];
+                const nextDiscreteValue = $scope.field.configuration.interpretation.discreteValues[index + 1];
+
+                if (nextDiscreteValue.bottom !== null)
+                {
+                    newValue = Math.max(nextDiscreteValue.bottom, newValue);
+                }
+
+                if (currentDiscreteValue.top !== null)
+                {
+                    newValue = Math.min(newValue, currentDiscreteValue.top);
+                }
+
+                currentDiscreteValue.bottom = newValue;
+                nextDiscreteValue.top = newValue;
+            }
+        };
     }
 
     return {

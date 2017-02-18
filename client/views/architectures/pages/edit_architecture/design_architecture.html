@@ -26,7 +26,7 @@
                 <div>
                     <h2>Network Diagram</h2>
 
-                    <uib-tabset>
+                    <uib-tabset active="currentDiagram" ng-if="diagrams">
                         <uib-tab ng-repeat="diagram in diagrams" heading="{{diagram.file}}">
                             <div>
                                 <div class="architecture-diagram-container">
@@ -38,6 +38,8 @@
                             </div>
                         </uib-tab>
                     </uib-tabset>
+
+                    <eb-loader-button class="pull-right" on-click="reloadDiagrams()" title="Reload"></eb-loader-button>
                 </div>
                 <div>
                     <h2>Options</h2>
@@ -50,13 +52,13 @@
                             show-only-included="true">
                     </eb-schema-editor>
 
-                    <!--<eb-schema-editor
+                    <eb-schema-editor
                             title="Output"
                             schema="architecture.outputSchema"
-                            mode="configure"
+                            mode="configure_neural_network"
                             show-field-details="false"
                             show-only-included="true">
-                    </eb-schema-editor>-->
+                    </eb-schema-editor>
                 </div>
             </div>
         </div>
