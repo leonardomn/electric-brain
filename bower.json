@@ -14,7 +14,7 @@
     "angular-ui-ace": "bower",
     "angular-ui-router": "^0.3.1",
     "angular-ui-select": "^0.18.1",
-    "angular-ui-tree": "^2.16.0",
+    "angular-ui-tree": "^2.22.5",
     "bootstrap": "^3.3.6",
     "Flot": "flot#^0.8.3",
     "font-awesome": "fontawesome#^4.6.3",
@@ -31,7 +31,8 @@
     "SpinKit": "spinkit#^1.2.5",
     "colorjs": "^1.0.1",
     "angular-swagger-ui": "^0.3.3",
-    "bluebird": "^3.4.6"
+    "bluebird": "^3.4.6",
+    "angular-ui-tree": "^2.22.5"
   },
   "possible_deprecations": {},
   "resolutions": {
