@@ -5,6 +5,8 @@ require('rnn')
 require('optim')
 require('mime')
 require('image')
+require('cutorch')
+require('cunn')
 local _ = require('underscore')
 cjson = require('cjson')
 local JSON = require('./JSON')
@@ -31,6 +33,9 @@ function TrainingScript.new()
     self.ipctree = require 'ipc.LocalhostTree'(tonumber(arg[1]), tonumber(arg[2]))
     self.allReduceSGD = require 'distlearn.AllReduceSGD'(self.ipctree)
 
+    -- Whether or not cuda is enabled
+    self.gpuEnabled = false
+
     -- generate SVG of the graph with the problem node highlighted
     -- and hover over the nodes in svg to see the filename:line_number info
     -- nodes will be annotated with local variable names even if debug mode is not enabled.
@@ -46,11 +51,19 @@ function TrainingScript.new()
     -- Create the main neural network module
     self.module = nn.{{=it.rootModuleName}}(self)
 
+    if self.gpuEnabled then
+        self.module:cuda()
+    end
+
     -- Create a copy of the main neural network module that will be used for saving
     self.moduleSaveCopy = nn.{{=it.rootModuleName}}(self)
 
     -- Create the main criterion for training
     self.criterion = nn.{{=it.rootCriterionName}}(self)
+
+    if self.gpuEnabled then
+        self.criterion:cuda()
+    end
 
     -- Prepare the parameters
     self.params, self.gradParams = self.module:getParameters()
@@ -61,6 +74,13 @@ function TrainingScript.new()
     return self
 end
 
+function TrainingScript:localize(obj)
+    if self.gpuEnabled then
+        return obj:cuda()
+    else
+        return obj
+    end
+end
 
 function TrainingScript:evaluateTrainingIteration(batch)
     local batchOutputs
@@ -125,7 +145,9 @@ function TrainingScript:prepareBatch(samples)
 
     {{= it.prepareBatch(it.inputSchema, "prepareInputRoot").replace(/\n/g, "\n    ") }}
 
-    batch.input = prepareInputRoot(inputSamples)
+    {{= it.generateLocalizeFunction(it.inputSchema, "localizeInputRoot") }}
+
+    batch.input = localizeInputRoot(prepareInputRoot(inputSamples))
 
     local outputSamples = {}
     for k,v in pairs(samples) do
@@ -134,7 +156,9 @@ function TrainingScript:prepareBatch(samples)
 
     {{= it.prepareBatch(it.outputSchema, "prepareOutputRoot").replace(/\n/g, "\n    ") }}
 
-    batch.output = prepareOutputRoot(outputSamples)
+    {{= it.generateLocalizeFunction(it.inputSchema, "localizeOutputRoot") }}
+
+    batch.output = localizeOutputRoot(prepareOutputRoot(outputSamples))
 
     return batch
 end

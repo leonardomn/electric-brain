@@ -19,7 +19,8 @@
 "use strict";
 
 const assert = require('assert'),
-    validatorUtilities = require("../utilities/validator");
+    validatorUtilities = require("../utilities/validator"),
+    underscore = require('underscore');
 
 /**
  *  This class represents a tensor schema. Its like a schema, but specifically designed to map
@@ -45,7 +46,7 @@ class EBTensorSchema
         });
 
         assert(rawTensorSchema.type);
-        assert(rawTensorSchema.variableName);
+        assert(!underscore.isUndefined(rawTensorSchema.variableName));
 
         this.type = rawTensorSchema.type;
         this.variableName = rawTensorSchema.variableName;
@@ -143,6 +144,51 @@ class EBTensorSchema
     get isArray()
     {
         return this.type === 'array';
+    }
+
+    /**
+     * This method returns a function which can convert this tensor schema into GPU
+     *
+     * #param {string} name The name of the function to be generated
+     *
+     * @return {boolean} True/false if this schema represents an array
+     */
+    generateLocalizeFunction(name)
+    {
+        let code = '';
+
+        code += `local ${name} = function (value)\n`;
+
+        if (this.isObject)
+        {
+            this.properties.forEach((property, index) =>
+            {
+                const subFunctionName = `${property.variableName}_localize`;
+                const subFunctionCode = property.generateLocalizeFunction(subFunctionName);
+                code += `    ${subFunctionCode.replace(/\n/g, "\n    ")}`;
+                code += `value[${index + 1}] = ${subFunctionName}(value[${index + 1}])\n`;
+            });
+
+            code += `    return value\n`;
+            code += `end\n`;
+        }
+        else if (this.isArray)
+        {
+            const subFunctionName = `${name}_localizeItems`;
+            const subFunctionCode = this.items.generateLocalizeFunction(subFunctionName);
+            code += `    ${subFunctionCode.replace(/\n/g, "\n    ")}`;
+            code += `    for n=1,#value do`;
+            code += `       value[n] = ${subFunctionName}(value[n])\n`;
+            code += `    end\n`;
+            code += `    return value\n`;
+            code += `end\n`;
+        }
+        else if (this.isTensor)
+        {
+            code += `    return value:cuda()\n`;
+            code += `end\n`;
+        }
+        return code;
     }
 
     /**

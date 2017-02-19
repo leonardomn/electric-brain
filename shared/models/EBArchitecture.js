@@ -428,6 +428,10 @@ class EBArchitecture
                 convertDataOut: neuralNetworkComponentDispatch.generateTensorOutputCode.bind(neuralNetworkComponentDispatch),
                 prepareBatch: neuralNetworkComponentDispatch.generatePrepareBatchCode.bind(neuralNetworkComponentDispatch),
                 unwindBatchOutput: neuralNetworkComponentDispatch.generateUnwindBatchCode.bind(neuralNetworkComponentDispatch),
+                generateLocalizeFunction: function(schema, name)
+                {
+                    return neuralNetworkComponentDispatch.getTensorSchema(schema).generateLocalizeFunction(name);
+                },
                 rootModuleName: rootModuleName,
                 rootCriterionName: rootCriterionName,
                 optimizationAlgorithm: "adamax",
