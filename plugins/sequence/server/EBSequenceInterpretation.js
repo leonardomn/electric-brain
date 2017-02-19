@@ -164,11 +164,10 @@ class EBSequenceInterpretation extends EBInterpretationBase
      */
     transformValueForNeuralNetwork(value, schema)
     {
-        return schema.transformObject(value, (key, value, subSchema, parent, parentSchema) =>
+        return Promise.each(value, (arrayValue) =>
         {
-            // Get the schema's main interpretation
-            const interpretation = this.interpretationRegistry.getInterpretation(subSchema.metadata.mainInterpretation);
-            return interpretation.transformValueForNeuralNetwork(value, subSchema);
+            const interpretation = this.interpretationRegistry.getInterpretation(schema.items.metadata.mainInterpretation);
+            return Promise.resolve(interpretation.transformValueForNeuralNetwork(arrayValue, schema.items));
         });
     }
 
@@ -182,11 +181,10 @@ class EBSequenceInterpretation extends EBInterpretationBase
      */
     transformValueBackFromNeuralNetwork(value, schema)
     {
-        return schema.transformObject(value, (key, value, subSchema, parent, parentSchema) =>
+        return Promise.each(value, (arrayValue) =>
         {
-            // Get the schema's main interpretation
-            const interpretation = this.interpretationRegistry.getInterpretation(subSchema.metadata.mainInterpretation);
-            return interpretation.transformValueBackFromNeuralNetwork(value, subSchema);
+            const interpretation = this.interpretationRegistry.getInterpretation(schema.items.metadata.mainInterpretation);
+            return Promise.resolve(interpretation.transformValueBackFromNeuralNetwork(arrayValue, schema.items));
         });
     }
 
