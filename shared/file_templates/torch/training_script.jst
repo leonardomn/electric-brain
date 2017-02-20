@@ -5,8 +5,6 @@ require('rnn')
 require('optim')
 require('mime')
 require('image')
-require('cutorch')
-require('cunn')
 local _ = require('underscore')
 cjson = require('cjson')
 local JSON = require('./JSON')
@@ -35,6 +33,11 @@ function TrainingScript.new()
 
     -- Whether or not cuda is enabled
     self.gpuEnabled = false
+
+    if self.gpuEnabled then
+        require('cutorch')
+        require('cunn')
+    end
 
     -- generate SVG of the graph with the problem node highlighted
     -- and hover over the nodes in svg to see the filename:line_number info
@@ -84,6 +87,14 @@ end
 
 function TrainingScript:evaluateTrainingIteration(batch)
     local batchOutputs
+
+    {{= it.generateLocalizeFunction(it.inputSchema, "localizeInputRoot") }}
+    {{= it.generateLocalizeFunction(it.inputSchema, "localizeOutputRoot") }}
+
+    if self.gpuEnabled then
+        batch.input = localizeInputRoot(batch.input)
+        batch.output = localizeOutputRoot(batch.output)
+    end
 
     local iteration = function(params)
         --if params_ ~= self.params then
@@ -145,9 +156,7 @@ function TrainingScript:prepareBatch(samples)
 
     {{= it.prepareBatch(it.inputSchema, "prepareInputRoot").replace(/\n/g, "\n    ") }}
 
-    {{= it.generateLocalizeFunction(it.inputSchema, "localizeInputRoot") }}
-
-    batch.input = localizeInputRoot(prepareInputRoot(inputSamples))
+    batch.input = prepareInputRoot(inputSamples)
 
     local outputSamples = {}
     for k,v in pairs(samples) do
@@ -156,9 +165,7 @@ function TrainingScript:prepareBatch(samples)
 
     {{= it.prepareBatch(it.outputSchema, "prepareOutputRoot").replace(/\n/g, "\n    ") }}
 
-    {{= it.generateLocalizeFunction(it.inputSchema, "localizeOutputRoot") }}
-
-    batch.output = localizeOutputRoot(prepareOutputRoot(outputSamples))
+    batch.output = prepareOutputRoot(outputSamples)
 
     return batch
 end
@@ -248,14 +255,15 @@ function TrainingScript:enterTrainingLoop()
                 self:sendResponse({type = "resetCompleted"})
             elseif command.type == "iteration" then
                 -- The iteration command advances the network with one forward and backward pass.
-                -- It will use data references in an array called 'samples'. These samples must
-                -- have been previously loaded into memory using the 'store' command'
-                local batch = self:prepareBatch(command.samples)
+                -- It must be given the filename of a batch that has been prepared in advance
+                -- using the "prepareBatch"
+                local batchFile = torch.load(command.batchFilename)
+                local batch = batchFile.data
                 local results = self:evaluateTrainingIteration(batch)
 
                 local convertedResults = {}
                 for n = 1,#results.output do
-                    local id = command.samples[n]
+                    local id = batchFile.ids[n]
                     local result = results.output[n]
                     local converted = self:convertOutputOut(result)
                     converted.id = id
@@ -268,7 +276,20 @@ function TrainingScript:enterTrainingLoop()
                     loss = results.loss
                 }
                 self:sendResponse(response)
+            elseif command.type == "prepareBatch" then
+                -- The prepare batch command assembles a batch and then writes it
+                -- out to a file, so that its ready to go for the main training
+                -- script
+                local batch = self:prepareBatch(command.ids)
 
+                local batchFile = {
+                    data = batch,
+                    ids = command.ids
+                }
+
+                torch.save(command.fileName, batchFile)
+
+                self:sendResponse({type="batchPrepared"})
             elseif command.type == "store" then
                 -- The store command is used by the manager process to store a specific data entry for
                 -- quick retrieval later. Then data is provided directly inside the JSON object of
@@ -319,7 +340,27 @@ function TrainingScript:enterTrainingLoop()
                 }
                 self:sendResponse(response)
 
+            elseif command.type == "evaluateBatch" then
+                -- The evaluate command runs an object through the network and
+                -- return the result
+                local batchFile = torch.load(command.batchFilename)
+                local batch = batchFile.data
+                local results = self:evaluateBatch(batch)
 
+                local convertedResults = {}
+                for n = 1,#results do
+                    local id = batchFile.ids[n]
+                    local result = results[n]
+                    local converted = self:convertOutputOut(result)
+                    converted.id = id
+                    table.insert(convertedResults, converted)
+                end
+
+                local response = {
+                    type = "evaluationCompleted",
+                    objects = convertedResults
+                }
+                self:sendResponse(response)
             elseif command.type == "save" then
                 -- The save command causes the process to save the trained model out to disk
                 self.moduleSaveCopy:getParameters():copy(self.params)

@@ -247,7 +247,7 @@ class EBTorchProcess
      */
     logError(message)
     {
-        console.log(message);
+        console.error(message);
     }
 
 
@@ -388,90 +388,43 @@ class EBTorchProcess
 
 
     /**
+     * This method runs a prepared batch through the network
+     *
+     * @param {string} batchFilename The filename of the batch
+     * @param {function(err, accuracy, output)} callback The callback function which will receive the accuracy of the test, along with the output object
+     */
+    processBatch(batchFilename)
+    {
+        // Choose a bunch of random samples from the set that we have
+        const message = {
+            type: "evaluateBatch",
+            batchFilename: batchFilename
+        };
+
+        // TODO: Make this work with multiple sub-processes!
+        return this.processes[0].writeAndWaitForMatchingOutput(message, {type: "evaluationCompleted"}).then((result) =>
+        {
+            return result.objects;
+        });
+    }
+
+
+    /**
      * This method will execute a single training iteration with the given batch.
      *
-     * @param {[string]} batch An array of object ids for the objects in the batch
+     * @param {[string]} batchFilename The filename that contains this training batch
      * @param {Promise} A Promise that will resolve when batch is complete
      */
-    executeTrainingIteration(batch)
+    executeTrainingIteration(batchFilename)
     {
-        return Promise.fromCallback((callback) =>
-        {
-            // Divide the batch between the processes.
-            const processBatches = this.processes.map((process) =>
-            {
-                return {
-                    samples: [],
-                    process: process
-                };
-            });
+        // Choose a bunch of random samples from the set that we have
+        const message = {
+            type: "iteration",
+            batchFilename: batchFilename
+        };
 
-            batch.forEach((object, index) => processBatches[index % processBatches.length].samples.push(object));
-
-            // The maximum number of iterations to run for
-            async.map(processBatches, (processBatch, next) =>
-            {
-                if (processBatch.samples.length === 0)
-                {
-                    return next({});
-                }
-
-                // Choose a bunch of random samples from the set that we have
-                const message = {
-                    type: "iteration",
-                    samples: processBatch.samples
-                };
-
-                const promise =  processBatch.process.writeAndWaitForMatchingOutput(message, {type: "iterationCompleted"});
-                promise.then((result) =>
-                {
-                    next(null, result);
-                }, (err) => next(err));
-            }, (err, results) =>
-            {
-                // Now we force each process to synchronize
-                if (err)
-                {
-                    return callback(err);
-                }
-
-                async.map(this.processes, (process, next) =>
-                {
-                    // Choose a bunch of random samples from the set that we have
-                    const message = {type: "synchronize"};
-                    const promise = process.writeAndWaitForMatchingOutput(message, {type: "synchronized"});
-                    promise.then(() =>
-                    {
-                        next(null);
-                    }, (err) => next(err));
-                }, function (err)
-                {
-                    if (err)
-                    {
-                        return callback(err);
-                    }
-
-                    // Combine all the losses together
-                    const losses = underscore.pluck(results, "loss");
-                    const loss = math.mean(losses);
-
-                    const allResults = {};
-                    results.forEach((processResults) =>
-                    {
-                        processResults.objects.forEach((object) =>
-                        {
-                            allResults[object.id] = object;
-                        });
-                    });
-
-                    return callback(null, {
-                        loss: loss,
-                        objects: batch.map((id) => allResults[id])
-                    });
-                });
-            });
-
-        });
+        // TODO: Make this work with multiple sub-processes!
+        return this.processes[0].writeAndWaitForMatchingOutput(message, {type: "iterationCompleted"});
     }
 
     /**
@@ -573,6 +526,22 @@ class EBTorchProcess
             return process.writeAndWaitForMatchingOutput(message, {type: "loaded"});
         });
         return writeAndWaitPromise;
+    }
+
+
+    /**
+     * This method tells the process to create a batch and save it to a file
+     *
+     * @param {[string]} ids The ids of the objects to be put into the batch
+     * @param {string} fileName The filename to write the result too
+     *
+     * @return {Promise} A promise that will resolve when the batch has been saved
+     */
+    prepareBatch(ids, fileName)
+    {
+        const self = this;
+        const message = {type: "prepareBatch", ids: ids, fileName: fileName};
+        return self.processes[0].writeAndWaitForMatchingOutput(message, {type: "batchPrepared"});
     }
 }
 
