@@ -37,6 +37,7 @@ function TrainingScript.new()
     if self.gpuEnabled then
         require('cutorch')
         require('cunn')
+        cutorch.setDevice(1)
     end
 
     -- generate SVG of the graph with the problem node highlighted
@@ -51,9 +52,18 @@ function TrainingScript.new()
     -- This is a table where we will store loaded data entries
     self.dataEntries = {}
 
+    -- Initialization optimization state
+    self.optimState = {}
+
+    -- Is the module initialized
+    self.moduleInitialized = false
+
+    return self
+end
+
+function TrainingScript:createModule()
     -- Create the main neural network module
     self.module = nn.{{=it.rootModuleName}}(self)
-
     if self.gpuEnabled then
         self.module:cuda()
     end
@@ -63,7 +73,6 @@ function TrainingScript.new()
 
     -- Create the main criterion for training
     self.criterion = nn.{{=it.rootCriterionName}}(self)
-
     if self.gpuEnabled then
         self.criterion:cuda()
     end
@@ -71,10 +80,8 @@ function TrainingScript.new()
     -- Prepare the parameters
     self.params, self.gradParams = self.module:getParameters()
 
-    -- Initialization optimization state
-    self.optimState = {}
-
-    return self
+    -- Set the module as initialized
+    self.moduleInitialized = true
 end
 
 function TrainingScript:localize(obj)
@@ -89,7 +96,7 @@ function TrainingScript:evaluateTrainingIteration(batch)
     local batchOutputs
 
     {{= it.generateLocalizeFunction(it.inputSchema, "localizeInputRoot") }}
-    {{= it.generateLocalizeFunction(it.inputSchema, "localizeOutputRoot") }}
+    {{= it.generateLocalizeFunction(it.outputSchema, "localizeOutputRoot") }}
 
     if self.gpuEnabled then
         batch.input = localizeInputRoot(batch.input)
@@ -140,6 +147,12 @@ end
 function TrainingScript:evaluateBatch(batch)
     ------------------- forward pass -------------------
     self.module:evaluate()
+
+    {{= it.generateLocalizeFunction(it.inputSchema, "localizeInputRoot") }}
+
+    if self.gpuEnabled then
+        batch.input = localizeInputRoot(batch.input)
+    end
 
     local batchOutputs = self.module:forward(batch.input)
     return self:unwindBatchOutput(batchOutputs)
@@ -249,11 +262,21 @@ function TrainingScript:enterTrainingLoop()
                 -- Send back a handshake response
                 self:sendResponse({type = "handshake"})
             elseif command.type == "reset" then
+                -- Initialize the model
+                if not self.moduleInitialized then
+                    self:createModule()
+                end
+
                 -- Resets the model with randomly generated parameters
                 self.params:uniform(-0.08, 0.08)
                 self.gradParams:zero()
                 self:sendResponse({type = "resetCompleted"})
             elseif command.type == "iteration" then
+                -- Initialize the model
+                if not self.moduleInitialized then
+                    self:createModule()
+                end
+
                 -- The iteration command advances the network with one forward and backward pass.
                 -- It must be given the filename of a batch that has been prepared in advance
                 -- using the "prepareBatch"
@@ -320,6 +343,11 @@ function TrainingScript:enterTrainingLoop()
                 self.dataEntries[command.id] = nil
                 self:sendResponse({type="forgotten"})
             elseif command.type == "evaluate" then
+                -- Initialize the model
+                if not self.moduleInitialized then
+                    self:createModule()
+                end
+
                 -- The evaluate command runs an object through the network and
                 -- return the result
                 local batch = self:prepareBatch(command.samples)
@@ -341,6 +369,11 @@ function TrainingScript:enterTrainingLoop()
                 self:sendResponse(response)
 
             elseif command.type == "evaluateBatch" then
+                -- Initialize the model
+                if not self.moduleInitialized then
+                    self:createModule()
+                end
+
                 -- The evaluate command runs an object through the network and
                 -- return the result
                 local batchFile = torch.load(command.batchFilename)
@@ -362,12 +395,22 @@ function TrainingScript:enterTrainingLoop()
                 }
                 self:sendResponse(response)
             elseif command.type == "save" then
+                -- Initialize the model
+                if not self.moduleInitialized then
+                    self:createModule()
+                end
+
                 -- The save command causes the process to save the trained model out to disk
                 self.moduleSaveCopy:getParameters():copy(self.params)
                 torch.save("model.t7", self.moduleSaveCopy)
                 local response = {type = "saved"}
                 self:sendResponse(response)
             elseif command.type == "load" then
+                -- Initialize the model
+                if not self.moduleInitialized then
+                    self:createModule()
+                end
+
                 -- The load command causes the process to load the trained model from the disk
                 self.module = torch.load("model.t7")
                 self.moduleSaveCopy = torch.load("model.t7")
@@ -375,6 +418,11 @@ function TrainingScript:enterTrainingLoop()
                 local response = {type = "loaded"}
                 self:sendResponse(response)
             elseif command.type == "synchronize" then
+                -- Initialize the model
+                if not self.moduleInitialized then
+                    self:createModule()
+                end
+
                 -- The synchronize command forces the process to synchronize its parameters with other processes
                 self.allReduceSGD.synchronizeParameters({self.params})
                 local response = {type = "synchronized"}
