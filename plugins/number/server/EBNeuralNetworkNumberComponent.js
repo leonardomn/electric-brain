@@ -177,7 +177,7 @@ class EBNeuralNetworkNumberComponent extends EBNeuralNetworkComponentBase
         const summaryModule = this.createSummaryModule(inputTensorSchema);
 
         // Calculate the middle layer size as half way between input and output size
-        const middleLayerSize = Math.min(3000, Math.max(summaryModule.tensorSchema.tensorSize / 2, 100));
+        const middleLayerSize = Math.min(1500, Math.max(summaryModule.tensorSchema.tensorSize / 2, 100));
 
         // Create the node in the graph for the summary module
         const summaryNode = new EBTorchNode(summaryModule.module, inputNode, `${variableName}_summaryNode`);
