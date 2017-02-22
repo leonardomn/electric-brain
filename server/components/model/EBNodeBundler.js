@@ -26,6 +26,7 @@ const
     fs = require('fs'),
     models = require('../../../shared/models/models'),
     mongodb = require('mongodb'),
+    Promise = require('bluebird'),
     path = require('path'),
     temp = require('temp');
 
@@ -50,99 +51,99 @@ class EBNodeBundler
      * All sub classes should implement this method.
      *
      * @param {EBModel} model The model object to be bundled
-     * @param {function(err, buffer)} callback The callback to receive the resulting bundle
+     * @return {Promise} Resolve a promise to receive the resulting bundle
      */
-    createBundle(model, callback)
+    createBundle(model)
     {
         const self = this;
+        return Promise.fromCallback((callback) =>
+        {
 
-        const gridFS = new mongodb.GridFSBucket(self.application.db, {
-            chunkSizeBytes: 1024,
-            bucketName: 'EBModel.torch'
-        });
+            const gridFS = new mongodb.GridFSBucket(self.application.db, {
+                chunkSizeBytes: 1024,
+                bucketName: 'EBModel.torch'
+            });
 
-        self.trainingProcess = new EBTorchProcess(new models.EBArchitecture(model.architecture));
+            self.trainingProcess = new EBTorchProcess(new models.EBArchitecture(model.architecture));
 
-        const zipFile = temp.path({suffix: '.zip'});
+            const zipFile = temp.path({suffix: '.zip'});
 
-        async.series([
-            // Generate the code
-            function generateCode(next)
-            {
-                const promise = self.trainingProcess.generateCode(self.application.interpretationRegistry, self.application.neuralNetworkComponentDispatch);
-                promise.then(() =>
+            async.series([
+                // Generate the code
+                function generateCode(next)
                 {
-                    next(null);
-                }, (err) => next(err));
-            },
-            // Download the torch model file
-            function(next)
-            {
-                gridFS.openDownloadStreamByName(`model-${model._id}.t7`).
-                    pipe(fs.createWriteStream(path.join(self.trainingProcess.scriptFolder, 'model.t7'))).
-                    on('error', function(error)
+                    const promise = self.trainingProcess.generateCode(self.application.interpretationRegistry, self.application.neuralNetworkComponentDispatch);
+                    promise.then(() =>
+                    {
+                        next(null);
+                    }, (err) => next(err));
+                },
+                // Download the torch model file
+                function (next)
+                {
+                    gridFS.openDownloadStreamByName(`model-${model._id}.t7`).pipe(fs.createWriteStream(path.join(self.trainingProcess.scriptFolder, 'model.t7'))).on('error', function (error)
                     {
                         return next(error);
-                    }).
-                    on('finish', function()
+                    }).on('finish', function ()
                     {
                         return next();
                     });
-            },
-            // Write the JSON of the model object
-            function writeModelJSON(next)
-            {
-                const jsonData = JSON.stringify(model, null, 4);
-                fs.writeFile(path.join(self.trainingProcess.scriptFolder, 'model.json'), jsonData, next);
-            },
-            // Write electric brain bundle file
-            function writeEBBundle(next)
-            {
-                fs.readFile(path.join(__dirname, '..', '..', '..', 'build', 'ebbundle.js'), (err, buffer) =>
+                },
+                // Write the JSON of the model object
+                function writeModelJSON(next)
                 {
-                    if (err)
-                    {
-                        return next(err);
-                    }
-
-                    fs.writeFile(path.join(self.trainingProcess.scriptFolder, 'ebbundle.js'), buffer, next);
-                });
-            },
-            // Create a zip file with all the files
-            function createZipFile(next)
-            {
-                childProcess.exec(`zip -r ${zipFile} *`, {cwd: self.trainingProcess.scriptFolder}, (err) =>
+                    const jsonData = JSON.stringify(model, null, 4);
+                    fs.writeFile(path.join(self.trainingProcess.scriptFolder, 'model.json'), jsonData, next);
+                },
+                // Write electric brain bundle file
+                function writeEBBundle(next)
                 {
-                    if (err)
+                    fs.readFile(path.join(__dirname, '..', '..', '..', 'build', 'ebbundle.js'), (err, buffer) =>
                     {
-                        return next(err);
-                    }
+                        if (err)
+                        {
+                            return next(err);
+                        }
 
-                    return next();
-                });
-            }
-        ], (err, buffer) =>
-        {
-            if (err)
-            {
-                return callback(err);
-            }
+                        fs.writeFile(path.join(self.trainingProcess.scriptFolder, 'ebbundle.js'), buffer, next);
+                    });
+                },
+                // Create a zip file with all the files
+                function createZipFile(next)
+                {
+                    childProcess.exec(`zip -r ${zipFile} *`, {cwd: self.trainingProcess.scriptFolder}, (err) =>
+                    {
+                        if (err)
+                        {
+                            return next(err);
+                        }
 
-            fs.readFile(zipFile, (err, buffer) =>
+                        return next();
+                    });
+                }
+            ], (err, buffer) =>
             {
                 if (err)
                 {
                     return callback(err);
                 }
 
-                fs.unlink(zipFile, (err) =>
+                fs.readFile(zipFile, (err, buffer) =>
                 {
                     if (err)
                     {
                         return callback(err);
                     }
 
-                    return callback(null, buffer);
+                    fs.unlink(zipFile, (err) =>
+                    {
+                        if (err)
+                        {
+                            return callback(err);
+                        }
+
+                        return callback(null, buffer);
+                    });
                 });
             });
         });
