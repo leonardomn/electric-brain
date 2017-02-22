@@ -197,12 +197,12 @@ class EBTorchProcess
                 },
                 function handshake(next)
                 {
-                    const writeAndWaitPromise = Promise.each(self.process,(process) =>
+                    const writeAndWaitPromise = Promise.each(self.processes, (process) =>
                     {
                         // Now we handshake with the process and get version / name information
                         return process.writeAndWaitForMatchingOutput({type: "handshake"}, {"type": "handshake"});
                     });
-                    return writeAndWaitPromise;
+                    writeAndWaitPromise.then(() => next(), (err) => next(err));
                 }
             ], callback);
         });
@@ -216,7 +216,7 @@ class EBTorchProcess
     killProcess()
     {
         const self = this;
-        const writeAndWaitPromise = Promise.each(self.process,(process) =>
+        const writeAndWaitPromise = Promise.each(self.processes,(process) =>
         {
             return process.process.kill();
         });
@@ -359,9 +359,9 @@ class EBTorchProcess
                     samples: processBatch.samples
                 };
                 const promise = processBatch.process.writeAndWaitForMatchingOutput(message, {type: "evaluationCompleted"});
-                promise.then(() =>
+                promise.then((result) =>
                 {
-                    next(null);
+                    next(null, result);
                 }, (err) => next(err));
             }, (err, results) =>
             {
@@ -423,9 +423,9 @@ class EBTorchProcess
                 };
 
                 const promise =  processBatch.process.writeAndWaitForMatchingOutput(message, {type: "iterationCompleted"});
-                promise.then(() =>
+                promise.then((result) =>
                 {
-                    next(null);
+                    next(null, result);
                 }, (err) => next(err));
             }, (err, results) =>
             {
@@ -553,7 +553,6 @@ class EBTorchProcess
 
                 return callback(null, stream);
             }, (err) => callback(err));
-
         });
     }
 
@@ -569,7 +568,7 @@ class EBTorchProcess
         const message = {
             type: "load"
         };
-        const writeAndWaitPromise = Promise.each(self.process, (process) =>
+        const writeAndWaitPromise = Promise.each(self.processes, (process) =>
         {
             return process.writeAndWaitForMatchingOutput(message, {type: "loaded"});
         });

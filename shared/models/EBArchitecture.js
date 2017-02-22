@@ -30,6 +30,7 @@ const
     EBTorchCustomModule = require("./EBTorchCustomModule"),
     Promise = require ('bluebird'),
     stream = require('stream'),
+    Promise = require('bluebird'),
     trainingScriptTemplate = require("../../build/torch/training_script"),
     underscore = require('underscore');
 
@@ -147,26 +148,31 @@ class EBArchitecture
 
                 try
                 {
-                    const transformedInputObject = registry.getInterpretation('object').transformValueForNeuralNetwork(inputObject, self.inputSchema.filterIncluded());
-                    const transformedOutputObject = registry.getInterpretation('object').transformValueForNeuralNetwork(outputObject, self.outputSchema.filterIncluded());
-
-                    try
+                    const inputPromise = registry.getInterpretation('object').transformValueForNeuralNetwork(inputObject, self.inputSchema.filterIncluded());
+                    const outputPromise = registry.getInterpretation('object').transformValueForNeuralNetwork(outputObject, self.outputSchema.filterIncluded());
+                    Promise.join(inputPromise, outputPromise).then((transformed) =>
                     {
-                        transform.push({
-                            input: filterInputFunction(transformedInputObject),
-                            output: filterOutputFunction(transformedOutputObject),
-                            original: object
-                        });
+                        const transformedInputObject = transformed[0];
+                        const transformedOutputObject = transformed[1];
 
-                        return next();
-                    }
-                    catch (err)
-                    {
-                        console.error(`Object in our database is not valid according to our data schema: ${err.toString()}`);
-                        console.error(err.stack);
+                        try
+                        {
+                            transform.push({
+                                input: filterInputFunction(transformedInputObject),
+                                output: filterOutputFunction(transformedOutputObject),
+                                original: object
+                            });
 
-                        return next();
-                    }
+                            return next();
+                        }
+                        catch (err)
+                        {
+                            console.error(`Object in our database is not valid according to our data schema: ${err.toString()}`);
+                            console.error(err.stack);
+
+                            return next();
+                        }
+                    }, (err) => next(err))
                 }
                 catch(err)
                 {
@@ -202,19 +208,21 @@ class EBArchitecture
                 const outputObject = deepcopy(object);
                 
                 // Next, apply transformations
-                const transformedOutputObject = registry.getInterpretation('object').transformValueBackFromNeuralNetwork(outputObject, outputSchema);
-                
-                try
+                const outputPromise = registry.getInterpretation('object').transformValueBackFromNeuralNetwork(outputObject, self.outputSchema.filterIncluded());
+                outputPromise.then((transformedOutputObject) =>
                 {
-                    transform.push(transformedOutputObject);
-                    return next();
-                }
-                catch (err)
-                {
-                    console.error(`Object in our database is not valid according to our data schema: ${err.toString()}`);
-                    console.error(err.stack);
-                    return next();
-                }
+                    try
+                    {
+                        transform.push(transformedOutputObject);
+                        return next();
+                    }
+                    catch (err)
+                    {
+                        console.error(`Object in our database is not valid according to our data schema: ${err.toString()}`);
+                        console.error(err.stack);
+                        return next();
+                    }
+                }, (err) => next(err));
             }
         });
     }
