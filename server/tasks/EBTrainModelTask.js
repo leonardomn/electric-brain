@@ -550,12 +550,20 @@ class EBTrainModelTask {
                                     async.eachSeries(underscore.zip(sample, result.objects), (zippedObjects, next) =>
                                     {
                                         const expected = zippedObjects[0];
-                                        const actual = zippedObjects[1];
-                                        self.getAccuracyFromOutput(expected.output, actual, false).then((trainingAccuracy) =>
+                                        const actualRaw = zippedObjects[1];
+                                        self.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, actualRaw, (err, actual) =>
                                         {
-                                            trainingAccuracies.push(trainingAccuracy);
-                                            return next();
-                                        }, (err) => next(err));
+                                            if (err)
+                                            {
+                                                return next(err);
+                                            }
+
+                                            self.getAccuracyFromOutput(expected.original, actual, false).then((trainingAccuracy) =>
+                                            {
+                                                trainingAccuracies.push(trainingAccuracy);
+                                                return next();
+                                            }, (err) => next(err));
+                                        });
                                     }, (err) =>
                                     {
                                         if (err)

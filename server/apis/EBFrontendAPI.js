@@ -167,7 +167,7 @@ class EBFrontendAPI extends EBAPIRoot
             {
                 foldersToSearch.push({
                     folder: path.join(plugin.folder, 'client', 'css'),
-                    root: `/plugins/${plugin}/css`
+                    root: `/plugins/${plugin.name}/css`
                 });
             }
         });

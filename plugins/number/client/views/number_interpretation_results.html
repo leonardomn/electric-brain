@@ -1,5 +1,6 @@
 <h3>Number</h3>
 
-
-<p>No results view at this time.</p>
+<div ng-if="field.results.discreteValueConfusionMatrix.expectedValues.length > 0">
+    <eb-confusion-matrix ng-model="field.results.discreteValueConfusionMatrix"></eb-confusion-matrix>
+</div>
 

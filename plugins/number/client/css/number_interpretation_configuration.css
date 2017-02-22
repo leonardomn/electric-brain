@@ -1,0 +1,55 @@
+/* Vote list */
+.discrete-discrete-value {
+    padding: 20px 25px;
+    background: #ffffff;
+    border-top: 1px solid #e7eaec;
+    position: relative;
+}
+
+.discrete-discrete-value:last-child {
+    border-bottom: 1px solid #e7eaec;
+}
+
+.discrete-discrete-value:hover {
+    background: #fbfbfb;
+}
+
+.add-discrete-value-button
+{
+    position: absolute;
+    left: 70px;
+    top: -18px;
+}
+
+.discrete-value-spread {
+    float: left;
+    width: 30px;
+    margin-right: 15px;
+    text-align: center;
+}
+
+.discrete-value-spread-arrows i {
+    position: relative;
+    left: 50px;
+}
+
+.discrete-value-spread {
+    font-weight: 600;
+}
+
+.discrete-value-limit-button {
+    width: 130px;
+}
+
+.discrete-value-limit-button.infinity {
+    cursor: default;
+}
+
+.discrete-value-limit-editor {
+    width: 140px;
+}
+
+.discrete-value-details {
+    position: relative;
+    top: 37px;
+}
