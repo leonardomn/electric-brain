@@ -160,15 +160,11 @@ class EBBundleScript
                         async.mapSeries(results, (result, next) =>
                         {
                             // TODO: FIX ME
-                            this.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, result, (err, output) =>
+                            const promise = this.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, result);
+                            promise.then((output) =>
                             {
-                                if (err)
-                                {
-                                    return next(err);
-                                }
-
                                 return next(null, output);
-                            });
+                            }, (err) => next(err));
                         }, next);
                     }
                 ], (err, outputs) =>
