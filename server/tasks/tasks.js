@@ -33,7 +33,11 @@ function setupTasks(application)
         return function(args, callback)
         {
             const task = new EBTrainModelTask(application);
-            task.run(this, args, callback);
+            const promise = task.run(this, args);
+            promise.then(() =>
+            {
+                callback(null);
+            }, (err) => callback(err));
         };
     }
 

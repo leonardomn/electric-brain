@@ -18,6 +18,8 @@
 
 "use strict";
 
+const Promise = require('bluebird');
+
 /**
  * This is a base class for various ways of bundling up trained EBModel's into an easy to embed model.
  */
@@ -29,11 +31,14 @@ class EBModelBundler
      * All sub classes should implement this method.
      *
      * @param {EBModel} model The model object to be bundled
-     * @param {function(err, buffer)} callback The callback to receive the resulting bundle
+     * @return {Promise} Resolve a promise to receive the resulting bundle
      */
-    createBundle(model, callback)
+    createBundle(model)
     {
-        throw new Error("EBModelBundler::createBundle is unimplemented");
+        return Promise.fromCallback((callback) =>
+        {
+            throw new Error("EBModelBundler::createBundle is unimplemented");
+        });
     }
 }
 

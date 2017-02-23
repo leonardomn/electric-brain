@@ -33,7 +33,7 @@ class EBPerformanceTrace
         this.traces = [{
             name: 'start',
             time: new Date()
-        }]
+        }];
     }
 
     /**
@@ -46,7 +46,7 @@ class EBPerformanceTrace
         this.traces.push({
             name: name,
             time: new Date()
-        })
+        });
     }
 }
 

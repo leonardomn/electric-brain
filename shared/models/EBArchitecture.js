@@ -171,7 +171,7 @@ class EBArchitecture
 
                             return next();
                         }
-                    }, (err) => next(err))
+                    }, (err) => next(err));
                 }
                 catch(err)
                 {
@@ -231,21 +231,24 @@ class EBArchitecture
      *
      * @param {EBInterpretationRegistry} registry The interpretation registry
      * @param {object} networkOutput The output from the network
-     * @param {function(err, transformed)} callback Which will receive the transformed object
+     * @return {Promise} Resolves a promise Which will receive the transformed object
      */
-    convertNetworkOutputObject(registry, networkOutput, next)
+    convertNetworkOutputObject(registry, networkOutput)
     {
         const self = this;
-        const stream = self.getNetworkOutputTransformationStream(registry);
-        stream.on("data", (output) =>
+        return Promise.fromCallback((callback) =>
         {
-            return next(null, output);
+            const stream = self.getNetworkOutputTransformationStream(registry);
+            stream.on("data", (output) =>
+            {
+                return callback(null, output);
+            });
+            stream.on("error", (error) =>
+            {
+                return callback(error);
+            });
+            stream.end(networkOutput);
         });
-        stream.on("error", (error) =>
-        {
-            return next(error);
-        });
-        stream.end(networkOutput);
     }
 
 

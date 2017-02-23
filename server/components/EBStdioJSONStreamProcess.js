@@ -182,6 +182,7 @@ class EBStdioJSONStreamProcess extends EventEmitter
 
             jsonStreamProcess.input.pipe(jsonStreamProcess.process.stdin);
 
+
             jsonStreamProcess.output = new stream.Transform({
                 objectMode: true,
                 transform: function(chunk, encoding, next)
@@ -250,6 +251,11 @@ class EBStdioJSONStreamProcess extends EventEmitter
             {
                 jsonStreamProcess.emit('exit');
             });
+
+            // Set listener settings
+            jsonStreamProcess.setMaxListeners(100);
+            jsonStreamProcess.input.setMaxListeners(100);
+            jsonStreamProcess.output.setMaxListeners(100);
 
             callback(null, jsonStreamProcess);
         });
