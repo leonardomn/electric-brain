@@ -1,4 +1,3 @@
 
-<div ng-if="field.results.confusionMatrix.expectedValues.length > 0">
-    <highchart id="confusionMatrix" config="confusionMatrixChartConfig"></highchart>
-</div>
+<eb-confusion-matrix ng-model="field.results.confusionMatrix"></eb-confusion-matrix>
+

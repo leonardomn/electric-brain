@@ -25,21 +25,33 @@
 
 angular.module('eb').controller('EBArchitectureDesignArchitectureController', function EBArchitectureDesignArchitectureController($scope, $timeout, $state, $stateParams, EBArchitectureService, EBLoaderService)
 {
+    $scope.currentDiagram = 0;
+    function reloadDiagrams()
+    {
+        const promise = EBArchitectureService.saveArchitecture($scope.architecture).then(function()
+        {
+            return EBArchitectureService.getNetworkDiagrams($scope.architecture._id).success(function(data)
+            {
+                $scope.diagrams = null;
+                $timeout(function()
+                {
+                    $scope.diagrams = data.diagrams;
+                }, 10);
+            });
+        });
+
+        EBLoaderService.showLoaderWith('menu', promise);
+        return promise;
+    }
+
+
     $scope.$watch('architecture', function(newValue, oldValue)
     {
         if (newValue)
         {
-            let loader = 'page';
-            if ($scope.architecture.inputSchema && $scope.architecture.outputSchema)
-            {
-                loader = 'menu';
-            }
-
-            const promise = EBArchitectureService.getNetworkDiagrams(newValue._id).success(function(data)
-            {
-                $scope.diagrams = data.diagrams;
-            });
-            EBLoaderService.showLoaderWith(loader, promise);
+            reloadDiagrams();
         }
     });
+
+    $scope.reloadDiagrams = reloadDiagrams;
 });

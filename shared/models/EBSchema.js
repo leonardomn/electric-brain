@@ -95,7 +95,7 @@ class EBSchema
             }
             else if (key === 'results')
             {
-                self.results = {confusionMatrix: new EBConfusionMatrix(rawSchema.results.confusionMatrix)};
+                self.results = rawSchema.results;
             }
             else if (key === 'type')
             {
