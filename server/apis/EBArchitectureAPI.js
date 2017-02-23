@@ -483,15 +483,19 @@ class EBArchitectureAPI extends EBAPIRoot
                     const promise = process.extractNetworkDiagrams();
                     promise.then((diagrams) =>
                     {
-                        return next(null, {
-                            diagrams: diagrams.map((diagram) =>
-                            {
-                                return {
-                                    file: diagram.file,
-                                    data: diagram.data.toString('base64')
-                                };
-                            })
-                        });
+                        const promise = process.killProcess();
+                        promise.then(() =>
+                        {
+                            return next(null, {
+                                diagrams: diagrams.map((diagram) =>
+                                {
+                                    return {
+                                        file: diagram.file,
+                                        data: diagram.data.toString('base64')
+                                    };
+                                })
+                            });
+                        }, (err) => next(err));
                     }, (err) => next(err));
                 });
             }

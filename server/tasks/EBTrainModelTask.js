@@ -21,15 +21,18 @@
 const
     async = require('async'),
     EBCustomTransformationProcess = require('../components/architecture/EBCustomTransformationProcess'),
-    EBRollingAverage = require("../../shared/models/EBRollingAverage"),
-    EBTorchProcess = require('../components/architecture/EBTorchProcess'),
     EBPerformanceData = require('../../shared/models/EBPerformanceData'),
     EBPerformanceTrace = require('../../shared/models/EBPerformanceTrace'),
-    models = require("../../shared/models/models"),
+    EBRollingAverage = require("../../shared/models/EBRollingAverage"),
+    EBStdioJSONStreamProcess = require("../components/EBStdioJSONStreamProcess"),
+    EBTorchProcess = require('../components/architecture/EBTorchProcess'),
+    fs = require('fs'),
     math = require('mathjs'),
+    models = require("../../shared/models/models"),
     mongodb = require('mongodb'),
+    path = require('path'),
     Promise = require('bluebird'),
-    SparkMD5 = require('spark-md5'),
+    temp = require('temp'),
     underscore = require('underscore');
 
 /**
@@ -58,6 +61,7 @@ class EBTrainModelTask {
         this.lastDatabaseUpdateTime = null;
         this.isFrontendUpdateScheduled = null;
         this.isDatabaseUpdateScheduled = null;
+        this.needAnotherDatabaseUpdate = false;
         this.frontendUpdateInterval = 2500;
         this.databaseUpdateInterval = 5000;
         this.numberOfObjectsToSample = 1000000;
@@ -67,6 +71,16 @@ class EBTrainModelTask {
         this.testingSetEntries = [];
         this.testingSetPosition = 0;
         this.trainingSetPosition = 0;
+
+        const numWorkers = 1;
+        this.workers = [];
+        for (let workerIndex = 0; workerIndex < numWorkers; workerIndex += 1)
+        {
+            const scriptPath = path.join(__dirname, '..', 'train_model_worker.js');
+            this.workers.push(EBStdioJSONStreamProcess.spawn(scriptPath, [], {}));
+        }
+        this.currentWorker = 0;
+        this.batchNumber = 0;
     }
 
     /**
@@ -83,14 +97,14 @@ class EBTrainModelTask {
 
         self.task = task;
 
-        Promise.fromCallback((next) =>
+        return Promise.fromCallback((next) =>
         {
             // First log the start
             self.task.log(self.task, `Starting the task to train the model with _id: ${args._id}`, next);
         }).then(()=>
         {
             // Retrieve the model object that this task refers to
-            self.models.find({_id: args._id}).toArray();
+            return self.models.find({_id: args._id}).toArray();
         }).then((objects) =>
         {
             if (objects.length === 0)
@@ -109,11 +123,10 @@ class EBTrainModelTask {
             if (self.model.running)
             {
                 const promise = self.models.update({_id: args._id}, {$set: {running: false}});
-                promise.then(() =>
+                return promise.then(() =>
                 {
                     return Promise.rejected(new Error("This model has already started training. It must have failed."));
                 });
-                return promise;
             }
             else
             {
@@ -122,10 +135,17 @@ class EBTrainModelTask {
 
             }
         }).then(() =>
-            // Generate the code
         {
-            const promise = self.trainingProcess.generateCode(self.application.neuralNetworkComponentDispatch);
-            promise.then((totalFiles) =>
+            // Initialize sub-process workers
+            return Promise.each(this.workers, (worker) => worker.writeAndWaitForMatchingOutput({
+                "type": "initialize",
+                "id": args._id
+            }, {"type": "initialized"}));
+        }).then(() =>
+        {
+            // Generate the code
+            const promise = self.trainingProcess.generateCode(self.application.interpretationRegistry, self.application.neuralNetworkComponentDispatch);
+            return promise.then((totalFiles) =>
             {
                 const codeGenerationResult = {
                     status: 'complete',
@@ -135,33 +155,52 @@ class EBTrainModelTask {
 
                 return self.updateStepResult('codeGeneration', codeGenerationResult);
             });
-            return promise;
         }).then(() =>
-            // Start up the process
         {
+            // Start up the process
             return self.trainingProcess.startProcess();
 
         }).then(() =>
-            // Scan the data, analyze it for input
         {
+            // Scan the data, analyze it for input
             return self.scanData(self.numberOfObjectsToSample);
         }).then(() =>
+        {
             // Save the model in its vanilla state. This just ensures that other
             // functionality that depends on downloading the torch model file
             // works from the first iteration of training
-        {
             return self.saveTorchModelFile();
         }).then(() =>
-            // Training model
         {
+            // Training model
             return self.trainModel();
         }).then(() =>
-            // Test model
         {
+            // Test model
             return self.testModel();
+        }).then(() =>
+        {
+            // Kill the process
+            return self.trainingProcess.killProcess();
+        }).then(() =>
+        {
+            // Set the model to not be running
+            return self.models.update({_id: args._id}, {$set: {running: false}});
         });
     }
 
+
+    /**
+     * This function schedules an update to be sent to the frontend
+     *
+     * @param {string} stepName The name of the step being updated. Should be the same as the the field names in EBModel
+     * @param {object} result An object with the results
+     * @return {Promise} Resolves a promise after the process is started and ready to receive commands
+     */
+    updateFrontend()
+    {
+
+    }
 
     /**
      * This function updates the current results for a given step
@@ -173,9 +212,13 @@ class EBTrainModelTask {
     updateStepResult(stepName, result)
     {
         const self = this;
+
+        // First, set the value on the model object
+        self.model[stepName] = result;
+
         return Promise.fromCallback((callback) =>
         {
-
+            // Scheduling to send updates to the frontend
             if (!self.isFrontendUpdateScheduled)
             {
                 self.isFrontendUpdateScheduled = true;
@@ -185,7 +228,7 @@ class EBTrainModelTask {
                     frontendUpdateDelay = Math.max(0, self.frontendUpdateInterval - (Date.now() - self.lastFrontendUpdateTime.getTime()));
                 }
 
-                setTimeout(() =>
+                function updateFrontend()
                 {
                     self.isFrontendUpdateScheduled = false;
                     self.lastFrontendUpdateTime = new Date();
@@ -194,38 +237,47 @@ class EBTrainModelTask {
                         event: 'update',
                         model: self.model
                     });
-                }, frontendUpdateDelay);
+                }
+
+                setTimeout(updateFrontend, frontendUpdateDelay);
             }
 
+            // Scheduling to send updates to the database
             if (!self.isDatabaseUpdateScheduled)
             {
                 self.isDatabaseUpdateScheduled = true;
-                let databaseUpdateDelay = 0;
-                if (self.lastDatabaseUpdateTime)
-                {
-                    databaseUpdateDelay = Math.max(0, self.databaseUpdateInterval - (Date.now() - self.lastDatabaseUpdateTime.getTime()));
-                }
 
-                setTimeout(() =>
+                function updateDatabase()
                 {
-                    self.isDatabaseUpdateScheduled = false;
+                    self.isDatabaseUpdateScheduled = true;
                     self.lastDatabaseUpdateTime = new Date();
 
-
-                    self.model[stepName] = result;
-                    self.models.updateOne({_id: self.model._id}, {
-                        $set: {
-                            [stepName]: result,
-                            architecture: self.model.architecture
-                        }
-                    }, (err) =>
+                    self.models.updateOne({_id: self.model._id}, self.model, (err) =>
                     {
                         if (err)
                         {
                             console.error(err);
                         }
+
+                        self.isDatabaseUpdateScheduled = false;
+                        if (self.needAnotherDatabaseUpdate)
+                        {
+                            self.needAnotherDatabaseUpdate = false;
+                            updateDatabase();
+                        }
                     });
-                }, databaseUpdateDelay);
+                }
+
+                let databaseUpdateDelay = 0;
+                if (self.lastDatabaseUpdateTime)
+                {
+                    databaseUpdateDelay = Math.max(0, self.databaseUpdateInterval - (Date.now() - self.lastDatabaseUpdateTime.getTime()));
+                }
+                setTimeout(updateDatabase, databaseUpdateDelay);
+            }
+            else
+            {
+                self.needAnotherDatabaseUpdate = true;
             }
 
             return callback();
@@ -339,7 +391,7 @@ class EBTrainModelTask {
         let lastUpdateTime = new Date();
 
         const promise = self.updateStepResult('dataScanning', dataScanningResults);
-        promise.then(() =>
+        return promise.then(() =>
         {
             return self.application.dataSourcePluginDispatch.count(self.model.architecture.dataSource).then((count) =>
             {
@@ -409,71 +461,105 @@ class EBTrainModelTask {
                 return self.updateStepResult('dataScanning', dataScanningResults);
             });
         });
-        return promise;
     }
 
-    fetchTrainingBatch()
+    /**
+     * This method creates a batch from the given set of object ids.
+     *
+     * @param {string} ids The list of ids to make a batch from
+     * @returns {Promise} A promise that will resolve to an object with two properties:
+     *      {
+     *          fileName: String // The name of the file that contains the batch
+     *          objects: [object] // The data for the objects objects within the batch
+     *      }
+     */
+    prepareBatch(ids)
     {
-        if (!this.trainingFetchQueue)
+        const workerPromise = this.workers[this.currentWorker];
+        this.currentWorker = (this.currentWorker + 1) % this.workers.length;
+
+        const batchNumber = this.batchNumber;
+        this.batchNumber += 1;
+
+        return workerPromise.then((worker) =>
         {
-            this.trainingFetchQueue = [];
-        }
-
-        const iterationsForBatch = 25;
-        const minimumTrainingObjectsInQueue = this.model.parameters.batchSize * iterationsForBatch;
-
-        // First, lets make sure that there are enough objects in the two fetch queues
-        while (this.trainingFetchQueue.length < minimumTrainingObjectsInQueue)
-        {
-            // Add an object to the fetch queue
-            const id = this.trainingSetEntries[this.trainingSetPosition];
-            this.trainingFetchQueue.push({id, promise: this.fetchObject(id)});
-            this.trainingSetPosition = (this.trainingSetPosition + 1) % this.trainingSetEntries.length;
-        }
-
-        const trainingSampleEntries = this.trainingFetchQueue.splice(0, this.model.parameters.batchSize);
-
-        return Promise.all(underscore.pluck(trainingSampleEntries, "promise")).then((results) =>
-        {
-            results.forEach((result) =>
+            const fileName = temp.path({suffix: '.t7'});
+            return worker.writeAndWaitForMatchingOutput({
+                "type": "prepareBatch",
+                "batchNumber": batchNumber,
+                "ids": ids,
+                "fileName": fileName
+            }, {
+                "type": "batchPrepared",
+                "batchNumber": batchNumber
+            }).then((output) =>
             {
-                result.id = result.original.id;
+                return {
+                    fileName: fileName,
+                    objects: output.objects
+                };
             });
-
-            return results;
         });
     }
 
-    fetchTestingBatch()
+    /**
+     * This method is used to put together a training batch
+     *
+     * @returns {Promise} A promise that will resolve to the fileName that the batch is stored in.
+     */
+    prepareTrainingBatch()
     {
-        if (!this.testingFetchQueue)
+        if (!this.trainingBatchQueue)
         {
-            this.testingFetchQueue = [];
+            this.trainingBatchQueue = [];
         }
 
-        const iterationsForBatch = 25;
-        const minimumTrainingObjectsInQueue = this.model.parameters.testingBatchSize * iterationsForBatch;
+        const minimumIterationsPrepared = 10;
 
-        // First, lets make sure that there are enough objects in the two fetch queues
-        while (this.testingFetchQueue.length < minimumTrainingObjectsInQueue)
+        while (this.trainingBatchQueue.length < minimumIterationsPrepared)
         {
-            // Add an object to the fetch queue
-            const id = this.testingSetEntries[this.testingSetPosition];
-            this.testingFetchQueue.push({id, promise: this.fetchObject(id)});
-            this.testingSetPosition = (this.testingSetPosition + 1) % this.testingSetEntries.length;
-        }
-
-        const testingSampleEntries = this.testingFetchQueue.splice(0, this.model.parameters.testingBatchSize );
-
-        return Promise.all(underscore.pluck(testingSampleEntries, "promise")).then((results) =>
-        {
-            results.forEach((result) =>
+            const ids = [];
+            for (let sampleN = 0; sampleN < this.model.parameters.batchSize; sampleN += 1)
             {
-                result.id = result.original.id;
-            });
+                const id = this.trainingSetEntries[this.trainingSetPosition];
+                ids.push(id);
+                this.trainingSetPosition = (this.trainingSetPosition + 1) % this.trainingSetEntries.length;
+            }
 
-            return results;
-        });
+            this.trainingBatchQueue.push(this.prepareBatch(ids));
+        }
+
+        return this.trainingBatchQueue.shift();
+    }
+
+    /**
+     * This method is used to put together a testing batch
+     *
+     * @returns {Promise} A promise that will resolve to the fileName that the batch is stored in.
+     */
+    prepareTestingBatch()
+    {
+        if (!this.testingBatchQueue)
+        {
+            this.testingBatchQueue = [];
+        }
+
+        const minimumIterationsPrepared = 10;
+
+        while (this.testingBatchQueue.length < minimumIterationsPrepared)
+        {
+            const ids = [];
+            for (let sampleN = 0; sampleN < this.model.parameters.testingBatchSize; sampleN += 1)
+            {
+                const id = this.testingSetEntries[this.testingSetPosition];
+                ids.push(id);
+                this.testingSetPosition = (this.testingSetPosition + 1) % this.testingSetEntries.length;
+            }
+
+            this.testingBatchQueue.push(this.prepareBatch(ids));
+        }
+
+        return this.testingBatchQueue.shift();
     }
 
 
@@ -485,7 +571,6 @@ class EBTrainModelTask {
     trainModel()
     {
         const self = this;
-
         const trainingIterations = 50000;
         const saveFrequency = 1000;
         const trainingResult = {
@@ -500,15 +585,14 @@ class EBTrainModelTask {
             performance: new EBPerformanceData()
         };
 
-        let lastIterationTime = new Date();
-        const iterationsForBatch = 25;
-
         const promise = self.updateStepResult('training', trainingResult);
-        promise.then(() =>
+        return promise.then(() =>
         {
             // Reset the model with random parameters
-            const promise = self.trainingProcess.reset();
-            promise.then(() =>
+            return self.trainingProcess.reset();
+        }).then(() =>
+        {
+            return Promise.fromCallback((next) =>
             {
                 // The number of iterations run so far
                 async.whilst(
@@ -519,125 +603,100 @@ class EBTrainModelTask {
                     (next) =>
                     {
                         const performanceTrace = new EBPerformanceTrace();
-
-                        this.fetchTrainingBatch().then((sample) =>
+                        this.prepareTrainingBatch().then((batch) =>
                         {
-                            performanceTrace.addTrace('fetch-batch');
-                            const promises = sample.map((object) =>
+                            performanceTrace.addTrace('prepare-batch');
+                            // console.log('executing', batch);
+                            return self.trainingProcess.executeTrainingIteration(batch.fileName).then((result) =>
                             {
-                                return this.loadObject(object.id, object.input, object.output);
-                            });
-                            // ******************************* Start Refactoring from here ******************************************************
-                            Promise.all(promises).then(() =>
-                            {
-                                performanceTrace.addTrace('load-object');
+                                performanceTrace.addTrace('training-iteration');
 
-                                const promise = self.trainingProcess.executeTrainingIteration(underscore.pluck(sample, "id"));
-                                promise.then((result) =>
+                                // At the end of each iteration, update the current training results
+                                trainingResult.completedIterations += 1;
+                                trainingResult.percentageComplete = (trainingResult.completedIterations * 100) / trainingResult.totalIterations;
+                                trainingResult.currentLoss = result.loss;
+
+                                // Update the time per iteration
+                                trainingResult.currentTimePerIteration = trainingResult.performance.total();
+
+                                // Zip together original objects with the actual outputs from the network, and compute accuracies
+                                return Promise.mapSeries(underscore.zip(batch.objects, result.objects), (zipped) =>
                                 {
-                                    performanceTrace.addTrace('training-iteration');
-
-                                    // At the end of each iteration, update the current training results
-                                    trainingResult.completedIterations += 1;
-                                    trainingResult.percentageComplete = (trainingResult.completedIterations * 100) / trainingResult.totalIterations;
-                                    trainingResult.currentLoss = result.loss;
-
-                                    // Update the time per iteration
-                                    trainingResult.currentTimePerIteration = trainingResult.performance.total();
-
-                                    const trainingAccuracies = [];
-                                    let index = 0;
-                                    async.eachSeries(underscore.zip(sample, result.objects), (zippedObjects, next) =>
-                                    {
-                                        const expected = zippedObjects[0];
-                                        const actualRaw = zippedObjects[1];
-                                        self.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, actualRaw, (err, actual) =>
-                                        {
-                                            if (err)
-                                            {
-                                                return next(err);
-                                            }
-
-                                            self.getAccuracyFromOutput(expected.original, actual, false).then((trainingAccuracy) =>
-                                            {
-                                                trainingAccuracies.push(trainingAccuracy);
-                                                return next();
-                                            }, (err) => next(err));
-                                        });
-                                    }, (err) =>
+                                    return self.getAccuracyFromOutput(zipped[0].output, zipped[1], false);
+                                }).then((accuracies) =>
+                                {
+                                    return {
+                                        trainingAccuracy: math.mean(accuracies),
+                                        loss: result.loss
+                                    };
+                                });
+                            }).then((trainingIterationResult) =>
+                            {
+                                // Unlink the batch file
+                                return Promise.fromCallback((next) =>
+                                {
+                                    fs.unlink(batch.fileName, (err) =>
                                     {
                                         if (err)
                                         {
                                             return next(err);
                                         }
 
-                                        const removeObjectPromise = Promise.each(sample, (object) =>
-                                        {
-                                            return this.trainingProcess.removeObject(object.id);
-                                        });
-                                        removeObjectPromise.then(() =>
-                                        {
-                                            performanceTrace.addTrace('remove-object');
-
-                                            const promise = self.testIteration();
-                                            promise.then((accuracy) =>
-                                            {
-                                                performanceTrace.addTrace('testing-iteration');
-
-                                                const trainingAccuracy = math.mean(trainingAccuracies);
-                                                self.rollingAverageAccuracy.accumulate(accuracy);
-                                                self.rollingAverageTrainingaccuracy.accumulate(trainingAccuracy * 100);
-                                                trainingResult.currentAccuracy = self.rollingAverageAccuracy.average;
-                                                trainingResult.iterations.push({
-                                                    loss: result.loss,
-                                                    accuracy: self.rollingAverageAccuracy.average,
-                                                    trainingAccuracy: self.rollingAverageTrainingaccuracy.average
-                                                });
-
-                                                const promise = self.updateStepResult('training', trainingResult);
-                                                promise.then(() =>
-                                                {
-                                                    performanceTrace.addTrace('save-to-db');
-                                                    trainingResult.performance.accumulate(performanceTrace);
-
-                                                    if ((trainingResult.completedIterations % saveFrequency) === 0)
-                                                    {
-                                                        const promise = self.saveTorchModelFile();
-                                                        promise.then(() =>
-                                                        {
-                                                            next(null);
-                                                        }, (err) => next(err));
-                                                    }
-                                                    else
-                                                    {
-                                                        return next();
-                                                    }
-                                                }, (err) => next(err));
-                                            }, (err) => next(err));
-                                        });
+                                        performanceTrace.addTrace('delete-batch');
+                                        return next(null, trainingIterationResult);
                                     });
-                                }, (err) => next(err));
-                            });
+                                });
+                            }).then((trainingIterationResult) =>
+                            {
+                                self.rollingAverageTrainingaccuracy.accumulate(trainingIterationResult.trainingAccuracy * 100);
+                                return self.testIteration().then((testingAccuracy) =>
+                                {
+                                    return {
+                                        trainingIterationResult: trainingIterationResult,
+                                        testingAccuracy: testingAccuracy
+                                    };
+                                });
+                            }).then((results) =>
+                            {
+                                performanceTrace.addTrace('testing-iteration');
+                                self.rollingAverageAccuracy.accumulate(results.testingAccuracy);
+                                trainingResult.currentAccuracy = self.rollingAverageAccuracy.average;
+                                trainingResult.iterations.push({
+                                    loss: results.trainingIterationResult.loss,
+                                    accuracy: self.rollingAverageAccuracy.average,
+                                    trainingAccuracy: self.rollingAverageTrainingaccuracy.average
+                                });
+
+                                return self.updateStepResult('training', trainingResult);
+                            }).then(() =>
+                            {
+                                performanceTrace.addTrace('save-to-db');
+                                trainingResult.performance.accumulate(performanceTrace);
+
+                                if ((trainingResult.completedIterations % saveFrequency) === 0)
+                                {
+                                    return self.saveTorchModelFile();
+                                }
+                                else
+                                {
+                                    return Promise.resolve();
+                                }
+                            }).then(() => next());
                         }, (err) => next(err));
                     }, (err) =>
                     {
                         if (err)
                         {
-                            return callback(err);
+                            return next(err);
                         }
 
                         trainingResult.status = "complete";
                         trainingResult.percentageComplete = 100;
 
-                        const promise = self.updateStepResult('training', trainingResult);
-                        promise.then(() =>
-                        {
-                            callback(null);
-                        }, (err) => callback(err));
+                        self.updateStepResult('training', trainingResult).then(() => next(), (err) => next(err));
                     });
-            }, (err) => callback(err));
+            });
         });
-        return promise;
     }
 
     /**
@@ -650,66 +709,20 @@ class EBTrainModelTask {
     testIteration()
     {
         const self = this;
-        return Promise.fromCallback((callback) =>
+        return this.prepareTestingBatch().then((batch) =>
         {
-
-            const accuracies = [];
-
-            this.fetchTestingBatch().then((sample) =>
+            return self.trainingProcess.processBatch(batch.fileName).then((outputs) =>
             {
-                async.mapSeries(sample, (object, next) =>
+                return Promise.mapSeries(underscore.zip(batch.objects, outputs), (pair) => self.getAccuracyFromOutput(pair[0].output, pair[1], true));
+            }).then((accuracies) =>
+            {
+                return Promise.fromCallback((next) =>
                 {
-                    const promise = this.loadObject(object.id, object.input, object.output);
-                    promise.then(() =>
-                    {
-                        next(null);
-                    }, (err) => next(err));
-                }, (err) =>
+                    fs.unlink(batch.fileName, next);
+                }).then(() =>
                 {
-                    if (err)
-                    {
-                        return callback(err);
-                    }
-
-                    const promise = self.trainingProcess.processObjects(underscore.pluck(sample, "id"));
-                    promise.then((outputs) =>
-                    {
-                        let index = 0;
-                        async.eachSeries(sample, (object, next) =>
-                        {
-                            const output = outputs[index];
-                            index += 1;
-
-                            const promise = self.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, output);
-                            promise.then((actualOutput) =>
-                            {
-                                self.getAccuracyFromOutput(object.original, actualOutput, true).then((accuracy) =>
-                                {
-                                    accuracies.push(accuracy);
-                                    return next();
-                                }, (err) => next(err));
-                            }, (err) => next(err));
-                        }, (err) =>
-                        {
-                            if (err)
-                            {
-                                return callback(err);
-                            }
-
-                            const removeObjectPromise = Promise.each(sample, (object) =>
-                            {
-                                return this.trainingProcess.removeObject(object.id);
-
-                            });
-                            removeObjectPromise.then(() =>
-                            {
-                                const accuracy = math.mean(accuracies);
-
-                                return callback(null, accuracy);
-
-                            }, (err) => callback(err));
-                        });
-                    }, (err) => callback(err));
+                    const accuracy = math.mean(accuracies);
+                    return accuracy;
                 });
             });
         });
@@ -756,27 +769,24 @@ class EBTrainModelTask {
      */
     testModel()
     {
-        const self = this;
-        return Promise.fromCallback((callback) =>
+        const testingResult = {
+            status: 'in_progress',
+            percentageComplete: 0,
+            totalObjects: this.testingSetEntries.length,
+            completedObjects: 0,
+            accuracies: []
+        };
+
+        // Reset our position within the training set
+        this.testingSetPosition = 0;
+        let processedObjects = 0;
+
+        const accuracies = [];
+
+        const promise = this.updateStepResult('testing', testingResult);
+        return promise.then(() =>
         {
-            const testingResult = {
-                status: 'in_progress',
-                percentageComplete: 0,
-                totalObjects: self.testingSetEntries.length,
-                completedObjects: 0,
-                accuracies: []
-            };
-
-            const objectsBetweenUpdate = 100;
-
-            // Reset our position within the training set
-            this.testingSetPosition = 0;
-            let processedObjects = 0;
-
-            const accuracies = [];
-
-            const promise = self.updateStepResult('testing', testingResult);
-            promise.then(() =>
+            return Promise.fromCallback((callback) =>
             {
                 // Start plowing through the training set
                 // The number of iterations run so far
@@ -787,80 +797,31 @@ class EBTrainModelTask {
                     },
                     (next) =>
                     {
-                        const start = new Date();
-
-                        this.fetchTestingBatch().then((sample) =>
+                        this.prepareTestingBatch().then((batch) =>
                         {
-                            async.mapSeries(sample, (object, next) =>
+                            return this.trainingProcess.processBatch(batch.fileName).then((outputs) =>
                             {
-                                const promise = this.loadObject(object.id, object.input, object.output);
-                                promise.then(() =>
-                                {
-                                    next(null);
-                                }, (err) => next(err));
-                            }, (err) =>
+                                processedObjects += batch.objects.length;
+                                return Promise.mapSeries(underscore.zip(batch.objects, outputs),
+                                    (pair) => this.getAccuracyFromOutput(pair[0].output, pair[1], true));
+                            }).then((batchAccuracies) =>
                             {
-                                if (err)
+                                return Promise.fromCallback((next) =>
                                 {
-                                    return next(err);
-                                }
-
-                                const promise = self.trainingProcess.processObjects(underscore.pluck(sample, "id"));
-                                promise.then((outputs) =>
+                                    fs.unlink(batch.fileName, next);
+                                }).then(() =>
                                 {
-                                    let index = 0;
-                                    async.eachSeries(sample, (object, next) =>
-                                    {
-                                        const output = outputs[index];
-                                        index += 1;
-
-                                        const promise = self.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, output);
-                                        promise.then((actualOutput) =>
-                                        {
-                                            self.getAccuracyFromOutput(object.original, actualOutput, true).then((accuracy) =>
-                                            {
-                                                accuracies.push(accuracy);
-
-                                                processedObjects += 1;
-
-                                                if (processedObjects % objectsBetweenUpdate === 0)
-                                                {
-                                                    const promise = this.updateStepResult('testing', testingResult);
-                                                    promise.then(() =>
-                                                    {
-                                                        next(null);
-                                                    }, (err) => next(err));
-                                                }
-                                                else
-                                                {
-                                                    return next();
-                                                }
-                                            }, (err) => next(err));
-                                        }, (err) => next(err));
-                                    }, (err) =>
-                                    {
-                                        if (err)
-                                        {
-                                            return next(err);
-                                        }
-
-                                        const removeObjectPromise = Promise.each(sample, (object) =>
-                                        {
-                                            return this.trainingProcess.removeObject(object.id);
-
-                                        });
-                                        removeObjectPromise.then(() =>
-                                        {
-                                            testingResult.accuracy = math.mean(accuracies);
-                                            testingResult.completedObjects += 1;
-                                            testingResult.percentageComplete = (testingResult.completedObjects * 100) / testingResult.totalObjects;
-
-                                            return next(null);
-                                        }, (err) => next(err));
-                                    });
-                                }, (err) => next(err));
+                                    return batchAccuracies;
+                                });
                             });
-                        });
+                        }).then((batchAccuracies) =>
+                        {
+                            batchAccuracies.forEach((accuracy) => accuracies.push(accuracy));
+                            testingResult.accuracy = math.mean(accuracies);
+                            testingResult.completedObjects += Math.min(batchAccuracies.length, testingResult.totalObjects);
+                            testingResult.percentageComplete = (testingResult.completedObjects * 100) / testingResult.totalObjects;
+                            return this.updateStepResult('testing', testingResult);
+                        }).then(() => next(), (err) => next(err));
                     }, (err) =>
                     {
                         if (err)
@@ -870,13 +831,10 @@ class EBTrainModelTask {
 
                         testingResult.percentageComplete = 100;
                         testingResult.status = 'complete';
-                        const promise = this.updateStepResult('testing', testingResult);
-                        promise.then(() =>
-                        {
-                            callback(null);
-                        }, (err) => callback(err));
+                        const resultPromise = this.updateStepResult('testing', testingResult);
+                        resultPromise.then(() => callback(null), (err) => callback(err));
                     });
-            }, (err) => callback(err));
+            });
         });
     }
 

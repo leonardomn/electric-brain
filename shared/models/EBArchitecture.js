@@ -28,7 +28,6 @@ const
     EBTorchModule = require("./EBTorchModule"),
     EBTorchNode = require("./EBTorchNode"),
     EBTorchCustomModule = require("./EBTorchCustomModule"),
-    Promise = require ('bluebird'),
     stream = require('stream'),
     Promise = require('bluebird'),
     trainingScriptTemplate = require("../../build/torch/training_script"),
@@ -172,7 +171,7 @@ class EBArchitecture
 
                             return next();
                         }
-                    }, (err) => next(err))
+                    }, (err) => next(err));
                 }
                 catch(err)
                 {
@@ -432,6 +431,10 @@ class EBArchitecture
                 convertDataOut: neuralNetworkComponentDispatch.generateTensorOutputCode.bind(neuralNetworkComponentDispatch),
                 prepareBatch: neuralNetworkComponentDispatch.generatePrepareBatchCode.bind(neuralNetworkComponentDispatch),
                 unwindBatchOutput: neuralNetworkComponentDispatch.generateUnwindBatchCode.bind(neuralNetworkComponentDispatch),
+                generateLocalizeFunction: function(schema, name)
+                {
+                    return neuralNetworkComponentDispatch.getTensorSchema(schema).generateLocalizeFunction(name);
+                },
                 rootModuleName: rootModuleName,
                 rootCriterionName: rootCriterionName,
                 optimizationAlgorithm: "adamax",

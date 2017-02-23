@@ -185,8 +185,7 @@ class EBStringInterpretation extends EBInterpretationBase
             const index = values.indexOf(value);
             if (index === -1)
             {
-                console.log('enum value not found: ', value);
-                // console.log(self.values);
+                console.error('enum value not found: ', value);
                 return 0;
             }
             else
