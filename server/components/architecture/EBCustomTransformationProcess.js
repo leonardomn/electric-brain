@@ -83,18 +83,15 @@ class EBCustomTransformationProcess
             function startProcess(next)
             {
                 // Start up the process
-                EBStdioJSONStreamProcess.spawn(self.scriptFile, [], {
+                const promise = EBStdioJSONStreamProcess.spawn(self.scriptFile, [], {
                     cwd: self.scriptFolder,
                     env: underscore.extend({TERM: "xterm"}, process.env)
-                }, function(err, process)
+                });
+                promise.then((process) =>
                 {
-                    if (err)
-                    {
-                        return next(err);
-                    }
                     self.process = process;
                     return next();
-                });
+                }, (err) => next(err));
             },
             function handshake(next)
             {

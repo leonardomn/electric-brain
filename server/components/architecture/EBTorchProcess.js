@@ -77,20 +77,18 @@ class EBTorchProcess
                         {
                             return next(err);
                         }
-
                         //childProcess.execSync('rm -rf /home/bradley/eb/electric-brain/training/*');
                         //self.scriptFolder = '/home/bradley/eb/electric-brain/training/';
                         self.scriptFolder = temporaryFolder;
-
                         // Create a list of files that need to be written
                         const files = self.architecture.generateFiles(registry, neuralNetworkComponentDispatch);
-
                         // Write out each of the files
-                        async.each(files, function(file, next)
+                        const writeFilePromise = Promise.each(files,(file) =>
                         {
                             totalFiles += 1;
-                            fs.writeFile(path.join(self.scriptFolder, file.path), file.data, next);
-                        }, next);
+                            return Promise.fromCallback((next) => fs.writeFile(path.join(self.scriptFolder, file.path), file.data, next));
+                        });
+                        writeFilePromise.then(() => next());
                     });
                 },
                 function writeLibraryFiles(next)
@@ -156,16 +154,12 @@ class EBTorchProcess
                 {
                     async.times(self.numProcesses, function(n, next)
                     {
-                        EBStdioJSONStreamProcess.spawn('luajit', ['TrainingScript.lua', n + 1, self.numProcesses], {
+                        const promise = EBStdioJSONStreamProcess.spawn('luajit', ['TrainingScript.lua', n + 1, self.numProcesses], {
                             cwd: self.scriptFolder,
                             env: underscore.extend({TERM: "xterm"}, process.env)
-                        }, function(err, process)
+                        });
+                        promise.then((process) =>
                         {
-                            if (err)
-                            {
-                                return callback(err);
-                            }
-
                             self.processes.push(process);
 
                             // Set up a handler for log messages coming from the lua process
@@ -198,16 +192,17 @@ class EBTorchProcess
                             });
 
                             return next();
-                        });
+                        }, (err) => next(err));
                     }, next);
                 },
                 function handshake(next)
                 {
-                    async.each(self.processes, function(process, next)
+                    const writeAndWaitPromise = Promise.each(self.processes, (process) =>
                     {
                         // Now we handshake with the process and get version / name information
-                        process.writeAndWaitForMatchingOutput({type: "handshake"}, {"type": "handshake"}, next);
-                    }, next);
+                        return process.writeAndWaitForMatchingOutput({type: "handshake"}, {"type": "handshake"});
+                    });
+                    writeAndWaitPromise.then(() => next(), (err) => next(err));
                 }
             ], callback);
         });
@@ -221,14 +216,11 @@ class EBTorchProcess
     killProcess()
     {
         const self = this;
-        return Promise.fromCallback((callback) =>
+        const writeAndWaitPromise = Promise.each(self.processes,(process) =>
         {
-            async.each(self.processes, function(process, next)
-            {
-                process.process.kill();
-                next();
-            }, callback);
+            return process.process.kill();
         });
+        return writeAndWaitPromise;
     }
 
 
@@ -240,13 +232,12 @@ class EBTorchProcess
     reset()
     {
         const self = this;
-        return Promise.fromCallback((callback) =>
-        {
-            async.each(self.processes, function(process, next)
+
+        const writeAndWaitPromise = Promise.each(self.processes, (process) =>
             {
-                process.writeAndWaitForMatchingOutput({type: "reset"}, {type: "resetCompleted"}, next);
-            }, callback);
-        });
+                return process.writeAndWaitForMatchingOutput({type: "reset"}, {type: "resetCompleted"});
+            });
+        return writeAndWaitPromise;
     }
 
     /**
@@ -256,7 +247,7 @@ class EBTorchProcess
      */
     logError(message)
     {
-        console.log(message);
+        console.error(message);
     }
 
 
@@ -271,15 +262,11 @@ class EBTorchProcess
         return Promise.fromCallback((callback) =>
         {
             const message = {type: "stats"};
-            self.processes[0].writeAndWaitForMatchingOutput(message, {type: "stats"}, function(err, response)
+            const promise = self.processes[0].writeAndWaitForMatchingOutput(message, {type: "stats"});
+            promise.then( (response) =>
             {
-                if (err)
-                {
-                    return callback(err);
-                }
-
                 return callback(null, response.stats);
-            });
+            }, (err) => callback (err));
         });
     }
 
@@ -295,30 +282,21 @@ class EBTorchProcess
     loadObject(id, input, output)
     {
         const self = this;
-        return Promise.fromCallback((callback) =>
+        const message = {
+            type: "store",
+            id: id,
+            input: input,
+            output: output
+        };
+        const writeAndWaitPromise = Promise.each(self.processes,(process) =>
         {
-            const message = {
-                type: "store",
-                id: id,
-                input: input,
-                output: output
-            };
-
-            async.each(self.processes, function(process, next)
-            {
-                process.writeAndWaitForMatchingOutput(message, {type: "stored"}, next);
-            }, function(err)
-            {
-                if (err)
-                {
-                    return callback(err);
-                }
-
-                self.allLoadedEntries.push(id);
-
-                return callback();
-            });
+            return process.writeAndWaitForMatchingOutput(message, {type: "stored"});
         });
+        writeAndWaitPromise.then(() =>
+        {
+            self.allLoadedEntries.push(id);
+        });
+        return writeAndWaitPromise;
     }
 
 
@@ -331,29 +309,19 @@ class EBTorchProcess
     removeObject(id)
     {
         const self = this;
-
-        return Promise.fromCallback((callback) =>
+        const message = {
+            type: "forget",
+            id: id
+        };
+        const writeAndWaitPromise = Promise.each(self.processes, (process) =>
         {
-            const message = {
-                type: "forget",
-                id: id
-            };
-
-            async.each(self.processes, function(process, next)
-            {
-                process.writeAndWaitForMatchingOutput(message, {type: "forgotten"}, next);
-            }, function(err)
-            {
-                if (err)
-                {
-                    return callback(err);
-                }
-
-                self.allLoadedEntries.splice(self.allLoadedEntries.indexOf(id), 1);
-
-                return callback();
-            });
+            return process.writeAndWaitForMatchingOutput(message, {type: "forgotten"});
         });
+        writeAndWaitPromise.then(() =>
+        {
+            self.allLoadedEntries.splice(self.allLoadedEntries.indexOf(id), 1);
+        });
+        return writeAndWaitPromise;
     }
 
 
@@ -390,7 +358,11 @@ class EBTorchProcess
                     type: "evaluate",
                     samples: processBatch.samples
                 };
-                processBatch.process.writeAndWaitForMatchingOutput(message, {type: "evaluationCompleted"}, next);
+                const promise = processBatch.process.writeAndWaitForMatchingOutput(message, {type: "evaluationCompleted"});
+                promise.then((result) =>
+                {
+                    next(null, result);
+                }, (err) => next(err));
             }, (err, results) =>
             {
                 // Now we force each process to synchronize
@@ -416,81 +388,43 @@ class EBTorchProcess
 
 
     /**
+     * This method runs a prepared batch through the network
+     *
+     * @param {string} batchFilename The filename of the batch
+     * @param {function(err, accuracy, output)} callback The callback function which will receive the accuracy of the test, along with the output object
+     */
+    processBatch(batchFilename)
+    {
+        // Choose a bunch of random samples from the set that we have
+        const message = {
+            type: "evaluateBatch",
+            batchFilename: batchFilename
+        };
+
+        // TODO: Make this work with multiple sub-processes!
+        return this.processes[0].writeAndWaitForMatchingOutput(message, {type: "evaluationCompleted"}).then((result) =>
+        {
+            return result.objects;
+        });
+    }
+
+
+    /**
      * This method will execute a single training iteration with the given batch.
      *
-     * @param {[string]} batch An array of object ids for the objects in the batch
+     * @param {[string]} batchFilename The filename that contains this training batch
      * @param {Promise} A Promise that will resolve when batch is complete
      */
-    executeTrainingIteration(batch)
+    executeTrainingIteration(batchFilename)
     {
-        return Promise.fromCallback((callback) =>
-        {
-            // Divide the batch between the processes.
-            const processBatches = this.processes.map((process) =>
-            {
-                return {
-                    samples: [],
-                    process: process
-                };
-            });
+        // Choose a bunch of random samples from the set that we have
+        const message = {
+            type: "iteration",
+            batchFilename: batchFilename
+        };
 
-            batch.forEach((object, index) => processBatches[index % processBatches.length].samples.push(object));
-
-            // The maximum number of iterations to run for
-            async.map(processBatches, (processBatch, next) =>
-            {
-                if (processBatch.samples.length === 0)
-                {
-                    return next({});
-                }
-
-                // Choose a bunch of random samples from the set that we have
-                const message = {
-                    type: "iteration",
-                    samples: processBatch.samples
-                };
-                processBatch.process.writeAndWaitForMatchingOutput(message, {type: "iterationCompleted"}, next);
-            }, (err, results) =>
-            {
-                // Now we force each process to synchronize
-                if (err)
-                {
-                    return callback(err);
-                }
-
-                async.map(this.processes, (process, next) =>
-                {
-                    // Choose a bunch of random samples from the set that we have
-                    const message = {type: "synchronize"};
-                    process.writeAndWaitForMatchingOutput(message, {type: "synchronized"}, next);
-                }, function (err)
-                {
-                    if (err)
-                    {
-                        return callback(err);
-                    }
-
-                    // Combine all the losses together
-                    const losses = underscore.pluck(results, "loss");
-                    const loss = math.mean(losses);
-
-                    const allResults = {};
-                    results.forEach((processResults) =>
-                    {
-                        processResults.objects.forEach((object) =>
-                        {
-                            allResults[object.id] = object;
-                        });
-                    });
-
-                    return callback(null, {
-                        loss: loss,
-                        objects: batch.map((id) => allResults[id])
-                    });
-                });
-            });
-
-        });
+        // TODO: Make this work with multiple sub-processes!
+        return this.processes[0].writeAndWaitForMatchingOutput(message, {type: "iterationCompleted"});
     }
 
     /**
@@ -565,18 +499,13 @@ class EBTorchProcess
         return Promise.fromCallback((callback) =>
         {
             const message = {type: "save"};
-            self.processes[0].writeAndWaitForMatchingOutput(message, {type: "saved"}, function (err, response)
+            const promise = self.processes[0].writeAndWaitForMatchingOutput(message, {type: "saved"});
+            promise.then((response) =>
             {
-                if (err)
-                {
-                    return callback(err);
-                }
-
                 const stream = fs.createReadStream(path.join(self.scriptFolder, 'model.t7'));
 
                 return callback(null, stream);
-            });
-
+            }, (err) => callback(err));
         });
     }
 
@@ -589,27 +518,30 @@ class EBTorchProcess
     loadModelFile()
     {
         const self = this;
-
-        return Promise.fromCallback((callback) =>
+        const message = {
+            type: "load"
+        };
+        const writeAndWaitPromise = Promise.each(self.processes, (process) =>
         {
-            const message = {
-                type: "load"
-            };
-
-            async.each(self.processes, function(process, next)
-            {
-                process.writeAndWaitForMatchingOutput(message, {type: "loaded"}, function(err, result)
-                {
-                    if (err)
-                    {
-                        return next(err);
-                    }
-
-                    return next(null);
-                });
-            }, callback);
+            return process.writeAndWaitForMatchingOutput(message, {type: "loaded"});
         });
+        return writeAndWaitPromise;
+    }
 
+
+    /**
+     * This method tells the process to create a batch and save it to a file
+     *
+     * @param {[string]} ids The ids of the objects to be put into the batch
+     * @param {string} fileName The filename to write the result too
+     *
+     * @return {Promise} A promise that will resolve when the batch has been saved
+     */
+    prepareBatch(ids, fileName)
+    {
+        const self = this;
+        const message = {type: "prepareBatch", ids: ids, fileName: fileName};
+        return self.processes[0].writeAndWaitForMatchingOutput(message, {type: "batchPrepared"});
     }
 }
 

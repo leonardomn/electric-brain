@@ -163,11 +163,29 @@ class EBObjectInterpretation extends EBInterpretationBase
      */
     transformValueForNeuralNetwork(value, schema)
     {
-        return schema.transformObject(value, (key, value, subSchema, parent, parentSchema) =>
+        const valuePromises = [];
+        schema.children.forEach((subSchema) =>
         {
-            // Get the schema's main interpretation
             const interpretation = this.interpretationRegistry.getInterpretation(subSchema.metadata.mainInterpretation);
-            return interpretation.transformValueForNeuralNetwork(value, subSchema);
+            const promise = Promise.resolve(interpretation.transformValueForNeuralNetwork(value[subSchema.variableName], subSchema));
+
+            valuePromises.push(promise.then((result) =>
+            {
+                return {
+                    key: subSchema.variableName,
+                    value: result
+                };
+            }));
+        });
+
+        return Promise.all(valuePromises).then((results) =>
+        {
+            const newObject = {};
+            results.forEach((result) =>
+            {
+                newObject[result.key] = result.value;
+            });
+            return newObject;
         });
     }
 
@@ -181,11 +199,29 @@ class EBObjectInterpretation extends EBInterpretationBase
      */
     transformValueBackFromNeuralNetwork(value, schema)
     {
-        return schema.transformObject(value, (key, value, subSchema, parent, parentSchema) =>
+        const valuePromises = [];
+        schema.children.forEach((subSchema) =>
         {
-            // Get the schema's main interpretation
             const interpretation = this.interpretationRegistry.getInterpretation(subSchema.metadata.mainInterpretation);
-            return interpretation.transformValueBackFromNeuralNetwork(value, subSchema);
+            const promise = Promise.resolve(interpretation.transformValueBackFromNeuralNetwork(value[subSchema.variableName], subSchema));
+
+            valuePromises.push(promise.then((result) =>
+            {
+                return {
+                    key: subSchema.variableName,
+                    value: result
+                };
+            }));
+        });
+
+        return Promise.all(valuePromises).then((results) =>
+        {
+            const newObject = {};
+            results.forEach((result) =>
+            {
+                newObject[result.key] = result.value;
+            });
+            return newObject;
         });
     }
 

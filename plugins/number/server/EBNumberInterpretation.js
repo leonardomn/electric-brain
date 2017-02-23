@@ -19,10 +19,12 @@
 "use strict";
 
 const
+    EBConfusionMatrix = require('../../../shared/models/EBConfusionMatrix'),
     EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
     EBNumberHistogram = require('../../../shared/models/EBNumberHistogram'),
+    EBSchema = require("../../../shared/models/EBSchema"),
     underscore = require('underscore');
 
 /**
@@ -154,7 +156,23 @@ class EBNumberInterpretation extends EBInterpretationBase
      */
     transformSchemaForNeuralNetwork(schema)
     {
-        return schema;
+        // Get the configuration
+        const configuration = schema.configuration.interpretation;
+
+        if (configuration.mode === 'continuous')
+        {
+            return schema;
+        }
+        else
+        {
+            // Create a new schema with an enumeration for all of the buckets
+            return new EBSchema({
+                title: `${schema.title}`,
+                type: "number",
+                enum: underscore.range(0, configuration.discreteValues.length),
+                configuration: {included: true}
+            });
+        }
     }
 
 
@@ -162,11 +180,41 @@ class EBNumberInterpretation extends EBInterpretationBase
      * This method should prepare a given value for input into the neural network
      *
      * @param {EBSchema} value The value to be transformed
+     * @param {EBSchema} schema The schema for the value to be transformed
      * @return {Promise} A promise that resolves to a new value.
      */
-    transformValueForNeuralNetwork(value)
+    transformValueForNeuralNetwork(value, schema)
     {
-        return Number(value);
+        // Get the configuration
+        const configuration = schema.configuration.interpretation;
+
+        if (configuration.mode === 'continuous')
+        {
+            if (configuration.scalingFunction === 'linear')
+            {
+                return Number(value);
+            }
+            else if (configuration.scalingFunction === 'quadratic')
+            {
+                return Number(value) * Number(value);
+            }
+            else if (configuration.scalingFunction === 'logarithmic')
+            {
+                return Math.log10(Number(value));
+            }
+            else
+            {
+                throw new Error(`Unknown scalingFunction '${configuration.scalingFunction}'`);
+            }
+        }
+        else if (configuration.mode === 'discrete')
+        {
+            return this.getDiscreteValueIndex(value, schema);
+        }
+        else
+        {
+            throw new Error(`Unknown mode for number interpretation: ${configuration.mode}`);
+        }
     }
 
 
@@ -179,7 +227,43 @@ class EBNumberInterpretation extends EBInterpretationBase
      */
     transformValueBackFromNeuralNetwork(value, schema)
     {
-        return value;
+        // Get the configuration
+        const configuration = schema.configuration.interpretation;
+        if (configuration.mode === 'continuous')
+        {
+            if (configuration.scalingFunction === 'linear')
+            {
+                return Number(value);
+            }
+            else if (configuration.scalingFunction === 'quadratic')
+            {
+                return Math.sqrt(Number(value));
+            }
+            else if (configuration.scalingFunction === 'logarithmic')
+            {
+                return Math.pow(10, Number(value));
+            }
+            else
+            {
+                throw new Error(`Unknown scalingFunction '${configuration.scalingFunction}'`);
+            }
+        }
+        else if (configuration.mode === 'discrete')
+        {
+            // Get the matching value
+            const discreteValue = configuration.discreteValues[value];
+
+            if (!discreteValue)
+            {
+                throw new Error(`Fatal error: Discrete value index ${value} is invalid. This should not happen.`);
+            }
+
+            return discreteValue.name;
+        }
+        else
+        {
+            throw new Error(`Unknown mode for number interpretation: ${configuration.mode}`);
+        }
     }
 
 
@@ -191,7 +275,10 @@ class EBNumberInterpretation extends EBInterpretationBase
      */
     generateDefaultConfiguration(schema)
     {
-        return {};
+        return {
+            mode: "continuous",
+            scalingFunction: "linear"
+        };
     }
 
 
@@ -207,18 +294,51 @@ class EBNumberInterpretation extends EBInterpretationBase
      */
     compareNetworkOutputs(expected, actual, schema, accumulateStatistics)
     {
-        // Calculating accuracy here is a bit quack, but we try anyhow
-        if (expected !== 0)
+        const configuration = schema.configuration.interpretation;
+        if (configuration.mode === 'continuous')
         {
-            return 1.0 - Math.max(0, Math.min(1, Math.abs((expected - actual) / expected)));
+            // Calculating accuracy here is a bit quack, but we try anyhow
+            if (expected !== 0)
+            {
+                return 1.0 - Math.max(0, Math.min(1, Math.abs((expected - actual) / expected)));
+            }
+            else if (actual !== 0)
+            {
+                return 1.0 - Math.max(0, Math.min(1, Math.abs((expected - actual) / actual)));
+            }
+            else
+            {
+                return 1;
+            }
         }
-        else if (actual !== 0)
+        else if (configuration.mode === 'discrete')
         {
-            return 1.0 - Math.max(0, Math.min(1, Math.abs((expected - actual) / actual)));
+            // Figure out which bucket the input value belongs in
+            const expectedIndex = this.getDiscreteValueIndex(expected, schema);
+            const expectedName = schema.configuration.interpretation.discreteValues[expectedIndex].name;
+
+
+            if (accumulateStatistics)
+            {
+                if (!schema.results.discreteValueConfusionMatrix)
+                {
+                    schema.results.discreteValueConfusionMatrix = new EBConfusionMatrix();
+                }
+                schema.results.discreteValueConfusionMatrix.accumulateResult(expectedName, actual);
+            }
+
+            if (expectedName === actual)
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
         }
         else
         {
-            return 1;
+            throw new Error(`Unknown mode for number interpretation: ${configuration.mode}`);
         }
     }
 
@@ -256,6 +376,40 @@ class EBNumberInterpretation extends EBInterpretationBase
 
 
     /**
+     *  Gets which discrete-value bucket a given value belongs in
+     *
+     *  @param {Number} value The input value
+     *  @param {EBSchema} schema The schema for the value
+     *  @return {Number} The index of the discrete value
+     */
+    getDiscreteValueIndex(value, schema)
+    {
+        const configuration = schema.configuration.interpretation;
+        // Go through all of the buckets and find the matching one
+        const number = Number(value);
+        let matchingValueIndex = null;
+        configuration.discreteValues.forEach((discreteValue, index) =>
+        {
+            if (discreteValue.top === null || number < discreteValue.top)
+            {
+                if (discreteValue.bottom === null || number >= discreteValue.bottom)
+                {
+                    matchingValueIndex = index;
+                }
+            }
+        });
+
+        if (matchingValueIndex === null)
+        {
+            throw new Error(`Fatal error: No matching discreteValue found for ${number}. This should not happen.`);
+        }
+
+        return matchingValueIndex;
+    }
+    
+
+
+    /**
      * This method should return a schema for the metadata associated with this interpretation
      *
      * @return {jsonschema} A schema representing the metadata for this interpretation
@@ -283,6 +437,25 @@ class EBNumberInterpretation extends EBInterpretationBase
             "id": "EBNumberInterpretation.configurationSchema",
             "type": "object",
             "properties": {
+                "mode": {
+                    "type": "string",
+                    "enum": ["discrete", "continuous"]
+                },
+                "scalingFunction": {
+                    "type": "string",
+                    "enum": ['linear', 'quadratic', 'logarithmic']
+                },
+                "discreteValues": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "top": {"type": ["number", "null"]},
+                            "bottom": {"type": ["number", "null"]},
+                            "name": {"type": "string"}
+                        }
+                    }
+                }
             }
         };
     }
@@ -298,7 +471,9 @@ class EBNumberInterpretation extends EBInterpretationBase
         return {
             "id": "EBNumberInterpretation.resultsSchema",
             "type": "object",
-            "properties": {}
+            "properties": {
+                "discreteValueConfusionMatrix": EBConfusionMatrix.schema()
+            }
         };
     }
 }

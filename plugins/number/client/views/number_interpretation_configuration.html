@@ -1,5 +1,92 @@
 <h3>Number</h3>
 
 
-<p>No configuration at this time.</p>
+<div class="btn-group">
+    <label class="btn btn-primary" ng-model="field.configuration.interpretation.mode" uib-btn-radio="'continuous'">
+        <i class="fa fa-area-chart"></i>&nbsp;Continuous
+    </label>
+    <label class="btn btn-primary" ng-model="field.configuration.interpretation.mode" uib-btn-radio="'discrete'">
+        <i class="fa fa-bar-chart"></i>&nbsp;Discrete
+    </label>
+</div>
 
+<div ng-if="field.configuration.interpretation.mode === 'continuous'">
+    <h2>Define your scaling function</h2>
+    <div class="btn-group">
+        <label class="btn btn-warning" ng-model="field.configuration.interpretation.scalingFunction" uib-btn-radio="'linear'">
+            <i class="fa fa-check" ng-show="field.configuration.interpretation.scalingFunction == 'linear'"></i>&nbsp;Linear
+        </label>
+        <label class="btn btn-warning" ng-model="field.configuration.interpretation.scalingFunction" uib-btn-radio="'quadratic'">
+            <i class="fa fa-check" ng-show="field.configuration.interpretation.scalingFunction == 'quadratic'"></i>&nbsp;Quadratic
+        </label>
+        <label class="btn btn-warning" ng-model="field.configuration.interpretation.scalingFunction" uib-btn-radio="'logarithmic'">
+            <i class="fa fa-check" ng-show="field.configuration.interpretation.scalingFunction == 'logarithmic'"></i>&nbsp;Logarithmic
+        </label>
+    </div>
+</div>
+
+<div ng-if="field.configuration.interpretation.mode === 'discrete'">
+    <h2>Define your discrete values</h2>
+    <div class="col-md-8">
+        <div class="discrete-discrete-value" ng-repeat="discreteValue in field.configuration.interpretation.discreteValues">
+            <div class="add-discrete-value-button" ng-if="$index > 0">
+                <button class="btn btn-success" type="button" ng-click="addDiscreteValue($index)">
+                    <i class="fa fa-plus"></i>
+                </button>
+            </div>
+
+            <div class="row">
+                <div class="col-md-2">
+                    <div class="discrete-value-spread">
+                        <div>
+                            <button type="button" class="btn btn-outline btn-default discrete-value-limit-button infinity" ng-show="discreteValue.top === null">&plus;&nbsp;&infin;</button>
+                            <button type="button" class="btn btn-outline btn-default discrete-value-limit-button" ng-show="discreteValue.top !== null && !editingTop" ng-click="startEditingTop(this, $index)">{{discreteValue.top}}</button>
+                            <div class="input-group discrete-value-limit-editor" ng-show="discreteValue.top !== null && editingTop">
+                                <input type="number" class="form-control" ng-model="topEditValue" ng-change="discreteValueTopChanged(topEditValue, $index)" ng-enter="editingTop = false">
+                                <span class="input-group-btn" ng-click="editingTop = false">
+                                    <button type="button" class="btn btn-primary">
+                                        <i class="fa fa-check"></i>
+                                    </button>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="discrete-value-spread-arrows">
+                            <i class="fa fa-chevron-up"> </i>
+                        </div>
+                        <div class="discrete-value-spread-arrows">
+                            <i class="fa fa-chevron-down"> </i>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-outline btn-default discrete-value-limit-button infinity" ng-show="discreteValue.bottom === null">&minus;&nbsp;&infin;</button>
+
+                            <button type="button" class="btn btn-outline btn-default discrete-value-limit-button" ng-show="discreteValue.bottom !== null && !editingBottom" ng-click="startEditingBottom(this, $index)">{{discreteValue.bottom}}</button>
+                            <div class="input-group discrete-value-limit-editor" ng-show="discreteValue.bottom !== null && editingBottom">
+                                <input type="number" class="form-control" ng-model="bottomEditValue" ng-change="discreteValueBottomChanged(bottomEditValue, $index)" ng-enter="discreteValue.editingBottom = false">
+                                <span class="input-group-btn" ng-click="editingBottom = false">
+                                    <button type="button" class="btn btn-primary">
+                                        <i class="fa fa-check"></i>
+                                    </button>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </div>
+                <div class="col-md-10">
+                    <div class="form-horizontal discrete-value-details">
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">Name</label>
+                            <div class="col-sm-8">
+                                <input type="text" class="form-control" ng-model="discreteValue.name">
+                            </div>
+                            <div class="col-sm-2" ng-if="$index > 0 && $index < (field.configuration.interpretation.discreteValues.length - 1)">
+                                <button class="btn btn-danger" ng-click="removeDiscreteValue($index)"><i class="fa fa-minus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
