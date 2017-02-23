@@ -472,6 +472,14 @@ class EBArchitectureAPI extends EBAPIRoot
                         {
                             next(null);
                         }, (err) => next(err));
+                    },
+                    function reset(next)
+                    {
+                        const promise = process.reset();
+                        promise.then(() =>
+                        {
+                            next(null);
+                        }, (err) => next(err));
                     }
                 ], function(err)
                 {

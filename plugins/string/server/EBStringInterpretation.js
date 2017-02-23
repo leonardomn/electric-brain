@@ -306,6 +306,11 @@ class EBStringInterpretation extends EBInterpretationBase
             {
                 schema.results.confusionMatrix = new EBConfusionMatrix();
             }
+
+            if (!(schema.results.confusionMatrix instanceof EBConfusionMatrix))
+            {
+                schema.results.confusionMatrix = new EBConfusionMatrix(schema.results.confusionMatrix);
+            }
             schema.results.confusionMatrix.accumulateResult(expected, actual);
         }
 
