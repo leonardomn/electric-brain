@@ -572,7 +572,7 @@ class EBTrainModelTask {
     {
         const self = this;
         const trainingIterations = 50000;
-        const saveFrequency = 1000;
+        const saveFrequency = 5000;
         const trainingResult = {
             status: 'in_progress',
             percentageComplete: 0,
