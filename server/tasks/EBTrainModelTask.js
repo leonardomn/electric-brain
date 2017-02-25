@@ -89,7 +89,7 @@ class EBTrainModelTask {
      *  @param {beaver.Task} task The Beaver task object
      *  @param {object} args The arguments for this task. It should only contain a single argument,
      *                       the MongoID of the EBModel object that needs to be trained.
-     *  @param {function(err)} callback The callback after the task has finished running
+     *  @return {Promise} A promise that will resolve with the finished EBModel object.
      */
     run(task, args)
     {
@@ -184,8 +184,12 @@ class EBTrainModelTask {
             return self.trainingProcess.killProcess();
         }).then(() =>
         {
-            // Set the model to not be running
-            return self.models.update({_id: args._id}, {$set: {running: false}});
+            // Set the model to be complete, and save the final object
+            self.model.running = false;
+            return self.models.update({_id: args._id}, self.model);
+        }).then(() =>
+        {
+            return self.model;
         });
     }
 
@@ -571,7 +575,7 @@ class EBTrainModelTask {
     trainModel()
     {
         const self = this;
-        const trainingIterations = 50000;
+        const trainingIterations = self.model.parameters.iterations;
         const saveFrequency = 5000;
         const trainingResult = {
             status: 'in_progress',

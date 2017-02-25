@@ -1620,6 +1620,27 @@ class EBSchema
         });
     }
 
+    /**
+     * This finds an EBSchema object within the hierarchy.
+     *
+     * @param {string} variablePath The path name of the variable to look for
+     *
+     * @returns {EBSchema} The EBSchema object
+     */
+    find(variablePath)
+    {
+        let found = null;
+        this.walk((subSchema) =>
+        {
+            if (subSchema.variablePath === variablePath)
+            {
+                found = subSchema;
+            }
+        });
+        
+        return found;
+    }
+
 
     /**
      * This method creates a new EBSchema object representing a fixed size vector. These are used to hold

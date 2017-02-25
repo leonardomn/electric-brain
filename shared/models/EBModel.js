@@ -55,7 +55,8 @@ class EBModel
         {
             self.parameters = {
                 batchSize: 16,
-                testingBatchSize: 4
+                testingBatchSize: 4,
+                iterations: 50000
             };
         }
 
@@ -134,6 +135,9 @@ class EBModel
                             type: "number"
                         },
                         "testingBatchSize": {
+                            type: "number"
+                        },
+                        "iterations": {
                             type: "number"
                         }
                     }
