@@ -31,6 +31,7 @@ install_dependencies_darwin() {
     # Install dependencies:
     brew update
     brew install mongodb rabbitmq node@4 graphviz
+    brew link node@4 --force
     brew services start mongodb
     brew services start rabbitmq
 }
