@@ -35,25 +35,57 @@ install_dependencies_darwin() {
     brew services start rabbitmq
 }
 
+install_redhat_epel() {
+    # Add EPEL repository
+    rpm -Uvh --replacepkgs https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+}
+
+install_rabbitmq_redhat() {
+    # Download and install Erlang
+    yum install -y erlang
+
+    # Install Rabbit by directly pulling from their website
+    wget https://github.com/rabbitmq/rabbitmq-server/releases/download/rabbitmq_v3_6_6/rabbitmq-server-3.6.6-1.el7.noarch.rpm
+
+    # Add the necessary keys for verification:
+    rpm --import https://www.rabbitmq.com/rabbitmq-signing-key-public.asc
+
+    # Install the .RPM package using YUM:
+    rpm -Uvh --replacepkgs rabbitmq-server-3.6.6-1.el7.noarch.rpm
+}
+
 
 install_dependencies_redhat() {
-    sudo yum install mongodb mongodb-server.x86_64 rabbitmq-server.noarch nodejs git graphviz gcc-c++
+    # Install the redhat EPEL repository
+    install_redhat_epel
+
+    # Now install nodejs, mongodb
+    sudo yum -y update
+    sudo yum -y install mongodb mongodb-server nodejs git graphviz gcc-c++
+
+    install_rabbitmq_redhat
+
     sudo service rabbitmq-server start
     sudo service mongod start
 }
 
 
 install_dependencies_ubuntu() {
+    # Install the nodesource repository
+    curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+
     sudo apt update
-    sudo apt install mongodb rabbitmq-server nodejs graphviz
+    sudo apt install mongodb rabbitmq-server nodejs graphviz git build-essential -y
 }
 
+
 install_torch() {
+    if [[ `which th` == '' ]]; then
         # Install torch and then clean up
         cd /tmp
         git clone https://github.com/torch/distro.git /tmp/torch --recursive
         cd /tmp/torch; bash install-deps;
-        sudo PREFIX=/usr/local ./install.sh
+        sudo PREFIX=/usr/local ./install.sh -b
         cd ..
         sudo rm -rf /tmp/torch
 
@@ -65,51 +97,57 @@ install_torch() {
         sudo luarocks install rnn
         sudo luarocks install underscore
         sudo luarocks install luasocket
+    fi
 }
 
-install_electric_brain()
-{
+install_electric_brain() {
     sudo npm install electricbrain -g
 }
 
 
-if [[ `uname` == 'Darwin' ]]; then
-    install_dependencies_darwin
-    install_torch
-    install_electric_brain
-elif [[ `uname` == 'Linux' ]]; then
-    if [[ -r /etc/os-release ]]; then
-        # this will get the required information without dirtying any env state
-        DIST_VERS="$( ( . /etc/os-release &>/dev/null
-                        echo "$ID $VERSION_ID") )"
-        DISTRO="${DIST_VERS%% *}" # get our distro name
-        VERSION="${DIST_VERS##* }" # get our version number
-    elif [[ -r /etc/redhat-release ]]; then
-        DIST_VERS=( $( cat /etc/redhat-release ) ) # make the file an array
-        DISTRO="${DIST_VERS[0],,}" # get the first element and get lcase
-        VERSION="${DIST_VERS[2]}" # get the third element (version)
-    elif [[ -r /etc/lsb-release ]]; then
-        DIST_VERS="$( ( . /etc/lsb-release &>/dev/null
-                        echo "${DISTRIB_ID,,} $DISTRIB_RELEASE") )"
-        DISTRO="${DIST_VERS%% *}" # get our distro name
-        VERSION="${DIST_VERS##* }" # get our version number
-    else # well, I'm out of ideas for now
-        echo '==> Failed to determine distro and version.'
-        exit 1
-    fi
+installation_main()
+{
+    if [[ `uname` == 'Darwin' ]]; then
+        install_dependencies_darwin
+        install_torch
+        install_electric_brain
+    elif [[ `uname` == 'Linux' ]]; then
+        if [[ -r /etc/os-release ]]; then
+            # this will get the required information without dirtying any env state
+            DIST_VERS="$( ( . /etc/os-release &>/dev/null
+                            echo "$ID $VERSION_ID") )"
+            DISTRO="${DIST_VERS%% *}" # get our distro name
+            VERSION="${DIST_VERS##* }" # get our version number
+        elif [[ -r /etc/redhat-release ]]; then
+            DIST_VERS=( $( cat /etc/redhat-release ) ) # make the file an array
+            DISTRO="${DIST_VERS[0],,}" # get the first element and get lcase
+            VERSION="${DIST_VERS[2]}" # get the third element (version)
+        elif [[ -r /etc/lsb-release ]]; then
+            DIST_VERS="$( ( . /etc/lsb-release &>/dev/null
+                            echo "${DISTRIB_ID,,} $DISTRIB_RELEASE") )"
+            DISTRO="${DIST_VERS%% *}" # get our distro name
+            VERSION="${DIST_VERS##* }" # get our version number
+        else # well, I'm out of ideas for now
+            echo '==> Failed to determine distro and version.'
+            exit 1
+        fi
 
-    # Installation for fedora / centos
-    if [[ "$DISTRO" = "fedora" ||  "$DISTRO" = "centos" ]]; then
-        install_dependencies_redhat
-        install_torch
-        install_electric_brain
-    # Installation for Ubuntu
-    elif [[ "$DISTRO" = "ubuntu" ]]; then
-        install_dependencies_ubuntu
-        install_torch
-        install_electric_brain
-    else
-        echo '==> Only Ubuntu, Fedora, and CentOS are supported.'
-        exit 1
+        # Installation for fedora / centos
+        if [[ "$DISTRO" = "fedora" ||  "$DISTRO" = "centos" ]]; then
+            install_dependencies_redhat
+            install_torch
+            install_electric_brain
+        # Installation for Ubuntu
+        elif [[ "$DISTRO" = "ubuntu" ]]; then
+            install_dependencies_ubuntu
+            install_torch
+            install_electric_brain
+        else
+            echo '==> Only Ubuntu, Fedora, and CentOS are supported.'
+            exit 1
+        fi
     fi
-fi
+}
+
+# Kick off the installation
+installation_main
