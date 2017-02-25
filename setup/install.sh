@@ -91,12 +91,12 @@ install_torch() {
 
         # Torch Activate and install Lua dependencies
         /usr/local/bin/torch-activate
-        sudo luarocks install json
-        sudo luarocks install distlearn
-        sudo luarocks install ipc
-        sudo luarocks install rnn
-        sudo luarocks install underscore
-        sudo luarocks install luasocket
+        sudo /usr/local/bin/luarocks install json
+        sudo /usr/local/bin/luarocks install distlearn
+        sudo /usr/local/bin/luarocks install ipc
+        sudo /usr/local/bin/luarocks install rnn
+        sudo /usr/local/bin/luarocks install underscore
+        sudo /usr/local/bin/luarocks install luasocket
     fi
 }
 
