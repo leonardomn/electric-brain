@@ -1,0 +1,7 @@
+{
+  "name": "eb-mongo",
+  "description": "This plugin allows using Mongo databases as a data source.",
+  "dependencies": {
+    "bluebird": "^3.4.6"
+  }
+}
