@@ -77,9 +77,9 @@ class EBTorchProcess
                         {
                             return next(err);
                         }
-                        childProcess.execSync('rm -rf /home/bradley/eb/electric-brain/training/*');
-                        self.scriptFolder = '/home/bradley/eb/electric-brain/training/';
-                        // self.scriptFolder = temporaryFolder;
+                        // childProcess.execSync('rm -rf /home/bradley/eb/electric-brain/training/*');
+                        // self.scriptFolder = '/home/bradley/eb/electric-brain/training/';
+                        self.scriptFolder = temporaryFolder;
                         // Create a list of files that need to be written
                         const files = self.architecture.generateFiles(registry, neuralNetworkComponentDispatch);
                         // Write out each of the files
