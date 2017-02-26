@@ -144,7 +144,12 @@ function TrainingScript:evaluateTrainingIteration(batch)
         end
 
         ------------------- backward pass -------------------
-        local derivativesBatch = localizeOutputRoot(self:prepareDerivatives(derivatives))
+        local derivativesBatch = self:prepareDerivatives(derivatives)
+
+        if self.gpuEnabled then
+            derivativesBatch = localizeOutputRoot(derivativesBatch)
+        end
+
         local inputDerivatives = self.module:backward(batch.input, derivativesBatch)
 
         -- clip gradient element-wise
