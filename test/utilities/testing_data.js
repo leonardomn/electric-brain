@@ -19,7 +19,10 @@
 "use strict";
 
 const async = require('async'),
+    fastCSV = require('fast-csv'),
+    fs = require('fs'),
     mongodb = require('mongodb'),
+    path = require('path'),
     Promise = require('bluebird'),
     underscore = require('underscore');
 
@@ -214,6 +217,43 @@ function saveObjects(collectionName, objects)
     });
 }
 
+/**
+ * This is a convenience method for the below functions which takes their dataset and saves
+ * it to a CSV file.
+ *
+ * @param {string} fileName The filename of the CSV file to write to.
+ * @param {[object]} objects The array of objects to save
+ *
+ * @returns {Promise} A promise that will resolve when the dataset is generated
+ */
+function saveObjectsToCSV(fileName, objects)
+{
+    return new Promise((resolve, reject) =>
+    {
+        const csvStream = fastCSV.createWriteStream({headers: true}),
+            writableStream = fs.createWriteStream(fileName);
+
+        writableStream.on("finish", function()
+        {
+            resolve();
+        });
+
+        writableStream.on("error", function(err)
+        {
+            reject(err);
+        });
+
+        csvStream.pipe(writableStream);
+
+        objects.forEach((object) =>
+        {
+            csvStream.write(object);
+        });
+
+        csvStream.end();
+    });
+}
+
 
 /**
  *  This method is used to generate a data set for testing purposes.
@@ -239,7 +279,10 @@ module.exports.generateCopyTestingDataSet = function generateCopyTestingDataSet(
         objects.push(object);
     }
 
-    return saveObjects("copy_value", objects);
+    return saveObjects("copy_value", objects).then(() =>
+    {
+        return saveObjectsToCSV(path.join(__dirname, "..", "data", "copy_value.csv"), objects);
+    });
 };
 
 
@@ -268,8 +311,11 @@ module.exports.generateDualCopyTestingDataSet = function generateDualCopyTesting
 
         objects.push(object);
     }
-
-    return saveObjects("dual_copy_value", objects);
+    
+    return saveObjects("dual_copy_value", objects).then(() =>
+    {
+        return saveObjectsToCSV(path.join(__dirname, "..", "data", "dual_copy_value.csv"), objects);
+    });
 };
 
 
@@ -648,7 +694,10 @@ module.exports.generateNumberHistogramDataset = function generateNumberHistogram
         objects.push(object);
     }
 
-    return saveObjects("number_histogram", objects);
+    return saveObjects("number_histogram", objects).then(() =>
+    {
+        return saveObjectsToCSV(path.join(__dirname, "..", "data", "number_histogram.csv"), objects);
+    });
 };
 
 
@@ -736,7 +785,10 @@ module.exports.generateNumberPredictionFromClassificationDataset = function gene
         objects.push(object);
     }
 
-    return saveObjects("number_prediction_from_classification", objects);
+    return saveObjects("number_prediction_from_classification", objects).then(() =>
+    {
+        return saveObjectsToCSV(path.join(__dirname, "..", "data", "number_prediction_from_classification.csv"), objects);
+    });
 };
 
 
@@ -775,7 +827,10 @@ module.exports.generateNumberMathematicsDataset = function generateNumberMathema
         objects.push(object);
     }
 
-    return saveObjects("number_mathematics", objects);
+    return saveObjects("number_mathematics", objects).then(() =>
+    {
+        return saveObjectsToCSV(path.join(__dirname, "..", "data", "number_mathematics.csv"), objects);
+    });
 };
 
 
@@ -810,6 +865,9 @@ module.exports.generateNumberClassificationDataset = function generateNumberClas
         objects.push(object);
     }
 
-    return saveObjects("number_classification", objects);
+    return saveObjects("number_classification", objects).then(() =>
+    {
+        return saveObjectsToCSV(path.join(__dirname, "..", "data", "number_classification.csv"), objects);
+    });
 };
 

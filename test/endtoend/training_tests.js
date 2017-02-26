@@ -22,8 +22,11 @@
 const
     assert = require('assert'),
     EBApplication = require("../../server/EBApplication"),
+    EBCSVPlugin = require("../../plugins/csv/server/EBCSVPlugin"),
     EBTrainModelTask = require("../../server/tasks/EBTrainModelTask"),
     EBModelTest = require("../utilities/EBModelTest"),
+    fs = require('fs'),
+    path = require('path'),
     testingData = require("../utilities/testing_data");
 
 // Give each test 5 minutes. This is because core machine learning tests can take a while.
@@ -312,7 +315,7 @@ describe("End to end tests", function()
             modelParameters: {
                 batchSize: 16,
                 testingBatchSize: 4,
-                iterations: 1000
+                iterations: 1500
             },
             results: {minimumAccuracy: 100}
         });
@@ -320,6 +323,67 @@ describe("End to end tests", function()
         return testingData.generateNumberClassificationDataset().then(() =>
         {
             return test.run(application);
+        });
+    });
+
+
+    it("Should be able to train a model from the copy-value CSV file", () =>
+    {
+        return testingData.generateCopyTestingDataSet().then(() =>
+        {
+            const csvPlugin = new EBCSVPlugin(application);
+            const fileStream = fs.createReadStream(path.join(__dirname, "..", "data", "copy_value.csv"));
+            return csvPlugin.uploadFile(fileStream).then((id) =>
+            {
+                console.log(id);
+                const test = new EBModelTest({
+                    dataSource: {
+                        name: "copy_value",
+                        type: "csv",
+                        file: id.toString()
+                    },
+                    inputFields: ['.inputLetter'],
+                    outputFields: ['.outputLetter'],
+                    modelParameters: {
+                        batchSize: 16,
+                        testingBatchSize: 4,
+                        iterations: 200
+                    },
+                    results: {minimumAccuracy: 100}
+                });
+
+                return test.run(application);
+            });
+        });
+    });
+
+
+    it("Should be able to train a model from the number classification CSV file", () =>
+    {
+        return testingData.generateNumberClassificationDataset().then(() =>
+        {
+            const csvPlugin = new EBCSVPlugin(application);
+            const fileStream = fs.createReadStream(path.join(__dirname, "..", "data", "number_classification.csv"));
+            return csvPlugin.uploadFile(fileStream).then((id) =>
+            {
+                const test = new EBModelTest({
+                    dataSource: {
+                        name: "number_classification",
+                        type: "csv",
+                        file: id.toString()
+                    },
+                    inputFields: ['.first', '.second'],
+                    outputFields: ['.classification'],
+                    modelParameters: {
+                        batchSize: 16,
+                        testingBatchSize: 4,
+                        iterations: 1500
+                    },
+                    results: {minimumAccuracy: 100}
+                });
+
+                return test.run(application);
+            });
         });
     });
 });

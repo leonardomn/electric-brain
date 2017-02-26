@@ -41,7 +41,7 @@ class EBModelTest
      */
     constructor(data)
     {
-        assert(EBModelTest.validate(data).length === 0);
+        assert.deepEqual(EBModelTest.validate(data), []);
         Object.keys(data).forEach((key) =>
         {
             this[key] = data[key];
