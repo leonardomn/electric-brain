@@ -171,7 +171,7 @@ class EBTensorSchema
             const subFunctionCode = this.items.generateLocalizeFunction(subFunctionName);
             code += `    ${subFunctionCode.replace(/\n/g, "\n    ")}`;
             code += `    for n=1,#value[2] do`;
-            code += `       value[n] = ${subFunctionName}(value[n])\n`;
+            code += `       value[2][n] = ${subFunctionName}(value[2][n])\n`;
             code += `    end\n`;
             code += `    return value\n`;
             code += `end\n`;
