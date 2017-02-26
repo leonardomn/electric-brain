@@ -211,7 +211,7 @@ describe("End to end tests", function()
             modelParameters: {
                 batchSize: 16,
                 testingBatchSize: 4,
-                iterations: 400
+                iterations: 450
             },
             results: {minimumAccuracy: 1.0}
         });
