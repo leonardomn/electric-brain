@@ -23,7 +23,8 @@ const
     assert = require('assert'),
     EBApplication = require("../../server/EBApplication"),
     EBTrainModelTask = require("../../server/tasks/EBTrainModelTask"),
-    EBModelTest = require("../utilities/EBModelTest");
+    EBModelTest = require("../utilities/EBModelTest"),
+    testingData = require("../utilities/testing_data");
 
 // Give each test 5 minutes. This is because core machine learning tests can take a while.
 const testTimeout = 5 * 60 * 1000;
@@ -91,7 +92,10 @@ describe("End to end tests", function()
             results: {minimumAccuracy: 1.0}
         });
 
-        return test.run(application);
+        return testingData.generateCopyTestingDataSet().then(() =>
+        {
+            return test.run(application);
+        });
     });
 
 
@@ -116,7 +120,11 @@ describe("End to end tests", function()
             results: {minimumAccuracy: 1.0}
         });
 
-        return test.run(application);
+
+        return testingData.generateDualCopyTestingDataSet().then(() =>
+        {
+            return test.run(application);
+        });
     });
 
 
@@ -141,7 +149,10 @@ describe("End to end tests", function()
             results: {minimumAccuracy: 1.0}
         });
 
-        return test.run(application);
+        return testingData.generateSequenceCopyTestingDataSet().then(() =>
+        {
+            return test.run(application);
+        });
     });
 
 
@@ -166,7 +177,10 @@ describe("End to end tests", function()
             results: {minimumAccuracy: 1.0}
         });
 
-        return test.run(application);
+        return testingData.generateSequenceDualCopyTestingDataSet().then(() =>
+        {
+            return test.run(application);
+        });
     });
 
 
@@ -191,7 +205,10 @@ describe("End to end tests", function()
             results: {minimumAccuracy: 1.0}
         });
 
-        return test.run(application);
+        return testingData.generateSequenceIdentificationTestingDataSet().then(() =>
+        {
+            return test.run(application);
+        });
     });
 
 
@@ -216,6 +233,93 @@ describe("End to end tests", function()
             results: {minimumAccuracy: 1.0}
         });
 
-        return test.run(application);
+        return testingData.generateSequenceClassificationTestingDataSet().then(() =>
+        {
+            return test.run(application);
+        });
+    });
+
+
+    it("Should be able to train a model using the number prediction from classification data set", () =>
+    {
+        const test = new EBModelTest({
+            dataSource: {
+                name: "number_prediction_from_classification",
+                type: "mongo",
+                database: {
+                    uri: "mongodb://localhost:27017/electric_brain_testing",
+                    collection: "number_prediction_from_classification"
+                }
+            },
+            inputFields: ['.first', '.second'],
+            outputFields: ['.result'],
+            modelParameters: {
+                batchSize: 16,
+                testingBatchSize: 4,
+                iterations: 1500
+            },
+            results: {minimumAccuracy: 0.85}
+        });
+
+        return testingData.generateNumberPredictionFromClassificationDataset().then(() =>
+        {
+            return test.run(application);
+        });
+    });
+
+
+    it("Should be able to train a model using the number mathematics data set", () =>
+    {
+        const test = new EBModelTest({
+            dataSource: {
+                name: "number_mathematics",
+                type: "mongo",
+                database: {
+                    uri: "mongodb://localhost:27017/electric_brain_testing",
+                    collection: "number_mathematics"
+                }
+            },
+            inputFields: ['.first', '.second', '.third'],
+            outputFields: ['.product1', '.product2', '.product3', '.sum1', '.sum2', '.sum3'],
+            modelParameters: {
+                batchSize: 16,
+                testingBatchSize: 4,
+                iterations: 1500
+            },
+            results: {minimumAccuracy: 0.90}
+        });
+
+        return testingData.generateNumberMathematicsDataset().then(() =>
+        {
+            return test.run(application);
+        });
+    });
+
+
+    it("Should be able to train a model using the number classification data set", () =>
+    {
+        const test = new EBModelTest({
+            dataSource: {
+                name: "number_classification",
+                type: "mongo",
+                database: {
+                    uri: "mongodb://localhost:27017/electric_brain_testing",
+                    collection: "number_classification"
+                }
+            },
+            inputFields: ['.first', '.second'],
+            outputFields: ['.classification'],
+            modelParameters: {
+                batchSize: 16,
+                testingBatchSize: 4,
+                iterations: 1000
+            },
+            results: {minimumAccuracy: 1.00}
+        });
+
+        return testingData.generateNumberClassificationDataset().then(() =>
+        {
+            return test.run(application);
+        });
     });
 });

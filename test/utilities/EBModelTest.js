@@ -167,7 +167,10 @@ class EBModelTest
             assert.equal(model.training.status, 'complete');
             assert.equal(model.testing.status, 'complete');
 
-            assert(model.testing.accuracy >= test.results.minimumAccuracy);
+            if (model.testing.accuracy < test.results.minimumAccuracy)
+            {
+                assert.fail(model.testing.accuracy * 100, test.results.minimumAccuracy * 100, `The accuracy of the model did not meet the minimum required accuracy of ${test.results.minimumAccuracy * 100}.`, "<");
+            }
 
             return Promise.resolve();
         }

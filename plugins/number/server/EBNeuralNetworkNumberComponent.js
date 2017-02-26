@@ -78,7 +78,7 @@ class EBNeuralNetworkNumberComponent extends EBNeuralNetworkComponentBase
     {
         let code = '';
         code += `local ${name} = function (input)\n`;
-        code += `    return input[1][1][1]\n`;
+        code += `    return input[1][1]\n`;
         code += `end\n`;
         return code;
     }
