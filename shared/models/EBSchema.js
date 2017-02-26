@@ -88,10 +88,7 @@ class EBSchema
             }
             else if (key === 'configuration')
             {
-                self.configuration = {
-                    included: rawSchema.configuration.included,
-                    interpretation: rawSchema.configuration.interpretation
-                };
+                self.configuration = rawSchema.configuration;
             }
             else if (key === 'results')
             {
