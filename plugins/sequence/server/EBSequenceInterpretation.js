@@ -23,6 +23,7 @@ const
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
     EBNumberHistogram = require('../../../shared/models/EBNumberHistogram'),
+    Promise = require('bluebird'),
     underscore = require('underscore');
 
 /**
@@ -164,7 +165,7 @@ class EBSequenceInterpretation extends EBInterpretationBase
      */
     transformValueForNeuralNetwork(value, schema)
     {
-        return Promise.each(value, (arrayValue) =>
+        return Promise.mapSeries(value, (arrayValue) =>
         {
             const interpretation = this.interpretationRegistry.getInterpretation(schema.items.metadata.mainInterpretation);
             return Promise.resolve(interpretation.transformValueForNeuralNetwork(arrayValue, schema.items));
@@ -181,7 +182,7 @@ class EBSequenceInterpretation extends EBInterpretationBase
      */
     transformValueBackFromNeuralNetwork(value, schema)
     {
-        return Promise.each(value, (arrayValue) =>
+        return Promise.mapSeries(value, (arrayValue) =>
         {
             const interpretation = this.interpretationRegistry.getInterpretation(schema.items.metadata.mainInterpretation);
             return Promise.resolve(interpretation.transformValueBackFromNeuralNetwork(arrayValue, schema.items));

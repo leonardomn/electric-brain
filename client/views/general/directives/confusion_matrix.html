@@ -1,3 +1,6 @@
-<div ng-if="ngModel.expectedValues.length > 0">
+<div ng-if="ngModel.expectedValues.length > 0 && ngModel.expectedValues.length <= 40">
     <highchart id="confusionMatrix" config="confusionMatrixChartConfig"></highchart>
+</div>
+<div ng-if="ngModel.expectedValues.length > 40">
+    <p>Cant display confusion matrix. Too many classes.</p>
 </div>

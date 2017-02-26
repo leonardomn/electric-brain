@@ -1,5 +1,6 @@
 require('torch')
 require('nn')
+require('./EBSequenceLengthCriterion')
 
 local {{=it.criterionName}}, parent = torch.class('nn.{{=it.criterionName}}', 'nn.Criterion')
 

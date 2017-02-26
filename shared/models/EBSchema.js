@@ -88,10 +88,7 @@ class EBSchema
             }
             else if (key === 'configuration')
             {
-                self.configuration = {
-                    included: rawSchema.configuration.included,
-                    interpretation: rawSchema.configuration.interpretation
-                };
+                self.configuration = rawSchema.configuration;
             }
             else if (key === 'results')
             {
@@ -1618,6 +1615,27 @@ class EBSchema
                 subSchema.configuration = fields[subSchema.variablePath].configuration;
             }
         });
+    }
+
+    /**
+     * This finds an EBSchema object within the hierarchy.
+     *
+     * @param {string} variablePath The path name of the variable to look for
+     *
+     * @returns {EBSchema} The EBSchema object
+     */
+    find(variablePath)
+    {
+        let found = null;
+        this.walk((subSchema) =>
+        {
+            if (subSchema.variablePath === variablePath)
+            {
+                found = subSchema;
+            }
+        });
+        
+        return found;
     }
 
 
