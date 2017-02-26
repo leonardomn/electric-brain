@@ -32,7 +32,7 @@ const testingSetMongoURI = "mongodb://localhost:27017/electric_brain_testing";
  */
 function getLettersEnumeration()
 {
-    return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'm'];
+    return ['letter_a', 'letter_b', 'letter_c', 'letter_d', 'letter_e', 'letter_f', 'letter_g', 'letter_h', 'letter_i', 'letter_j', 'letter_k', 'letter_m'];
 }
 
 
@@ -343,7 +343,7 @@ module.exports.generateSequenceIdentificationTestingDataSet = function generateS
 {
     const enumerationSequences = [];
     // Generate several random sequences
-    for (let sequenceIndex = 0; sequenceIndex < 100; sequenceIndex += 1)
+    for (let sequenceIndex = 0; sequenceIndex < 10; sequenceIndex += 1)
     {
         enumerationSequences.push(getRandomLetterSequence());
     }
@@ -356,7 +356,7 @@ module.exports.generateSequenceIdentificationTestingDataSet = function generateS
 
         const object = {
             inputLetters: enumerationSequences[sequenceIndex],
-            outputIdentity: sequenceIndex.toString()
+            outputIdentity: `sequence_${sequenceIndex.toString()}`
         };
         objects.push(object);
     }
@@ -380,13 +380,48 @@ module.exports.generateSequenceClassificationTestingDataSet = function generateS
     const enumerationSequences = [];
     const numberClasses = 10;
     const numberSequences = 15;
+
+
+
+    const firstClasses = [
+        'class_a',
+        'class_b',
+        'class_c',
+        'class_d',
+        'class_e',
+        'class_f',
+        'class_g',
+        'class_h',
+        'class_i',
+        'class_j',
+        'class_k',
+        'class_l',
+        'class_m'
+    ];
+
+    const secondClasses = [
+        'class_n',
+        'class_o',
+        'class_p',
+        'class_q',
+        'class_r',
+        'class_s',
+        'class_t',
+        'class_u',
+        'class_v',
+        'class_w',
+        'class_x',
+        'class_y',
+        'class_z'
+    ];
+
     // Generate several random sequences
     for (let sequenceIndex = 0; sequenceIndex < numberSequences; sequenceIndex += 1)
     {
         enumerationSequences.push({
             inputLetters: getRandomLetterSequence(),
-            outputFirstClassification: Math.floor((Math.random() * numberClasses) + 1).toString(),
-            outputSecondClassification: Math.floor((Math.random() * numberClasses) + 1).toString()
+            outputFirstClassification: firstClasses[Math.floor((Math.random() * numberClasses) + 1)].toString(),
+            outputSecondClassification: secondClasses[Math.floor((Math.random() * numberClasses) + 1)].toString()
         });
     }
 
@@ -487,13 +522,47 @@ module.exports.generateLayeredSequenceClassificationTestingDataSet = function ge
     const enumerationSequences = [];
     const numberClasses = 10;
     const numberSequences = 100;
+
+    const firstClasses = [
+        'class_a',
+        'class_b',
+        'class_c',
+        'class_d',
+        'class_e',
+        'class_f',
+        'class_g',
+        'class_h',
+        'class_i',
+        'class_j',
+        'class_k',
+        'class_l',
+        'class_m'
+    ];
+
+    const secondClasses = [
+        'class_n',
+        'class_o',
+        'class_p',
+        'class_q',
+        'class_r',
+        'class_s',
+        'class_t',
+        'class_u',
+        'class_v',
+        'class_w',
+        'class_x',
+        'class_y',
+        'class_z'
+    ];
+
+
     // Generate several random sequences
     for (let sequenceIndex = 0; sequenceIndex < numberSequences; sequenceIndex += 1)
     {
         enumerationSequences.push({
             inputLetters: getRandomLayeredSequence(),
-            outputFirstClassification: Math.floor((Math.random() * numberClasses) + 1).toString(),
-            outputSecondClassification: Math.floor((Math.random() * numberClasses) + 1).toString()
+            outputFirstClassification: firstClasses[Math.floor((Math.random() * numberClasses) + 1)],
+            outputSecondClassification: secondClasses[Math.floor((Math.random() * numberClasses) + 1)]
         });
     }
 
@@ -521,7 +590,7 @@ module.exports.generateLayeredSequenceClassificationTestingDataSet = function ge
 module.exports.generateInnerSequenceClassificationTestingDataSet = function generateInnerSequenceClassificationTestingDataSet(next)
 {
     const enumerationSequences = [];
-    const numberSequences = 100;
+    const numberSequences = 10;
     // Generate several random sequences
     for (let sequenceIndex = 0; sequenceIndex < numberSequences; sequenceIndex += 1)
     {

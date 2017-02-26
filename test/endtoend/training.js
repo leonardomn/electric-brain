@@ -28,7 +28,7 @@ const
 // Give each test 5 minutes. This is because core machine learning tests can take a while.
 const testTimeout = 5 * 60 * 1000;
 
-describe.only("End to end tests", function()
+describe("End to end tests", function()
 {
     this.timeout(testTimeout);
     const application = new EBApplication();
@@ -133,6 +133,81 @@ describe.only("End to end tests", function()
             },
             inputFields: ['.letters.[].inputLetter'],
             outputFields: ['.letters.[].outputLetter'],
+            modelParameters: {
+                batchSize: 16,
+                testingBatchSize: 4,
+                iterations: 400
+            },
+            results: {minimumAccuracy: 1.0}
+        });
+
+        return test.run(application);
+    });
+
+
+    it("Should be able to train a model using the sequence dual copy data set", () =>
+    {
+        const test = new EBModelTest({
+            dataSource: {
+                name: "sequence_dual_copy",
+                type: "mongo",
+                database: {
+                    uri: "mongodb://localhost:27017/electric_brain_testing",
+                    collection: "sequence_dual_copy"
+                }
+            },
+            inputFields: ['.letters.[].inputLetter', '.letters.[].inputStatus'],
+            outputFields: ['.letters.[].outputLetter', '.letters.[].outputStatus'],
+            modelParameters: {
+                batchSize: 16,
+                testingBatchSize: 4,
+                iterations: 400
+            },
+            results: {minimumAccuracy: 1.0}
+        });
+
+        return test.run(application);
+    });
+
+
+    it("Should be able to train a model using the sequence identification data set", () =>
+    {
+        const test = new EBModelTest({
+            dataSource: {
+                name: "sequence_identification",
+                type: "mongo",
+                database: {
+                    uri: "mongodb://localhost:27017/electric_brain_testing",
+                    collection: "sequence_identification"
+                }
+            },
+            inputFields: ['.inputLetters.[].letter'],
+            outputFields: ['.outputIdentity'],
+            modelParameters: {
+                batchSize: 16,
+                testingBatchSize: 4,
+                iterations: 350
+            },
+            results: {minimumAccuracy: 1.0}
+        });
+
+        return test.run(application);
+    });
+
+
+    it("Should be able to train a model using the sequence classification data set", () =>
+    {
+        const test = new EBModelTest({
+            dataSource: {
+                name: "sequence_classification",
+                type: "mongo",
+                database: {
+                    uri: "mongodb://localhost:27017/electric_brain_testing",
+                    collection: "sequence_classification"
+                }
+            },
+            inputFields: ['.inputLetters.[].letter'],
+            outputFields: ['.outputFirstClassification', '.outputSecondClassification'],
             modelParameters: {
                 batchSize: 16,
                 testingBatchSize: 4,
