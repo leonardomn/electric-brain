@@ -29,8 +29,8 @@ const
     path = require('path'),
     testingData = require("../utilities/testing_data");
 
-// Give each test 5 minutes. This is because core machine learning tests can take a while.
-const testTimeout = 5 * 60 * 1000;
+// Give each test 15 minutes. This is because core machine learning tests can take a while.
+const testTimeout = 15 * 60 * 1000;
 
 describe("End to end tests", function()
 {
