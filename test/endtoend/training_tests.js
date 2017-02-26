@@ -86,7 +86,7 @@ describe("End to end tests", function()
             modelParameters: {
                 batchSize: 16,
                 testingBatchSize: 4,
-                iterations: 100
+                iterations: 200
             },
             results: {minimumAccuracy: 1.0}
         });
@@ -111,7 +111,7 @@ describe("End to end tests", function()
             modelParameters: {
                 batchSize: 16,
                 testingBatchSize: 4,
-                iterations: 100
+                iterations: 200
             },
             results: {minimumAccuracy: 1.0}
         });
@@ -136,7 +136,7 @@ describe("End to end tests", function()
             modelParameters: {
                 batchSize: 16,
                 testingBatchSize: 4,
-                iterations: 400
+                iterations: 500
             },
             results: {minimumAccuracy: 1.0}
         });
@@ -161,7 +161,7 @@ describe("End to end tests", function()
             modelParameters: {
                 batchSize: 16,
                 testingBatchSize: 4,
-                iterations: 400
+                iterations: 500
             },
             results: {minimumAccuracy: 1.0}
         });
@@ -186,7 +186,7 @@ describe("End to end tests", function()
             modelParameters: {
                 batchSize: 16,
                 testingBatchSize: 4,
-                iterations: 350
+                iterations: 500
             },
             results: {minimumAccuracy: 1.0}
         });
@@ -211,7 +211,7 @@ describe("End to end tests", function()
             modelParameters: {
                 batchSize: 16,
                 testingBatchSize: 4,
-                iterations: 450
+                iterations: 500
             },
             results: {minimumAccuracy: 1.0}
         });
