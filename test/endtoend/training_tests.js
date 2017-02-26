@@ -261,7 +261,7 @@ describe("End to end tests", function()
                 testingBatchSize: 4,
                 iterations: 1500
             },
-            results: {minimumAccuracy: 85}
+            results: {minimumAccuracy: 80}
         });
 
         return testingData.generateNumberPredictionFromClassificationDataset().then(() =>
