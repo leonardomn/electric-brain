@@ -18,8 +18,9 @@
 
 "use strict";
 
-const assert = require('assert'),
-    validatorUtilities = require("../utilities/validator"),
+const
+    Ajv = require('ajv'),
+    assert = require('assert'),
     underscore = require('underscore');
 
 /**
@@ -35,15 +36,7 @@ class EBTensorSchema
      */
     constructor(rawTensorSchema)
     {
-        validatorUtilities.getJSONValidator(EBTensorSchema.schema()).then((validationFunction) =>
-        {
-            const result = validationFunction(rawTensorSchema);
-            if (!result)
-            {
-                console.log(validationFunction.errors);
-            }
-            assert(!result);
-        });
+        assert.deepEqual([], EBTensorSchema.validate(rawTensorSchema));
 
         assert(rawTensorSchema.type);
         assert(!underscore.isUndefined(rawTensorSchema.variableName));
@@ -177,7 +170,7 @@ class EBTensorSchema
             const subFunctionName = `${name}_localizeItems`;
             const subFunctionCode = this.items.generateLocalizeFunction(subFunctionName);
             code += `    ${subFunctionCode.replace(/\n/g, "\n    ")}`;
-            code += `    for n=1,#value do`;
+            code += `    for n=1,#value[2] do`;
             code += `       value[n] = ${subFunctionName}(value[n])\n`;
             code += `    end\n`;
             code += `    return value\n`;
@@ -265,11 +258,51 @@ class EBTensorSchema
                 },
                 "items": {"$ref": "#"},
                 "properties": {
-                    "type": "array",
                     "items": {"$ref": "#"}
                 }
             }
         };
+    }
+
+
+    /**
+     * Returns a validation function for EBTensorSchema
+     *
+     * @returns {function} An AJV validation function
+     */
+    static validator()
+    {
+        if (!EBTensorSchema._validationFunction)
+        {
+            const ajv = new Ajv({
+                "allErrors": true
+            });
+
+            EBTensorSchema._validationFunction = ajv.compile(EBTensorSchema.schema());
+        }
+
+        return EBTensorSchema._validationFunction;
+    }
+
+
+    /**
+     * This method validates the given object. Returns an array with the errors
+     *
+     * @param {object} object The object to be validated
+     * @returns {[object]} An array containing any detected errors. Will be empty if the object is valid.
+     */
+    static validate(object)
+    {
+        const validationFunction = EBTensorSchema.validator();
+        const valid = validationFunction(object);
+        if (valid)
+        {
+            return [];
+        }
+        else
+        {
+            return validationFunction.errors;
+        }
     }
 }
 

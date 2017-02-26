@@ -193,19 +193,6 @@ class EBTrainModelTask {
         });
     }
 
-
-    /**
-     * This function schedules an update to be sent to the frontend
-     *
-     * @param {string} stepName The name of the step being updated. Should be the same as the the field names in EBModel
-     * @param {object} result An object with the results
-     * @return {Promise} Resolves a promise after the process is started and ready to receive commands
-     */
-    updateFrontend()
-    {
-
-    }
-
     /**
      * This function updates the current results for a given step
      *

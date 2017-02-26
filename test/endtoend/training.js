@@ -93,4 +93,54 @@ describe.only("End to end tests", function()
 
         return test.run(application);
     });
+
+
+    it("Should be able to train a model using the dual-copy-value data-set.", () =>
+    {
+        const test = new EBModelTest({
+            dataSource: {
+                name: "dual_copy_value",
+                type: "mongo",
+                database: {
+                    uri: "mongodb://localhost:27017/electric_brain_testing",
+                    collection: "dual_copy_value"
+                }
+            },
+            inputFields: ['.inputLetter', '.inputStatus'],
+            outputFields: ['.outputLetter', '.outputStatus'],
+            modelParameters: {
+                batchSize: 16,
+                testingBatchSize: 4,
+                iterations: 100
+            },
+            results: {minimumAccuracy: 1.0}
+        });
+
+        return test.run(application);
+    });
+
+
+    it("Should be able to train a model using the sequence-copy data set", () =>
+    {
+        const test = new EBModelTest({
+            dataSource: {
+                name: "sequence_copy",
+                type: "mongo",
+                database: {
+                    uri: "mongodb://localhost:27017/electric_brain_testing",
+                    collection: "sequence_copy"
+                }
+            },
+            inputFields: ['.letters.[].inputLetter'],
+            outputFields: ['.letters.[].outputLetter'],
+            modelParameters: {
+                batchSize: 16,
+                testingBatchSize: 4,
+                iterations: 400
+            },
+            results: {minimumAccuracy: 1.0}
+        });
+
+        return test.run(application);
+    });
 });

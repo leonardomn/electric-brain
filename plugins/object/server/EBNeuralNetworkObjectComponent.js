@@ -207,11 +207,7 @@ class EBNeuralNetworkObjectComponent extends EBNeuralNetworkComponentBase
         let children = schema.children;
 
         code += `local ${name} = function (input)\n`;
-        code += `    local entries = input[1]:size()[1]\n`;
         code += `    local samples = {}\n`;
-        code += `    for s=1,entries do\n`;
-        code += `        samples[s] = {}\n`;
-        code += `    end\n`;
         code += `    local decomposed = {}\n`;
 
         let tablePosition = 1;
@@ -221,12 +217,15 @@ class EBNeuralNetworkObjectComponent extends EBNeuralNetworkComponentBase
         {
             const subFunctionName = `unwindBatch_${subSchema.machineVariablePath}`;
             let subSchemaCode = this.neuralNetworkComponentDispatch.generateUnwindBatchCode(subSchema, subFunctionName);
-            subSchemaCode = `        ${subSchemaCode.replace(/\n/g, "\n        ")}`;
+            subSchemaCode = `    ${subSchemaCode.replace(/\n/g, "\n    ")}`;
             code += subSchemaCode;
 
             code += `decomposed[${tablePosition}] = ${subFunctionName}(input[${tablePosition}])\n`;
 
-            code += `    for s=1,entries do\n`;
+            code += `    for s=1,#decomposed[${tablePosition}] do\n`;
+            code += `        if not samples[s] then\n`;
+            code += `            samples[s] = {}\n`;
+            code += `        end\n`;
             code += `        samples[s][${tablePosition}] = decomposed[${tablePosition}][s]\n`;
             code += `    end\n`;
 

@@ -90,7 +90,7 @@ class EBTorchCustomModule
                 allNodes.push(input);
 
                 // nodesToProcess.splice(nodesToProcess.indexOf(input), 1);
-                // nodesToProcess.push(input);
+                nodesToProcess.push(input);
             }
         };
         

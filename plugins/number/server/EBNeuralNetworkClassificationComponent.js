@@ -48,7 +48,22 @@ class EBNeuralNetworkClassificationComponent extends EBNeuralNetworkComponentBas
      */
     getTensorSchema(schema)
     {
-        return EBTensorSchema.generateDataTensorSchema(1, schema.variableName);
+        return new EBTensorSchema({
+            "type": "tensor",
+            "variableName": schema.variableName,
+            "tensorDimensions": [
+                {
+                    "size": 1,
+                    "label": "batch"
+                }
+            ],
+            "tensorMap": {
+                [schema.variableName]: {
+                    "start": 1,
+                    "size": 1
+                }
+            }
+        });
     }
 
 
@@ -99,9 +114,22 @@ class EBNeuralNetworkClassificationComponent extends EBNeuralNetworkComponentBas
         let code = '';
 
         code += `local ${name} = function (input)\n`;
-        code += `    local batch = torch.zeros(#input)\n`;
+        code += `    local batch\n`;
+        code += `    local expandedFound = false\n`;
         code += `    for k,v in pairs(input) do\n`;
-        code += `        batch:narrow(1, k, 1):copy(input[k])\n`;
+        code += `       if input[k]:dim() == 2 then\n`;
+        code += `           expandedFound = true\n`;
+        code += `       end\n`;
+        code += `    end\n`;
+        code += `    if not expandedFound then\n`;
+        code += `       batch = torch.zeros(#input)\n`;
+        code += `    else\n`;
+        code += `       batch = torch.zeros(#input, ${schema.enum.length})\n`;
+        code += `    end\n`;
+        code += `    for k,v in pairs(input) do\n`;
+        code += `        if input[k]:sum() ~= 0 then\n`;
+        code += `           batch:narrow(1, k, 1):copy(input[k])\n`;
+        code += `        end\n`;
         code += `    end\n`;
         code += `    return batch\n`;
         code += `end\n`;
