@@ -89,7 +89,7 @@ describe("End to end tests", function()
                 testingBatchSize: 4,
                 iterations: 200
             },
-            results: {minimumAccuracy: 1.0}
+            results: {minimumAccuracy: 100}
         });
 
         return testingData.generateCopyTestingDataSet().then(() =>
@@ -117,7 +117,7 @@ describe("End to end tests", function()
                 testingBatchSize: 4,
                 iterations: 200
             },
-            results: {minimumAccuracy: 1.0}
+            results: {minimumAccuracy: 100}
         });
 
 
@@ -146,7 +146,7 @@ describe("End to end tests", function()
                 testingBatchSize: 4,
                 iterations: 500
             },
-            results: {minimumAccuracy: 1.0}
+            results: {minimumAccuracy: 100}
         });
 
         return testingData.generateSequenceCopyTestingDataSet().then(() =>
@@ -174,7 +174,7 @@ describe("End to end tests", function()
                 testingBatchSize: 4,
                 iterations: 500
             },
-            results: {minimumAccuracy: 1.0}
+            results: {minimumAccuracy: 100}
         });
 
         return testingData.generateSequenceDualCopyTestingDataSet().then(() =>
@@ -202,7 +202,7 @@ describe("End to end tests", function()
                 testingBatchSize: 4,
                 iterations: 500
             },
-            results: {minimumAccuracy: 1.0}
+            results: {minimumAccuracy: 100}
         });
 
         return testingData.generateSequenceIdentificationTestingDataSet().then(() =>
@@ -230,7 +230,7 @@ describe("End to end tests", function()
                 testingBatchSize: 4,
                 iterations: 500
             },
-            results: {minimumAccuracy: 1.0}
+            results: {minimumAccuracy: 100}
         });
 
         return testingData.generateSequenceClassificationTestingDataSet().then(() =>
@@ -258,7 +258,7 @@ describe("End to end tests", function()
                 testingBatchSize: 4,
                 iterations: 1500
             },
-            results: {minimumAccuracy: 0.85}
+            results: {minimumAccuracy: 85}
         });
 
         return testingData.generateNumberPredictionFromClassificationDataset().then(() =>
@@ -286,7 +286,7 @@ describe("End to end tests", function()
                 testingBatchSize: 4,
                 iterations: 1500
             },
-            results: {minimumAccuracy: 0.90}
+            results: {minimumAccuracy: 90}
         });
 
         return testingData.generateNumberMathematicsDataset().then(() =>
@@ -314,7 +314,7 @@ describe("End to end tests", function()
                 testingBatchSize: 4,
                 iterations: 1000
             },
-            results: {minimumAccuracy: 1.00}
+            results: {minimumAccuracy: 100}
         });
 
         return testingData.generateNumberClassificationDataset().then(() =>
