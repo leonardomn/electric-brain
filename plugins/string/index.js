@@ -26,6 +26,9 @@ module.exports = {
     "name": "string",
     "folder": __dirname,
     "dataSources": {},
-    "interpretations": {'string': EBStringInterpretation}
+    "interpretations": {'string': EBStringInterpretation},
+    "neuralNetworkComponents": {
+        'string': EBNeuralNetworkStringComponent
+    }
 };
 

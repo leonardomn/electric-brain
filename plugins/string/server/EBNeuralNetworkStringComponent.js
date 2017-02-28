@@ -18,78 +18,23 @@
 
 "use strict";
 
-const Promise = require('bluebird'),
+const EBNeuralNetworkComponentBase = require('../../../shared/components/architecture/EBNeuralNetworkComponentBase'),
+    EBTorchModule = require('../../../shared/models/EBTorchModule'),
+    EBTorchNode = require('../../../shared/models/EBTorchNode'),
+    EBTensorSchema = require('../../../shared/models/EBTensorSchema'),
     underscore = require('underscore');
 
 /**
- *  This is registers all of the available EBDataSourcePlugins and will dispatch the methods
- *  to the appropriate plugin depending on the type of data source.
+ * This is a base class for various neural network components
  */
-class EBNeuralNetworkComponentDispatch
+class EBNeuralNetworkStringComponent extends EBNeuralNetworkComponentBase
 {
     /**
-     * Creates an EBNeuralNetworkComponentDispatch object.
+     * Constructor
      */
-    constructor()
+    constructor(neuralNetworkComponentDispatch)
     {
-        this.plugins = {};
-    }
-
-    /**
-     * This method returns a list of all neural network components
-     *
-     * @return {[EBNeuralNetworkComponentBase]} Returns all of the neural network components
-     */
-    getSupportedDataSources(type, plugin)
-    {
-        return underscore.values(this.plugins);
-    }
-
-    /**
-     * This method registers a plugin with the dispatch.
-     *
-     * @param {string} type The machine name of the data source type
-     * @param {EBDataSourcePlugin} plugin The plugin to be registered.
-     */
-    registerPlugin(type, plugin)
-    {
-        this.plugins[type] = plugin;
-    }
-
-
-    /**
-     * This method gets the correct neural network plugin for the given EBSchema
-     */
-    getPluginForSchema(schema)
-    {
-        if (schema.isObject)
-        {
-            return this.plugins['object'];
-        }
-        else if (schema.isArray)
-        {
-            return this.plugins['sequence'];
-        }
-        else if (schema.enum)
-        {
-            return this.plugins['classification'];
-        }
-        else if (schema.isNumber)
-        {
-            return this.plugins['number'];
-        }
-        else if (schema.isString)
-        {
-            return this.plugins['string'];
-        }
-        else if (schema.metadata.mainInterpretation === 'image')
-        {
-            return this.plugins['image'];
-        }
-        else
-        {
-            throw new Error(`Unknown plugin for EBSchema: ${schema.toString()}`);
-        }
+        super(neuralNetworkComponentDispatch);
     }
 
 
@@ -101,48 +46,27 @@ class EBNeuralNetworkComponentDispatch
      */
     getTensorSchema(schema)
     {
-        return this.getPluginForSchema(schema).getTensorSchema(schema);
-    }
-
-
-    /**
-     * Method returns the size of the fixed input tensor for a given schema
-     *
-     * @param {EBSchema} schema The schema to get the tensor size of
-     * @returns {number} The size of the tensor
-     */
-    getInputTensorSize(schema)
-    {
-        return this.getPluginForSchema(schema).getInputTensorSize(schema);
-    }
-
-
-    /**
-     * Method returns the size of the table outputs for the given schema
-     *
-     * @param {EBSchema} schema The schema to get the table size of
-     * @returns {number} The size of the table
-     */
-    getInputTableSize(schema)
-    {
-        return this.getPluginForSchema(schema).getInputTableSize(schema);
+        return EBTensorSchema.generateDataTensorSchema(1, schema.variableName);
     }
 
 
     /**
      * Method generates Lua code to create a tensor from the JSON of this variable
      *
-     * @param {EBSchema} schema The schema to generate this conversion code for.
-     * @param {string} name The name of the lua function to be generated.
+     * @param {EBSchema} schema The schema to generate this conversion code for
+     * @param {string} name The name of the Lua function to be generated
      */
     generateTensorInputCode(schema, name)
     {
-        if (!name)
-        {
-            name = 'generateTensor';
-        }
-        return this.getPluginForSchema(schema).generateTensorInputCode(schema, name);
+        let code = '';
+        code += `local ${name} = function (input)\n`;
+        code += `    local result = torch.zeros(1, 1)\n`;
+        code += `    result[1][1] = input\n`;
+        code += `    return result\n`;
+        code += `end\n`;
+        return code
     }
+
 
     /**
      * Method generates Lua code to turn a tensor back into a JSON
@@ -152,12 +76,13 @@ class EBNeuralNetworkComponentDispatch
      */
     generateTensorOutputCode(schema, name)
     {
-        if (!name)
-        {
-            name = 'generateJSON';
-        }
-        return this.getPluginForSchema(schema).generateTensorOutputCode(schema, name);
+        let code = '';
+        code += `local ${name} = function (input)\n`;
+        code += `    return input[1][1][1]\n`;
+        code += `end\n`;
+        return code;
     }
+
 
     /**
      * Method generates Lua code that can prepare a combined batch tensor from
@@ -168,12 +93,19 @@ class EBNeuralNetworkComponentDispatch
      */
     generatePrepareBatchCode(schema, name)
     {
-        if (!name)
-        {
-            name = 'prepareBatch';
-        }
-        return this.getPluginForSchema(schema).generatePrepareBatchCode(schema, name);
+        let code = '';
+
+        code += `local ${name} = function (input)\n`;
+        code += `    local batch = torch.zeros(#input,1)\n`;
+        code += `    for k,v in pairs(input) do\n`;
+        code += `        batch:narrow(1, k, 1):copy(input[k])\n`;
+        code += `    end\n`;
+        code += `    return batch\n`;
+        code += `end\n`;
+
+        return code;
     }
+
 
     /**
      * Method generates Lua code that can takes a batch and breaks it apart
@@ -184,11 +116,17 @@ class EBNeuralNetworkComponentDispatch
      */
     generateUnwindBatchCode(schema, name)
     {
-        if (!name)
-        {
-            name = 'unwindBatch';
-        }
-        return this.getPluginForSchema(schema).generateUnwindBatchCode(schema, name);
+        let code = '';
+
+        code += `local ${name} = function (input)\n`;
+        code += `    local samples = {}\n`;
+        code += `    for k=1,input:size()[1] do\n`;
+        code += `        table.insert(samples, input:narrow(1, k, 1))\n`;
+        code += `    end\n`;
+        code += `    return samples\n`;
+        code += `end\n`;
+
+        return code;
     }
 
 
@@ -206,7 +144,11 @@ class EBNeuralNetworkComponentDispatch
      */
     generateInputStack(schema, inputNode)
     {
-        return this.getPluginForSchema(schema).generateInputStack(schema, inputNode);
+        return {
+            outputNode: new EBTorchNode(new EBTorchModule("nn.Identity"), inputNode, `${schema.variableName}_inputStack`),
+            outputTensorSchema: this.getTensorSchema(schema),
+            additionalModules: []
+        };
     }
 
 
@@ -225,7 +167,34 @@ class EBNeuralNetworkComponentDispatch
      */
     generateOutputStack(outputSchema, inputNode, inputTensorSchema)
     {
-        return this.getPluginForSchema(outputSchema).generateOutputStack(outputSchema, inputNode, inputTensorSchema);
+        // Variable name for this piece
+        const variableName = outputSchema.variableName;
+
+        // Get the tensor-schema for the output
+        const outputTensorSchema = this.getTensorSchema(inputTensorSchema);
+
+        // Create a summary module for the input tensor
+        const summaryModule = this.createSummaryModule(inputTensorSchema);
+
+        // Calculate the middle layer size as half way between input and output size
+        const middleLayerSize = Math.min(1500, Math.max(summaryModule.tensorSchema.tensorSize / 2, 100));
+
+        // Create the node in the graph for the summary module
+        const summaryNode = new EBTorchNode(summaryModule.module, inputNode, `${variableName}_summaryNode`);
+
+        const linearUnit = new EBTorchNode(new EBTorchModule("nn.Sequential", [], [
+            new EBTorchModule("nn.Linear", [summaryModule.tensorSchema.tensorSize, middleLayerSize]),
+            new EBTorchModule("nn.Tanh", []),
+            new EBTorchModule("nn.Linear", [middleLayerSize, middleLayerSize]),
+            new EBTorchModule("nn.Tanh", []),
+            new EBTorchModule("nn.Linear", [middleLayerSize, outputTensorSchema.tensorSize])
+        ]), summaryNode, `${variableName}_linearUnit`);
+
+        return {
+            outputNode: linearUnit,
+            outputTensorSchema: outputTensorSchema,
+            additionalModules: []
+        };
     }
 
 
@@ -240,8 +209,9 @@ class EBNeuralNetworkComponentDispatch
      */
     generateCriterion(outputSchema)
     {
-        return this.getPluginForSchema(outputSchema).generateCriterion(outputSchema);
+        // Create MSE module
+        return new EBTorchModule("nn.MSECriterion");
     }
 }
 
-module.exports = EBNeuralNetworkComponentDispatch;
+module.exports = EBNeuralNetworkStringComponent;
