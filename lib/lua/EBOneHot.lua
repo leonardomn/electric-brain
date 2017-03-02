@@ -24,10 +24,13 @@ function EBOneHot:updateOutput(input)
     self.outputTensor:resize(batchSize, self.outputSize)
     self.outputTensor:zero()
 
+    -- Remove the bottom dimension, if it exists
+    local baseInput = input:view(batchSize)
+
     -- Go through each item in the batch, set the one-hot
     -- value
     for n=1,batchSize do
-        local value = input[n]
+        local value = baseInput[n]
         if value > 0 then
             self.outputTensor[n][value] = 1
         end

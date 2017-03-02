@@ -52,6 +52,7 @@ angular.module('eb').controller('EBDataSourceSelectFieldsController', function E
             const promise = EBDataSourceService.createDataSource($scope.dataSource).then(function success(body)
             {
                 EBNavigationBarService.refreshNavigationBar();
+                return body;
             });
             return promise;
         }

@@ -72,7 +72,10 @@ class EBApplication
             const pluginNames = fs.readdirSync(directory);
             pluginNames.forEach((pluginFilename) =>
             {
-                this.plugins.push(require(path.join(directory, pluginFilename)));
+                if (fs.statSync(path.join(directory, pluginFilename)).isDirectory())
+                {
+                    this.plugins.push(require(path.join(directory, pluginFilename)));
+                }
             });
         });
 

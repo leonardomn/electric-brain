@@ -1,6 +1,10 @@
 Electric Brain
 ==============
 
+## Build Status!
+
+[![Build status](https://badge.buildkite.com/afd4f697eb6e00f07f220fa46e2f73538ac814173bae159f26.svg?branch=master)](https://buildkite.com/electric-brain/electric-brain)
+
 ## Installation
 
 Thank you for downloading Electric Brain!

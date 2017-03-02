@@ -19,7 +19,11 @@
 "use strict";
 
 const async = require('async'),
+    fastCSV = require('fast-csv'),
+    fs = require('fs'),
     mongodb = require('mongodb'),
+    path = require('path'),
+    Promise = require('bluebird'),
     underscore = require('underscore');
 
 const testingSetMongoURI = "mongodb://localhost:27017/electric_brain_testing";
@@ -32,7 +36,7 @@ const testingSetMongoURI = "mongodb://localhost:27017/electric_brain_testing";
  */
 function getLettersEnumeration()
 {
-    return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'm'];
+    return ['letter_a', 'letter_b', 'letter_c', 'letter_d', 'letter_e', 'letter_f', 'letter_g', 'letter_h', 'letter_i', 'letter_j', 'letter_k', 'letter_m'];
 }
 
 
@@ -170,42 +174,83 @@ function getRandomString()
  *
  * @param {string} collectionName The name of the collection to save the objects in
  * @param {[object]} objects The array of objects to save
- * @param {function(err)} next The callback after the objects have been saved
+ *
+ * @returns {Promise} A promise that will resolve when the dataset is generated
  */
-function saveObjects(collectionName, objects, next)
+function saveObjects(collectionName, objects)
 {
-    mongodb.MongoClient.connect(testingSetMongoURI, function(connectError, db)
+    return Promise.fromCallback((next) =>
     {
-        if (connectError)
+        mongodb.MongoClient.connect(testingSetMongoURI, function(connectError, db)
         {
-            return next(connectError);
-        }
-
-        const collection = db.collection(collectionName);
-
-        collection.removeMany({}, function(err)
-        {
-            if (err)
+            if (connectError)
             {
-                return next(err);
+                return next(connectError);
             }
 
-            // Deep clone each object
-            const cloned = objects.map(function(object)
-            {
-                return underscore.clone(object);
-            });
+            const collection = db.collection(collectionName);
 
-            collection.insertMany(cloned, function(err)
+            collection.removeMany({}, function(err)
             {
                 if (err)
                 {
                     return next(err);
                 }
 
-                return next();
+                // Deep clone each object
+                const cloned = objects.map(function(object)
+                {
+                    return underscore.clone(object);
+                });
+
+                collection.insertMany(cloned, function(err)
+                {
+                    if (err)
+                    {
+                        return next(err);
+                    }
+
+                    return next();
+                });
             });
         });
+    });
+}
+
+/**
+ * This is a convenience method for the below functions which takes their dataset and saves
+ * it to a CSV file.
+ *
+ * @param {string} fileName The filename of the CSV file to write to.
+ * @param {[object]} objects The array of objects to save
+ *
+ * @returns {Promise} A promise that will resolve when the dataset is generated
+ */
+function saveObjectsToCSV(fileName, objects)
+{
+    return new Promise((resolve, reject) =>
+    {
+        const csvStream = fastCSV.createWriteStream({headers: true}),
+            writableStream = fs.createWriteStream(fileName);
+
+        writableStream.on("finish", function()
+        {
+            resolve();
+        });
+
+        writableStream.on("error", function(err)
+        {
+            reject(err);
+        });
+
+        csvStream.pipe(writableStream);
+
+        objects.forEach((object) =>
+        {
+            csvStream.write(object);
+        });
+
+        csvStream.end();
     });
 }
 
@@ -217,9 +262,9 @@ function saveObjects(collectionName, objects, next)
  *  with the same fixed input and output. The network simply has to learn
  *  to copy its input to its output.
  *
- *  @param {function(err)} next The callback after the data set has been generated
+ *  @returns {Promise} A promise that will resolve when the dataset is generated
  */
-module.exports.generateCopyTestingDataSet = function generateCopyTestingDataSet(next)
+module.exports.generateCopyTestingDataSet = function generateCopyTestingDataSet()
 {
     const objects = [];
     for (let objectIndex = 0; objectIndex < 1000; objectIndex += 1)
@@ -234,7 +279,10 @@ module.exports.generateCopyTestingDataSet = function generateCopyTestingDataSet(
         objects.push(object);
     }
 
-    saveObjects("copy_value", objects, next);
+    return saveObjects("copy_value", objects).then(() =>
+    {
+        return saveObjectsToCSV(path.join(__dirname, "..", "data", "copy_value.csv"), objects);
+    });
 };
 
 
@@ -244,9 +292,9 @@ module.exports.generateCopyTestingDataSet = function generateCopyTestingDataSet(
  *  This is similar to the copy data set, except that there are two
  *  classifications that it needs to copy
  *
- *  @param {function(err)} next The callback after the data set has been generated
+ *  @returns {Promise} A promise that will resolve when the dataset is generated
  */
-module.exports.generateDualCopyTestingDataSet = function generateDualCopyTestingDataSet(next)
+module.exports.generateDualCopyTestingDataSet = function generateDualCopyTestingDataSet()
 {
     const objects = [];
     for (let objectIndex = 0; objectIndex < 1000; objectIndex += 1)
@@ -263,8 +311,11 @@ module.exports.generateDualCopyTestingDataSet = function generateDualCopyTesting
 
         objects.push(object);
     }
-
-    saveObjects("dual_copy_value", objects, next);
+    
+    return saveObjects("dual_copy_value", objects).then(() =>
+    {
+        return saveObjectsToCSV(path.join(__dirname, "..", "data", "dual_copy_value.csv"), objects);
+    });
 };
 
 
@@ -274,9 +325,9 @@ module.exports.generateDualCopyTestingDataSet = function generateDualCopyTesting
  *  This data set requires the network to copy values from input
  *  to output within a sequence.
  *
- *  @param {function(err)} next The callback after the data set has been generated
+ *  @returns {Promise} A promise that will resolve when the dataset is generated
  */
-module.exports.generateSequenceCopyTestingDataSet = function generateSequenceCopyTestingDataSet(next)
+module.exports.generateSequenceCopyTestingDataSet = function generateSequenceCopyTestingDataSet()
 {
     const objects = [];
     for (let objectIndex = 0; objectIndex < 1000; objectIndex += 1)
@@ -294,7 +345,7 @@ module.exports.generateSequenceCopyTestingDataSet = function generateSequenceCop
         objects.push(object);
     }
 
-    saveObjects("sequence_copy", objects, next);
+    return saveObjects("sequence_copy", objects);
 };
 
 
@@ -304,9 +355,9 @@ module.exports.generateSequenceCopyTestingDataSet = function generateSequenceCop
  *  This data set requires the network to copy two different values from input
  *  to output within a sequence.
  *
- *  @param {function(err)} next The callback after the data set has been generated
+ *  @returns {Promise} A promise that will resolve when the dataset is generated
  */
-module.exports.generateSequenceDualCopyTestingDataSet = function generateSequenceDualCopyTestingDataSet(next)
+module.exports.generateSequenceDualCopyTestingDataSet = function generateSequenceDualCopyTestingDataSet()
 {
     const objects = [];
     for (let objectIndex = 0; objectIndex < 1000; objectIndex += 1)
@@ -326,7 +377,7 @@ module.exports.generateSequenceDualCopyTestingDataSet = function generateSequenc
         objects.push(object);
     }
 
-    saveObjects("sequence_dual_copy", objects, next);
+    return saveObjects("sequence_dual_copy", objects);
 };
 
 
@@ -337,13 +388,13 @@ module.exports.generateSequenceDualCopyTestingDataSet = function generateSequenc
  *  fixed list of sequences. The network just has to memorize them and learn to
  *  identify which sequence it is.
  *
- *  @param {function(err)} next The callback after the data set has been generated
+ *  @returns {Promise} A promise that will resolve when the dataset is generated
  */
-module.exports.generateSequenceIdentificationTestingDataSet = function generateSequenceIdentificationTestingDataSet(next)
+module.exports.generateSequenceIdentificationTestingDataSet = function generateSequenceIdentificationTestingDataSet()
 {
     const enumerationSequences = [];
     // Generate several random sequences
-    for (let sequenceIndex = 0; sequenceIndex < 100; sequenceIndex += 1)
+    for (let sequenceIndex = 0; sequenceIndex < 10; sequenceIndex += 1)
     {
         enumerationSequences.push(getRandomLetterSequence());
     }
@@ -356,12 +407,12 @@ module.exports.generateSequenceIdentificationTestingDataSet = function generateS
 
         const object = {
             inputLetters: enumerationSequences[sequenceIndex],
-            outputIdentity: sequenceIndex.toString()
+            outputIdentity: `sequence_${sequenceIndex.toString()}`
         };
         objects.push(object);
     }
 
-    saveObjects("sequence_identification", objects, next);
+    return saveObjects("sequence_identification", objects);
 };
 
 
@@ -373,20 +424,55 @@ module.exports.generateSequenceIdentificationTestingDataSet = function generateS
  *  identifying the sequence, it has to produce two randomly assigned classes.
  *  It still requires memorizing the input sequences.
  *
- *  @param {function(err)} next The callback after the data set has been generated
+ *  @returns {Promise} A promise that will resolve when the dataset is generated
  */
-module.exports.generateSequenceClassificationTestingDataSet = function generateSequenceClassificationTestingDataSet(next)
+module.exports.generateSequenceClassificationTestingDataSet = function generateSequenceClassificationTestingDataSet()
 {
     const enumerationSequences = [];
     const numberClasses = 10;
     const numberSequences = 15;
+
+
+
+    const firstClasses = [
+        'class_a',
+        'class_b',
+        'class_c',
+        'class_d',
+        'class_e',
+        'class_f',
+        'class_g',
+        'class_h',
+        'class_i',
+        'class_j',
+        'class_k',
+        'class_l',
+        'class_m'
+    ];
+
+    const secondClasses = [
+        'class_n',
+        'class_o',
+        'class_p',
+        'class_q',
+        'class_r',
+        'class_s',
+        'class_t',
+        'class_u',
+        'class_v',
+        'class_w',
+        'class_x',
+        'class_y',
+        'class_z'
+    ];
+
     // Generate several random sequences
     for (let sequenceIndex = 0; sequenceIndex < numberSequences; sequenceIndex += 1)
     {
         enumerationSequences.push({
             inputLetters: getRandomLetterSequence(),
-            outputFirstClassification: Math.floor((Math.random() * numberClasses) + 1).toString(),
-            outputSecondClassification: Math.floor((Math.random() * numberClasses) + 1).toString()
+            outputFirstClassification: firstClasses[Math.floor((Math.random() * numberClasses) + 1)].toString(),
+            outputSecondClassification: secondClasses[Math.floor((Math.random() * numberClasses) + 1)].toString()
         });
     }
 
@@ -398,7 +484,7 @@ module.exports.generateSequenceClassificationTestingDataSet = function generateS
         objects.push(enumerationSequences[sequenceIndex]);
     }
 
-    saveObjects("sequence_classification", objects, next);
+    return saveObjects("sequence_classification", objects);
 };
 
 
@@ -408,9 +494,9 @@ module.exports.generateSequenceClassificationTestingDataSet = function generateS
  *  This data set requires the network to copy values in a layered
  *  sequence - a sequence of sequences.
  *
- *  @param {function(err)} next The callback after the data set has been generated
+ *  @returns {Promise} A promise that will resolve when the dataset is generated
  */
-module.exports.generateLayeredSequenceCopyTestingDataSet = function generateLayeredSequenceCopyTestingDataSet(next)
+module.exports.generateLayeredSequenceCopyTestingDataSet = function generateLayeredSequenceCopyTestingDataSet()
 {
     const objects = [];
     for (let objectIndex = 0; objectIndex < 1000; objectIndex += 1)
@@ -433,7 +519,7 @@ module.exports.generateLayeredSequenceCopyTestingDataSet = function generateLaye
         objects.push(object);
     }
 
-    saveObjects("layered_sequence_copy", objects, next);
+    return saveObjects("layered_sequence_copy", objects);
 };
 
 
@@ -443,9 +529,9 @@ module.exports.generateLayeredSequenceCopyTestingDataSet = function generateLaye
  *  This data set requires the network to memorize and identify
  *  layered sequences, which are just sequences of sequences
  *
- *  @param {function(err)} next The callback after the data set has been generated
+ *  @returns {Promise} A promise that will resolve when the dataset is generated
  */
-module.exports.generateLayeredSequenceIdentificationTestingDataSet = function generateLayeredSequenceIdentificationTestingDataSet(next)
+module.exports.generateLayeredSequenceIdentificationTestingDataSet = function generateLayeredSequenceIdentificationTestingDataSet()
 {
     const enumerationSequences = [];
     // Generate several random sequences
@@ -467,7 +553,7 @@ module.exports.generateLayeredSequenceIdentificationTestingDataSet = function ge
         objects.push(object);
     }
 
-    saveObjects("layered_sequence_identification", objects, next);
+    return saveObjects("layered_sequence_identification", objects);
 };
 
 
@@ -480,20 +566,54 @@ module.exports.generateLayeredSequenceIdentificationTestingDataSet = function ge
  *  instead of asking the network to identify the sequence outright,
  *  it has to be able to learn a couple of arbitrarily defined classes
  *
- *  @param {function(err)} next The callback after the data set has been generated
+ *  @returns {Promise} A promise that will resolve when the dataset is generated
  */
-module.exports.generateLayeredSequenceClassificationTestingDataSet = function generateLayeredSequenceClassificationTestingDataSet(next)
+module.exports.generateLayeredSequenceClassificationTestingDataSet = function generateLayeredSequenceClassificationTestingDataSet()
 {
     const enumerationSequences = [];
     const numberClasses = 10;
     const numberSequences = 100;
+
+    const firstClasses = [
+        'class_a',
+        'class_b',
+        'class_c',
+        'class_d',
+        'class_e',
+        'class_f',
+        'class_g',
+        'class_h',
+        'class_i',
+        'class_j',
+        'class_k',
+        'class_l',
+        'class_m'
+    ];
+
+    const secondClasses = [
+        'class_n',
+        'class_o',
+        'class_p',
+        'class_q',
+        'class_r',
+        'class_s',
+        'class_t',
+        'class_u',
+        'class_v',
+        'class_w',
+        'class_x',
+        'class_y',
+        'class_z'
+    ];
+
+
     // Generate several random sequences
     for (let sequenceIndex = 0; sequenceIndex < numberSequences; sequenceIndex += 1)
     {
         enumerationSequences.push({
             inputLetters: getRandomLayeredSequence(),
-            outputFirstClassification: Math.floor((Math.random() * numberClasses) + 1).toString(),
-            outputSecondClassification: Math.floor((Math.random() * numberClasses) + 1).toString()
+            outputFirstClassification: firstClasses[Math.floor((Math.random() * numberClasses) + 1)],
+            outputSecondClassification: secondClasses[Math.floor((Math.random() * numberClasses) + 1)]
         });
     }
 
@@ -505,7 +625,7 @@ module.exports.generateLayeredSequenceClassificationTestingDataSet = function ge
         objects.push(enumerationSequences[sequenceIndex]);
     }
 
-    saveObjects("layered_sequence_classification", objects, next);
+    return saveObjects("layered_sequence_classification", objects);
 };
 
 
@@ -516,12 +636,12 @@ module.exports.generateLayeredSequenceClassificationTestingDataSet = function ge
  *  a layered sequence - it uses the output of the inner sequence to
  *  help it identify classes on the outer sequence.
  *
- *  @param {function(err)} next The callback after the data set has been generated
+ *  @returns {Promise} A promise that will resolve when the dataset is generated
  */
-module.exports.generateInnerSequenceClassificationTestingDataSet = function generateInnerSequenceClassificationTestingDataSet(next)
+module.exports.generateInnerSequenceClassificationTestingDataSet = function generateInnerSequenceClassificationTestingDataSet()
 {
     const enumerationSequences = [];
-    const numberSequences = 100;
+    const numberSequences = 10;
     // Generate several random sequences
     for (let sequenceIndex = 0; sequenceIndex < numberSequences; sequenceIndex += 1)
     {
@@ -546,7 +666,7 @@ module.exports.generateInnerSequenceClassificationTestingDataSet = function gene
         objects.push({sequence: outerSequence});
     }
 
-    saveObjects("inner_sequence_classification", objects, next);
+    return saveObjects("inner_sequence_classification", objects);
 };
 
 
@@ -555,9 +675,9 @@ module.exports.generateInnerSequenceClassificationTestingDataSet = function gene
  *
  *  This data set is used to test the histogram functionality for numbers
  *
- *  @param {function(err)} next The callback after the data set has been generated
+ *  @returns {Promise} A promise that will resolve when the dataset is generated
  */
-module.exports.generateNumberHistogramDataset = function generateNumberHistogramDataset(next)
+module.exports.generateNumberHistogramDataset = function generateNumberHistogramDataset()
 {
     const objects = [];
     for (let objectIndex = 0; objectIndex < 1000; objectIndex += 1)
@@ -574,7 +694,10 @@ module.exports.generateNumberHistogramDataset = function generateNumberHistogram
         objects.push(object);
     }
 
-    saveObjects("number_histogram", objects, next);
+    return saveObjects("number_histogram", objects).then(() =>
+    {
+        return saveObjectsToCSV(path.join(__dirname, "..", "data", "number_histogram.csv"), objects);
+    });
 };
 
 
@@ -584,9 +707,9 @@ module.exports.generateNumberHistogramDataset = function generateNumberHistogram
  *  This data set requires the network to identify a string. Essentially the same as sequence
  *  identification, except that the prepossessing is different
  *
- *  @param {function(err)} next The callback after the data set has been generated
+ *  @returns {Promise} A promise that will resolve when the dataset is generated
  */
-module.exports.generateStringIdentificationSequence = function generateStringIdentificationSequence(next)
+module.exports.generateStringIdentificationSequence = function generateStringIdentificationSequence()
 {
     const enumerationStrings = [];
     // Generate several random strings
@@ -608,5 +731,143 @@ module.exports.generateStringIdentificationSequence = function generateStringIde
         objects.push(object);
     }
 
-    saveObjects("text_identification", objects, next);
+    return saveObjects("text_identification", objects);
 };
+
+
+
+/**
+ *  This method is used to generate a data set for testing purposes.
+ *
+ *  This data set is used to test the ability of the network to predict numbers as
+ *  outputs, based on classifications as inputs
+ *
+ *  @returns {Promise} A promise that will resolve when the dataset is generated
+ */
+module.exports.generateNumberPredictionFromClassificationDataset = function generateNumberPredictionFromClassificationDataset()
+{
+    // First, we have a bunch of classifications that are associated with some intrinsic number
+    const firstClassification = {
+        "first_a": 2,
+        "first_b": 3,
+        "first_c": 4,
+        "first_d": 5,
+        "first_e": 6,
+        "first_f": 7,
+        "first_g": 8,
+        "first_h": 9
+    };
+    const secondClassification = {
+        "second_a": 2,
+        "second_b": 3,
+        "second_c": 4,
+        "second_d": 5,
+        "second_e": 6,
+        "second_f": 7,
+        "second_g": 8,
+        "second_h": 9
+    };
+
+    const objects = [];
+    for (let objectIndex = 0; objectIndex < 10000; objectIndex += 1)
+    {
+        // For each object, we take one of the two classifications, and the network
+        // has to learn to predict their product
+        const firstClass = Object.keys(firstClassification)[Math.floor(Math.random() * Object.keys(firstClassification).length)];
+        const secondClass = Object.keys(secondClassification)[Math.floor(Math.random() * Object.keys(secondClassification).length)];
+
+        const object = {
+            first: firstClass,
+            second: secondClass,
+            result: firstClassification[firstClass] * secondClassification[secondClass]
+        };
+
+        objects.push(object);
+    }
+
+    return saveObjects("number_prediction_from_classification", objects).then(() =>
+    {
+        return saveObjectsToCSV(path.join(__dirname, "..", "data", "number_prediction_from_classification.csv"), objects);
+    });
+};
+
+
+
+
+/**
+ *  This method is used to generate a data set for testing purposes.
+ *
+ *  This data provides numbers as both inputs and outputs, expecting the network
+ *  to learn to do some basic mathematics on the numbers
+ *
+ *  @returns {Promise} A promise that will resolve when the data set is generated
+ */
+module.exports.generateNumberMathematicsDataset = function generateNumberMathematicsDataset()
+{
+    const objects = [];
+    for (let objectIndex = 0; objectIndex < 10000; objectIndex += 1)
+    {
+        // Generate three random numbers
+        const first = Math.floor(Math.random() * 20) + 2;
+        const second = Math.floor(Math.random() * 20) + 2;
+        const third = Math.floor(Math.random() * 20) + 2;
+
+        const object = {
+            first: first,
+            second: second,
+            third: third,
+            product1: first * second,
+            product2: first * third,
+            product3: second * third,
+            sum1: first + second,
+            sum2: first + third,
+            sum3: second + third
+        };
+
+        objects.push(object);
+    }
+
+    return saveObjects("number_mathematics", objects).then(() =>
+    {
+        return saveObjectsToCSV(path.join(__dirname, "..", "data", "number_mathematics.csv"), objects);
+    });
+};
+
+
+
+
+/**
+ *  This method is used to generate a data set for testing purposes.
+ *
+ *  This data provides numbers as inputs, and is expected to generate a classification
+ *  from those numbers
+ *
+ *  @returns {Promise} A promise that will resolve when the data set is generated
+ */
+module.exports.generateNumberClassificationDataset = function generateNumberClassificationDataset()
+{
+    const objects = [];
+    for (let objectIndex = 0; objectIndex < 10000; objectIndex += 1)
+    {
+        // Generate two random numbers
+        const first = Math.floor(Math.random() * 20) + 2;
+        const second = Math.floor(Math.random() * 20) + 2;
+        
+        // Create a classification based on their product
+        const classification = `class_${Math.floor((first * second) / 25) + 1}`;
+        
+        const object = {
+            first,
+            second,
+            classification
+        };
+
+        objects.push(object);
+    }
+
+    return saveObjects("number_classification", objects).then(() =>
+    {
+        return saveObjectsToCSV(path.join(__dirname, "..", "data", "number_classification.csv"), objects);
+    });
+};
+

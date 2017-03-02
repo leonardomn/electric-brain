@@ -18,9 +18,7 @@
 
 "use strict";
 
-const
-    async = require('async'),
-    testingData = require('../test/utilities/testing_data');
+const testingData = require('../test/utilities/testing_data');
 
 /**
  *  This script is used to quickly generate data for a bunch of different tests.
@@ -29,20 +27,43 @@ const
  */
 module.exports.generateData = function generateData(next)
 {
-    async.series([
-        testingData.generateCopyTestingDataSet,
-        testingData.generateDualCopyTestingDataSet,
-        testingData.generateSequenceCopyTestingDataSet,
-        testingData.generateSequenceDualCopyTestingDataSet,
-        testingData.generateSequenceIdentificationTestingDataSet,
-        testingData.generateSequenceClassificationTestingDataSet,
-        testingData.generateLayeredSequenceCopyTestingDataSet,
-        testingData.generateLayeredSequenceIdentificationTestingDataSet,
-        testingData.generateLayeredSequenceClassificationTestingDataSet,
-        testingData.generateInnerSequenceClassificationTestingDataSet,
-        testingData.generateNumberHistogramDataset,
-        testingData.generateStringIdentificationSequence
-    ], next);
+    testingData.generateCopyTestingDataSet().then(() =>
+    {
+        return testingData.generateDualCopyTestingDataSet();
+    }).then(() =>
+    {
+        return testingData.generateSequenceCopyTestingDataSet();
+    }).then(() =>
+    {
+        return testingData.generateSequenceDualCopyTestingDataSet();
+    }).then(() =>
+    {
+        return testingData.generateSequenceIdentificationTestingDataSet();
+    }).then(() =>
+    {
+        return testingData.generateSequenceClassificationTestingDataSet();
+    }).then(() =>
+    {
+        return testingData.generateLayeredSequenceCopyTestingDataSet();
+    }).then(() =>
+    {
+        return testingData.generateLayeredSequenceIdentificationTestingDataSet();
+    }).then(() =>
+    {
+        return testingData.generateLayeredSequenceClassificationTestingDataSet();
+    }).then(() =>
+    {
+        return testingData.generateInnerSequenceClassificationTestingDataSet();
+    }).then(() =>
+    {
+        return testingData.generateNumberHistogramDataset();
+    }).then(() =>
+    {
+        return testingData.generateStringIdentificationSequence();
+    }).then(() =>
+    {
+        return testingData.generateNumberPredictionFromClassificationDataset();
+    }).then(() => next(), (err) => next(err));
 };
 
 if (require.main === module)

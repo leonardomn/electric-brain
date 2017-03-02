@@ -77,18 +77,26 @@ class EBTorchProcess
                         {
                             return next(err);
                         }
-                        //childProcess.execSync('rm -rf /home/bradley/eb/electric-brain/training/*');
-                        //self.scriptFolder = '/home/bradley/eb/electric-brain/training/';
+                        // childProcess.execSync('rm -rf /home/bradley/eb/electric-brain/training/*');
+                        // self.scriptFolder = '/home/bradley/eb/electric-brain/training/';
                         self.scriptFolder = temporaryFolder;
-                        // Create a list of files that need to be written
-                        const files = self.architecture.generateFiles(registry, neuralNetworkComponentDispatch);
-                        // Write out each of the files
-                        const writeFilePromise = Promise.each(files,(file) =>
+                        try
                         {
-                            totalFiles += 1;
-                            return Promise.fromCallback((next) => fs.writeFile(path.join(self.scriptFolder, file.path), file.data, next));
-                        });
-                        writeFilePromise.then(() => next());
+                            // Create a list of files that need to be written
+                            const files = self.architecture.generateFiles(registry, neuralNetworkComponentDispatch);
+                            
+                            // Write out each of the files
+                            const writeFilePromise = Promise.each(files,(file) =>
+                            {
+                                totalFiles += 1;
+                                return Promise.fromCallback((next) => fs.writeFile(path.join(self.scriptFolder, file.path), file.data, next));
+                            });
+                            writeFilePromise.then(() => next());
+                        }
+                        catch (err)
+                        {
+                            return next(err);
+                        }
                     });
                 },
                 function writeLibraryFiles(next)

@@ -460,26 +460,19 @@ class EBArchitectureAPI extends EBAPIRoot
                     function generateCode(next)
                     {
                         const promise = process.generateCode(self.application.interpretationRegistry, self.application.neuralNetworkComponentDispatch);
-                        promise.then(() =>
-                        {
-                            next(null);
-                        }, (err) => next(err));
+                        promise.then(() => next(), (err) => next(err));
                     },
                     function startProcess(next)
                     {
                         const promise = process.startProcess();
-                        promise.then(() =>
-                        {
-                            next(null);
-                        }, (err) => next(err));
+
+                        promise.then(() => next(), (err) => next(err));
                     },
-                    function reset(next)
+                    // Reset params, forces the network to be generated
+                    function resetParams(next)
                     {
                         const promise = process.reset();
-                        promise.then(() =>
-                        {
-                            next(null);
-                        }, (err) => next(err));
+                        promise.then(() => next(), (err) => next(err));
                     }
                 ], function(err)
                 {

@@ -83,10 +83,10 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
 
         code += itemSchemaCode;
         
-        code += `local transformed = {}\n`;
+        code += `local transformed = {torch.Tensor(1):fill(#input), {}}\n`;
         code += `    for n=1,#input do\n`;
         code += `        local item = ${subFunctionName}(input[n])\n`;
-        code += `        table.insert(transformed, item)\n`;
+        code += `        table.insert(transformed[2], item)\n`;
         code += `    end\n`;
         code += `    return transformed\n`;
         code += `end\n`;
@@ -113,13 +113,13 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
         let subFunctionName = `${name}_items`;
 
         let itemSchemaCode = this.neuralNetworkComponentDispatch.generateTensorOutputCode(schema.items, subFunctionName);
-        itemSchemaCode = "    " + itemSchemaCode.replace(/\n/g, "\n    ");
+        itemSchemaCode = `    ${itemSchemaCode.replace(/\n/g, "\n    ")}`;
 
         code += itemSchemaCode;
 
         code += `local transformed = {}\n`;
-        code += `    for n=1,#input do\n`;
-        code += `        local item = ${subFunctionName}(input[n])\n`;
+        code += `    for n=1,input[1][1] do\n`;
+        code += `        local item = ${subFunctionName}(input[2][n])\n`;
         code += `        table.insert(transformed, item)\n`;
         code += `    end\n`;
         code += `    return transformed\n`;
@@ -158,22 +158,25 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
         // First determine what the longest sequence is
         code += `local longest = 0\n`;
         code += `    for k,v in pairs(input) do\n`;
-        code += `        longest = math.max(longest, #input[k])\n`;
+        code += `        longest = math.max(longest, input[k][1][1])\n`;
         code += `    end\n`;
-        code += `    local batch = {}\n`;
+        code += `    local batch = {torch.Tensor(#input), {}}\n`;
+        code += `    for k,v in pairs(input) do\n`;
+        code += `       batch[1][k] = input[k][1][1]\n`;
+        code += `    end\n`;
         code += `    for n=1,longest do\n`;
         code += `        local samples = {}\n`;
         code += `        for k,v in pairs(input) do\n`;
-        code += `           if #input[k] >= 1 and #input[k] >= n then\n`;
+        code += `           if input[k][1][1] >= 1 and input[k][1][1] >= n then\n`;
         code += `               -- Insert an actual sample\n`;
-        code += `               table.insert(samples, input[k][n])\n`;
+        code += `               table.insert(samples, input[k][2][n])\n`;
         code += `           else\n`;
         code += `               -- Insert a blank object\n`;
         code += `               table.insert(samples, ${emptyTensorFunctionName}())\n`;
         code += `           end\n`;
         code += `        end\n`;
         code += `        local item = ${subFunctionName}(samples)\n`;
-        code += `        table.insert(batch, item)\n`;
+        code += `        table.insert(batch[2], item)\n`;
         code += `    end\n`;
         code += `    return batch\n`;
         code += `end\n`;
@@ -198,21 +201,23 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
 
         code += `local ${name} = function (input)\n`;
 
-        let subFunctionName = `${name}_items`;
+        const subFunctionName = `${name}_items`;
         let itemSchemaCode = this.neuralNetworkComponentDispatch.generateUnwindBatchCode(schema.items, subFunctionName);
         itemSchemaCode = `    ${itemSchemaCode.replace(/\n/g, "\n    ")}`;
         code += itemSchemaCode;
 
-        // TODO: I don't think this works
         // Go through each item in the input
         code += `    local outputs = {}\n`;
-        code += `    local count = input[1]:size()[2]\n`;
-        code += `    for n=1,count do\n`;
-        code += `        local items = {}`;
-        code += `        for k,v in pairs(input) do\n`;
-        code += `            table.insert(items, input[k][n])\n`;
+        code += `    for n=1,#input[2] do\n`;
+        code += `        local items = ${subFunctionName}(input[2][n])\n`;
+        code += `        for s=1, #items do\n`;
+        code += `           if n <= input[1][s] then\n`;
+        code += `               if not outputs[s] then\n`;
+        code += `                   outputs[s] = {torch.Tensor(1):fill(input[1][s]), {}}\n`;
+        code += `               end\n`;
+        code += `               table.insert(outputs[s][2], items[s])\n`;
+        code += `           end\n`;
         code += `        end\n`;
-        code += `        table.insert(batch, item)\n`;
         code += `    end\n`;
         code += `    return outputs\n`;
         code += `end\n`;
@@ -248,14 +253,18 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
         const itemInputStack = this.neuralNetworkComponentDispatch.generateInputStack(schema.items, subModuleInputNode);
         const subModule = new EBTorchCustomModule(subModuleName, subModuleInputNode, itemInputStack.outputNode, itemInputStack.additionalModules.map((module) => module.name));
 
+        // Cleave off the length tensor at the beginning of the sequence
+        const lengthNode = new EBTorchNode(new EBTorchModule("nn.SelectTable", [1]), inputNode, `${moduleName}_lengthNode`);
+        const sequenceNode = new EBTorchNode(new EBTorchModule("nn.SelectTable", [2]), inputNode, `${moduleName}_sequenceNode`);
+
         // Use MapTable to run each item through the input stack
         const subModuleProcessor = new EBTorchNode(new EBTorchModule(`nn.MapTable`, [
             new EBTorchModule(`nn.${subModuleName}`)
-        ]), inputNode, `${moduleName}_subModuleProcessor`);
+        ]), sequenceNode, `${moduleName}_subModuleProcessor`);
 
         // Create a summary module to create tensors output of the items input stack that can be fed into the LSTM
         const summaryModule = this.createSummaryModule(itemInputStack.outputTensorSchema);
-        const summarizerModule = new EBTorchNode(new EBTorchModule(`nn.MapTable`, [summaryModule.module]), subModuleProcessor, `${moduleName}_subModuleProcessor`);
+        const summarizerModule = new EBTorchNode(new EBTorchModule(`nn.MapTable`, [summaryModule.module]), subModuleProcessor, `${moduleName}_summarizerNode`);
 
         // Unsqueeze the tensors to add in a time dimension
         const unsqueezeInput = new EBTorchNode(new EBTorchModule("nn.MapTable", [new EBTorchModule("nn.Unsqueeze", ["1"])]), summarizerModule, `${moduleName}_unsqueezeInput`);
@@ -273,8 +282,11 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
         // Break apart the output tensors along time dimension
         const splitNode = new EBTorchNode(new EBTorchModule("nn.SplitTable", ["1"]), lstmModule, `${moduleName}_splitNode`);
 
+        // Output node - combines a length node with the sequence node
+        const outputNode = new EBTorchNode(new EBTorchModule("nn.Identity", []), [lengthNode, splitNode], `${moduleName}_outputNode`);
+
         return {
-            outputNode: splitNode,
+            outputNode: outputNode,
             outputTensorSchema: new EBTensorSchema({
                 "type": "array",
                 "variableName": `${moduleName}_lstmOutput`,
@@ -309,21 +321,28 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
         const sequencePosition = inputTensorSchema.getPropertyIndex(`${moduleName}_lstmOutput`);
         assert(sequencePosition !== null);
         const sequenceTensorSchema = inputTensorSchema.properties[sequencePosition];
-        const sequenceExtractorNode = new EBTorchNode(new EBTorchModule('nn.SelectTable', [sequencePosition + 1]), inputNode, `${moduleName}_extractSequence`);
+        const fieldExtractionNode = new EBTorchNode(new EBTorchModule('nn.SelectTable', [sequencePosition + 1]), inputNode, `${moduleName}_extractField`);
+
+        // Cleave off the length tensor at the beginning of the sequence
+        const lengthNode = new EBTorchNode(new EBTorchModule("nn.SelectTable", [1]), fieldExtractionNode, `${moduleName}_lengthNode`);
+        const sequenceNode = new EBTorchNode(new EBTorchModule("nn.SelectTable", [2]), fieldExtractionNode, `${moduleName}_sequenceNode`);
 
         // Now create an output stack that we can apply to each item
         const subModuleName = `${moduleName}_itemOutputStack`;
         const subModuleInputNode = new EBTorchNode(new EBTorchModule("nn.Identity", []), null, `${subModuleName}_input`);
-        const itemOutputStack = this.neuralNetworkComponentDispatch.generateOutputStack(outputSchema.items, subModuleInputNode, sequenceTensorSchema);
+        const itemOutputStack = this.neuralNetworkComponentDispatch.generateOutputStack(outputSchema.items, subModuleInputNode, sequenceTensorSchema.items);
         const subModule = new EBTorchCustomModule(subModuleName, subModuleInputNode, itemOutputStack.outputNode, itemOutputStack.additionalModules.map((module) => module.name));
         
         // Use MapTable to run each item through the output stack
         const subModuleProcessor = new EBTorchNode(new EBTorchModule(`nn.MapTable`, [
             new EBTorchModule(`nn.${subModuleName}`)
-        ]), sequenceExtractorNode, `${moduleName}_subModuleProcessor`);
-        
+        ]), sequenceNode, `${moduleName}_subModuleProcessor`);
+
+        // Now the output node
+        const jointOutputNode = new EBTorchNode(new EBTorchModule(`nn.Identity`, []), [lengthNode, subModuleProcessor], `${moduleName}_jointOutputNode`);
+
         return {
-            outputNode: subModuleProcessor,
+            outputNode: jointOutputNode,
             outputTensorSchema: new EBTensorSchema({
                 "type": "array",
                 "variableName": `${moduleName}`,
@@ -350,7 +369,10 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
 
         // Get the item criterion
         const itemCriterion = this.neuralNetworkComponentDispatch.generateCriterion(outputSchema.items);
-        return new EBTorchModule("nn.SequencerCriterion", [itemCriterion]);
+        return new EBTorchModule("nn.ParallelCriterion", [], [
+            new EBTorchModule("nn.EBSequenceLengthCriterion", []),
+            new EBTorchModule("nn.SequencerCriterion", [itemCriterion])
+        ]);
     }
 
     /**

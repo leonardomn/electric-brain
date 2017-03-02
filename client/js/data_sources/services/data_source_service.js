@@ -58,7 +58,6 @@ angular.module('eb').service('EBDataSourceService', function EBDataSourceService
 
     service.getCollectionSchema = function getCollectionSchema(dataSource)
     {
-        console.log(dataSource);
         const headers = {};
         return $http({
             method: 'GET',

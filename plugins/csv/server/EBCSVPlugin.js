@@ -95,6 +95,34 @@ class EBCSVPlugin extends EBDataSourcePlugin
 
     }
 
+    /**
+     * This method takes a file stream and uploads it so that it can be used with this plugin.
+     *
+     * @param {ReadableStream} stream A read-stream that will be read from to provide the CSV data
+     * @returns {Promise} A promise that will resolve when the file has been uploaded. It will resolve to the ID of the new upload.
+     *
+     */
+    uploadFile(stream)
+    {
+        return new Promise((resolve, reject) =>
+        {
+            const uploadStream = this.uploads.openUploadStream('data.csv');
+            const id = uploadStream.id;
+
+            stream.pipe(uploadStream);
+
+            // Wait for stream to finish
+            uploadStream.once('finish', () =>
+            {
+                resolve(id);
+            });
+            uploadStream.once('error', (err) =>
+            {
+                reject(err);
+            });
+        });
+    }
+
 
     /**
      * This method takes a CSV files and breaks it apart into a collection, which is then used for further analysis.

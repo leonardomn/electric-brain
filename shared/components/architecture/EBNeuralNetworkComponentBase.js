@@ -178,10 +178,12 @@ class EBNeuralNetworkComponentBase
         {
             // First, run each of the items through summary network
             const itemSummaryModule = this.createSummaryModule(tensorSchema.items);
+            const selectTableModule = new EBTorchModule('nn.SelectTable', [2]);
             const summaryModule = new EBTorchModule('nn.MapTable', [itemSummaryModule.module]);
-            
+
             // Then take all the summaries and sum them
             const fixedResultModule = new EBTorchModule('nn.Sequential', [], [
+                selectTableModule,
                 summaryModule,
                 new EBTorchModule('nn.CAddTable', [])
             ]);
