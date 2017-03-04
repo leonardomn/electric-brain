@@ -23,7 +23,8 @@
 const
     config = require('../server/config/config'),
     EBApplication = require("../server/EBApplication"),
-    async = require("async");
+    async = require("async"),
+    util = require('util');
 
 /**
  * This script starts a combination API and Worker in a single process.
@@ -65,7 +66,8 @@ if (require.main === module)
     {
         if (err)
         {
-            throw err;
+            console.error(util.inspect(err));
+            process.exit(1);
         }
     });
 }
