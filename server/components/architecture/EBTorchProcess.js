@@ -447,7 +447,7 @@ class EBTorchProcess
         return Promise.fromCallback((callback) =>
         {
             let foundFiles = false;
-            const retryAttempts = 50;
+            const retryAttempts = 100;
             const timeoutBetweenRetries = 150;
             const maxBufferSize = 10 * 1024 * 1024;
             async.retry(retryAttempts, function (callback)

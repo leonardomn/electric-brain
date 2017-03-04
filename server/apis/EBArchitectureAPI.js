@@ -465,6 +465,7 @@ class EBArchitectureAPI extends EBAPIRoot
                     function startProcess(next)
                     {
                         const promise = process.startProcess();
+
                         promise.then(() => next(), (err) => next(err));
                     },
                     // Reset params, forces the network to be generated
