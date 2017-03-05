@@ -45,7 +45,6 @@ angular.module('eb').controller('EBDataSourceSelectTableController', function EB
     {
         $scope.dataSource.name = mongoCollection.name;
         $scope.dataSource.database.collection = mongoCollection.name;
-        $scope.dataSource.dataSchema = null;
         $timeout(function()
         {
             $state.go('^.select_fields', {refreshSchema: true});

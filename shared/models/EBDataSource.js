@@ -68,6 +68,8 @@ class EBDataSource
             "properties": {
                 "_id": {},
                 "name": {"type": "string"},
+                "objectsCompleted": {"type": "number"},
+                "objectsTotal": {"type": "number"},
                 "type": {
                     "type": "string",
                     "enum": ["mongo", "csv"]

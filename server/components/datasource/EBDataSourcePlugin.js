@@ -116,10 +116,11 @@ class EBDataSourcePlugin
     /**
      * This method should sample the data from the data-source and determine what the schema is.
      *
-     * @param {EBDataSource} This should be the EBDataSource object to find the tables with it
+     * @param {EBDataSource} dataSource This should be the EBDataSource object to find the tables with it
+     * @param {function(dataSchema, objectsCompleted, objectsTotal)} [iterator] This is an iterator function that is called with the intermediary schemas as they are being assembled.
      * @returns {Promise} A promise that will resolve to the EBSchema object for this data-source.
      */
-    detectSchema(dataSource)
+    detectSchema(dataSource, iterator)
     {
         return Promise.rejected(new Error('Unimplemented'));
     }

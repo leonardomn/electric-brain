@@ -20,6 +20,7 @@ const beaver = require('beaver');
 const registry = require('./task_registry').registry;
 
 const EBTrainModelTask = require("./EBTrainModelTask");
+const EBSampleDataSourceTask = require("./EBSampleDataSourceTask");
 
 /**
  * This function initializes all of the Beaver tasks for Electric Brain
@@ -28,11 +29,11 @@ const EBTrainModelTask = require("./EBTrainModelTask");
  */
 function setupTasks(application)
 {
-    function wrapTaskClass()
+    function wrapTaskClass(taskClass)
     {
         return function(args, callback)
         {
-            const task = new EBTrainModelTask(application);
+            const task = new taskClass(application);
             const promise = task.run(this, args);
             promise.then(() =>
             {
@@ -47,6 +48,15 @@ function setupTasks(application)
         concurrencyPerWorker: 1,
         maximumAttempts: 2,
         func: wrapTaskClass(EBTrainModelTask)
+    });
+    
+    
+    registry.registerTask({
+        name: "sample_data_source",
+        timeout: null, // no timeout. This can take forever.
+        concurrencyPerWorker: 1,
+        maximumAttempts: 2,
+        func: wrapTaskClass(EBSampleDataSourceTask)
     });
 }
 

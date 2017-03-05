@@ -364,19 +364,21 @@ class EBMongoPlugin extends EBDataSourcePlugin
      * This method should sample the data from the data-source and determine what the schema is.
      *
      * @param {EBDataSource} dataSource This should be the EBDataSource object to find the tables with it
+     * @param {function(dataSchema, objectsCompleted, objectsTotal)} [iterator] This is an iterator function that is called with the intermediary schemas as they are being assembled.
      * @returns {Promise} A promise that will resolve to the EBSchema object for this data-source.
      */
-    detectSchema(dataSource)
+    detectSchema(dataSource, iterator)
     {
         const maxNumberOfObjectsToSample = 500;
         const examplesToKeep = 10;
+        const objectsBetweenIteratorCalls = 25;
         const exampleIndexes = randomUtilities.getRandomIntegers(maxNumberOfObjectsToSample, examplesToKeep);
 
         const schemaDetector = new EBSchemaDetector(this.application);
         let objectIndex = 0;
 
         return this.sample(maxNumberOfObjectsToSample, dataSource,
-            function(object)
+            (object) =>
             {
                 let keepForSample = false;
                 if (exampleIndexes.indexOf(objectIndex) !== -1)
@@ -386,12 +388,22 @@ class EBMongoPlugin extends EBDataSourcePlugin
 
                 // Accumulate the converted version of the object
                 objectIndex += 1;
-                return schemaDetector.accumulateObject(object, keepForSample);
-            }).then(function success()
-        {
-            const schema = schemaDetector.getSchema();
-            return schema;
-        });
+
+                let iteratorPromise = Promise.resolve();
+                if (objectIndex % objectsBetweenIteratorCalls === 0)
+                {
+                    iteratorPromise = iterator(schemaDetector.getSchema(), objectIndex, maxNumberOfObjectsToSample);
+                }
+
+                return iteratorPromise.then(() =>
+                {
+                    return schemaDetector.accumulateObject(object, keepForSample);
+                });
+            }).then(() =>
+            {
+                const schema = schemaDetector.getSchema();
+                return schema;
+            });
     }
 
     /**
@@ -405,7 +417,7 @@ class EBMongoPlugin extends EBDataSourcePlugin
         // First we have to convert Mongo types like ObjectID, Date and RegExp into
         // vanilla JSON. Currently, the only non-json compatible output is binary
         // data, which will be output as a Buffer object.
-        return underscore.mapObject(subObject, function(value)
+        return underscore.mapObject(subObject, (value) =>
         {
             if (value instanceof Date)
             {

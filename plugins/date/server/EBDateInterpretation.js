@@ -23,6 +23,7 @@ const
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
     EBNumberHistogram = require('../../../shared/models/EBNumberHistogram'),
+    EBSchema = require('../../../shared/models/EBSchema'),
     EBValueHistogram = require("../../../shared/models/EBValueHistogram"),
     moment = require('moment'),
     underscore = require('underscore');
@@ -160,19 +161,106 @@ class EBDateInterpretation extends EBInterpretationBase
      */
     transformSchemaForNeuralNetwork(schema)
     {
-        return schema;
+        // Create an object composed of several properties
+        const dateComponentProperties = {};
+        if (schema.configuration.interpretation.includeYear)
+        {
+            dateComponentProperties.year = new EBSchema({
+                title: `${schema.title}.year`,
+                type: "number",
+                configuration: {included: true}
+            });
+        }
+        if (schema.configuration.interpretation.includeDayOfYear)
+        {
+            dateComponentProperties.dayOfYear = new EBSchema({
+                title: `${schema.title}.dayOfYear`,
+                type: "number",
+                configuration: {included: true}
+            });
+        }
+        if (schema.configuration.interpretation.includeMonth)
+        {
+            const numberOfMonths = 12;
+            dateComponentProperties.month = new EBSchema({
+                title: `${schema.title}.month`,
+                type: "number",
+                enum: underscore.range(0, numberOfMonths),
+                configuration: {included: true}
+            });
+        }
+        if (schema.configuration.interpretation.includeDayOfMonth)
+        {
+            dateComponentProperties.dayOfMonth = new EBSchema({
+                title: `${schema.title}.dayOfMonth`,
+                type: "number",
+                configuration: {included: true}
+            });
+        }
+        if (schema.configuration.interpretation.includeDayOfWeek)
+        {
+            const numberOfDaysInWeek = 7;
+            dateComponentProperties.dayOfWeek = new EBSchema({
+                title: `${schema.title}.dayOfWeek`,
+                type: "number",
+                enum: underscore.range(0, numberOfDaysInWeek),
+                configuration: {included: true}
+            });
+        }
+        if (schema.configuration.interpretation.includeTimeOfDay)
+        {
+            dateComponentProperties.timeOfDay = new EBSchema({
+                title: `${schema.title}.timeOfDay`,
+                type: "number",
+                configuration: {included: true}
+            });
+        }
+        return new EBSchema({
+            title: schema.title,
+            type: "object",
+            properties: dateComponentProperties,
+            configuration: {included: true}
+        });
     }
 
 
     /**
      * This method should prepare a given value for input into the neural network
      *
-     * @param {EBSchema} value The value to be transformed
+     * @param {*} value The value to be transformed
+     * @param {EBSchema} schema The schema for the value to be transformed
      * @return {Promise} A promise that resolves to a new value.
      */
-    transformValueForNeuralNetwork(value)
+    transformValueForNeuralNetwork(value, schema)
     {
-        return value;
+        const date = moment(value);
+        const output = {};
+        if (schema.configuration.interpretation.includeYear)
+        {
+            output.year = date.year();
+        }
+        if (schema.configuration.interpretation.includeDayOfYear)
+        {
+            output.dayOfYear = date.dayOfYear() / 366;
+        }
+        if (schema.configuration.interpretation.includeMonth)
+        {
+            output.month = date.month();
+        }
+        if (schema.configuration.interpretation.includeDayOfMonth)
+        {
+            output.dayOfMonth = date.date() / date.daysInMonth();
+        }
+        if (schema.configuration.interpretation.includeDayOfWeek)
+        {
+            output.dayOfWeek = date.day();
+        }
+        if (schema.configuration.interpretation.includeTimeOfDay)
+        {
+            const startOfDay = date.startOf('day');
+            output.timeOfDay = Math.abs(date.diff(startOfDay)) / 86400000;
+        }
+        return output;
     }
 
 
@@ -185,7 +273,7 @@ class EBDateInterpretation extends EBInterpretationBase
      */
     transformValueBackFromNeuralNetwork(value, schema)
     {
-        return value;
+        throw new Error("Unimplemented.");
     }
 
 
@@ -197,7 +285,14 @@ class EBDateInterpretation extends EBInterpretationBase
      */
     generateDefaultConfiguration(schema)
     {
-        return {};
+        return {
+            includeYear: false,
+            includeDayOfYear: true,
+            includeMonth: true,
+            includeDayOfMonth: false,
+            includeDayOfWeek: true,
+            includeTimeOfDay: true
+        };
     }
 
 
@@ -240,7 +335,7 @@ class EBDateInterpretation extends EBInterpretationBase
 
             accumulateValue(value)
             {
-                const parsed = moment(value);
+                const parsed = moment(new Date(value));
                 this.years.push(parsed.format("YYYY"));
                 this.months.push(parsed.format("MMMM"));
                 this.daysOfWeek.push(parsed.format("dddd"));
@@ -288,7 +383,12 @@ class EBDateInterpretation extends EBInterpretationBase
             "id": "EBDateInterpretation.configurationSchema",
             "type": "object",
             "properties": {
-
+                includeYear: {"type": "boolean"},
+                includeDayOfYear: {"type": "boolean"},
+                includeMonth: {"type": "boolean"},
+                includeDayOfMonth: {"type": "boolean"},
+                includeDayOfWeek: {"type": "boolean"},
+                includeTimeOfDay: {"type": "boolean"}
             }
         };
     }
