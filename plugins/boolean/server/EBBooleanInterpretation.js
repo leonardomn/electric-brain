@@ -159,7 +159,8 @@ class EBBooleanInterpretation extends EBInterpretationBase
         // Convert to a number
         return new EBSchema({
             title: schema.title,
-            type: "number"
+            type: "number",
+            configuration: {included: true}
         });
     }
 
@@ -171,15 +172,15 @@ class EBBooleanInterpretation extends EBInterpretationBase
      * @param {EBSchema} schema The schema for the value
      * @return {Promise} A promise that resolves to a new value.
      */
-    transformValueForNeuralNetwork(value)
+    transformValueForNeuralNetwork(value, schema)
     {
         if (value)
         {
-            return 1;
+            return Promise.resolve(1);
         }
         else
         {
-            return 0;
+            return Promise.resolve(0);
         }
     }
 
@@ -206,6 +207,29 @@ class EBBooleanInterpretation extends EBInterpretationBase
     generateDefaultConfiguration(schema)
     {
         return {};
+    }
+
+
+    /**
+     * This method should compare two values according to the given schema, in order to determine the accuracy
+     * of the neural network.
+     *
+     * @param {*} expected The value the network was expected to produce, e.g. the correct answer
+     * @param {*} actual The actual value the network produced.
+     * @param {EBSchema} schema The schema for the value to be compared
+     * @param {boolean} accumulateStatistics Whether or not statistics on the results should be accumulated into the EBSchema object.
+     * @return {number} accuracy The accuracy of the result. should be a number between 0 and 1
+     */
+    compareNetworkOutputs(expected, actual, schema, accumulateStatistics)
+    {
+        if (expected === actual)
+        {
+            return 1;
+        }
+        else
+        {
+            return 0;
+        }
     }
 
 

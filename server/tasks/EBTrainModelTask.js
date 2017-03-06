@@ -613,7 +613,10 @@ class EBTrainModelTask {
                                 // Zip together original objects with the actual outputs from the network, and compute accuracies
                                 return Promise.mapSeries(underscore.zip(batch.objects, result.objects), (zipped) =>
                                 {
-                                    return self.getAccuracyFromOutput(zipped[0].output, zipped[1], false);
+                                    return self.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, zipped[1]).then((actual) =>
+                                    {
+                                        return self.getAccuracyFromOutput(zipped[0].original, actual, false);
+                                    });
                                 }).then((accuracies) =>
                                 {
                                     return {
@@ -704,7 +707,14 @@ class EBTrainModelTask {
         {
             return self.trainingProcess.processBatch(batch.fileName).then((outputs) =>
             {
-                return Promise.mapSeries(underscore.zip(batch.objects, outputs), (pair) => self.getAccuracyFromOutput(pair[0].output, pair[1], true));
+                // Zip together original objects with the actual outputs from the network, and compute accuracies
+                return Promise.mapSeries(underscore.zip(batch.objects, outputs), (zipped) =>
+                {
+                    return self.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, zipped[1]).then((actual) =>
+                    {
+                        return self.getAccuracyFromOutput(zipped[0].original, actual, true);
+                    });
+                });
             }).then((accuracies) =>
             {
                 return Promise.fromCallback((next) =>
@@ -793,8 +803,15 @@ class EBTrainModelTask {
                             return this.trainingProcess.processBatch(batch.fileName).then((outputs) =>
                             {
                                 processedObjects += batch.objects.length;
-                                return Promise.mapSeries(underscore.zip(batch.objects, outputs),
-                                    (pair) => this.getAccuracyFromOutput(pair[0].output, pair[1], true));
+
+                                // Zip together original objects with the actual outputs from the network, and compute accuracies
+                                return Promise.mapSeries(underscore.zip(batch.objects, outputs), (zipped) =>
+                                {
+                                    return this.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, zipped[1]).then((actual) =>
+                                    {
+                                        return this.getAccuracyFromOutput(zipped[0].original, actual, true);
+                                    });
+                                });
                             }).then((batchAccuracies) =>
                             {
                                 return Promise.fromCallback((next) =>
