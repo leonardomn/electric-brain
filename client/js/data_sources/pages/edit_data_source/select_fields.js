@@ -78,6 +78,10 @@ angular.module('eb').controller('EBDataSourceSelectFieldsController', function E
                 });
                 EBLoaderService.showLoaderWith('page', promise);
             }
+            else
+            {
+                setupEventHandler();
+            }
         }
     });
 

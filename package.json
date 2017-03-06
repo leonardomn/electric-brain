@@ -43,6 +43,7 @@
     "bson": "^0.5.5",
     "chunking-streams": "0.0.8",
     "compute-quantile": "^1.0.1",
+    "date.js": "^0.3.1",
     "deep-diff": "^0.3.4",
     "deepcopy": "^0.6.3",
     "dot": "^1.0.3",

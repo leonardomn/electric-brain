@@ -42,6 +42,23 @@ class EBDateInterpretation extends EBInterpretationBase
     {
         super('date');
         this.interpretationRegistry = interpretationRegistry;
+
+        // This is the list of date formats that we the system will accept
+        this.validDateFormats = [
+            'YYYY-MM-DDTHH:mm:ss',
+            "MM-DD-YYYY",
+            "YYYY-MM-DD",
+            "YYYY-DD-MM",
+            "DD-MM-YYYY",
+            "MM/DD/YYYY",
+            "YYYY/MM/DD",
+            "YYYY/DD/MM",
+            "DD/MM/YYYY",
+            "MM DD YYYY",
+            "YYYY MM DD",
+            "YYYY DD MM",
+            "DD MM YYYY"
+        ];
     }
 
 
@@ -91,16 +108,13 @@ class EBDateInterpretation extends EBInterpretationBase
         }
         else if (underscore.isString(value))
         {
-            // let parsed = Date.parse(value);
-            const date = new Date(value);
-            if (!isNaN(date.getTime()))
+            const date = moment(value, this.validDateFormats, true);
+            if (date.isValid())
             {
                 return Promise.resolve(true);
             }
-            else
-            {
-                return Promise.resolve(false);
-            }
+
+            return Promise.resolve(false);
         }
         else
         {
@@ -322,6 +336,7 @@ class EBDateInterpretation extends EBInterpretationBase
      */
     createFieldAccumulator()
     {
+        const self = this;
         // Create a subclass and immediately instantiate it.
         return new (class extends EBFieldAnalysisAccumulatorBase
         {
@@ -335,10 +350,13 @@ class EBDateInterpretation extends EBInterpretationBase
 
             accumulateValue(value)
             {
-                const parsed = moment(new Date(value));
-                this.years.push(parsed.format("YYYY"));
-                this.months.push(parsed.format("MMMM"));
-                this.daysOfWeek.push(parsed.format("dddd"));
+                const date = moment(value, this.validDateFormats, true);
+                if (date.isValid())
+                {
+                    this.years.push(date.format("YYYY"));
+                    this.months.push(date.format("MMMM"));
+                    this.daysOfWeek.push(date.format("dddd"));
+                }
             }
 
             getFieldStatistics()
