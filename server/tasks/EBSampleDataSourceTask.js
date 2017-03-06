@@ -137,6 +137,12 @@ class EBSampleDataSourceTask {
             // Set local copy
             this.dataSource.dataSchema = newSchema;
 
+            // Reset the interpretation configuration nom matter what
+            this.dataSource.dataSchema.walk((field) =>
+            {
+                field.configuration.interpretation = this.application.interpretationRegistry.getInterpretation(field.metadata.mainInterpretation).generateDefaultConfiguration(field);
+            });
+
             // Update in the database
             this.dataSources.update({_id: this.dataSource._id}, this.dataSource).then(() =>
             {
