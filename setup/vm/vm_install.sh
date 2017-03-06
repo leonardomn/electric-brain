@@ -20,9 +20,6 @@ set -e
 # This script is used for installation of Electric Brain.
 #
 
-# Change the password for the electricbrain user to electricbrain
-echo "electricbrain:electricbrain" | chpasswd
-
 # Install the nodesource repository
 curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
 
@@ -57,7 +54,7 @@ Description=Electric Brain API
 [Service]
 Environment=
 WorkingDirectory=/home/electricbrain
-ExecStart=/usr/local/bin/ebapi
+ExecStart=/usr/bin/ebapi
 Restart=always
 User=electricbrain
 
@@ -70,7 +67,7 @@ Description=Electric Brain Worker #1
 [Service]
 Environment=
 WorkingDirectory=/home/electricbrain
-ExecStart=/usr/local/bin/ebworker
+ExecStart=/usr/bin/ebworker
 Restart=always
 User=electricbrain
 
@@ -86,7 +83,7 @@ Description=Electric Brain Worker #2
 [Service]
 Environment=
 WorkingDirectory=/home/electricbrain
-ExecStart=/usr/local/bin/ebworker
+ExecStart=/usr/bin/ebworker
 Restart=always
 User=electricbrain
 
