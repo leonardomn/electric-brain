@@ -25,33 +25,6 @@
 
 angular.module('eb').controller('EBDataSourceSelectFieldsController', function EBDataSourceSelectFieldsController($scope, $timeout, $state, $stateParams, EBDataSourceService, config, EBNavigationBarService, EBLoaderService, EBSocketService)
 {
-    if (!$stateParams.id)
-    {
-        $stateParams.id = 'new';
-    }
-    $scope.isNew = $stateParams.id === 'new';
-
-
-    const createAndSave = function()
-    {
-        if ($stateParams.id === 'new')
-        {
-            const promise = EBDataSourceService.createDataSource($scope.dataSource).then((body) =>
-            {
-                $stateParams.id = body.data._id;
-                $scope.dataSource._id = body.data._id;
-                EBNavigationBarService.refreshNavigationBar();
-                return body;
-            });
-            return promise;
-        }
-        else
-        {
-            const promise = EBDataSourceService.saveDataSource($scope.dataSource);
-            return promise;
-        }
-    };
-
     const socketEventHandler = (data) =>
     {
         $timeout(() =>
@@ -90,27 +63,27 @@ angular.module('eb').controller('EBDataSourceSelectFieldsController', function E
         clearEventHandler();
     });
 
-    if ($stateParams.refreshSchema)
+    $scope.$watch('dataSource', function(newValue)
     {
-        const promise = createAndSave().then(() =>
+        if (newValue)
         {
-            EBDataSourceService.sampleDataSource($scope.dataSource).success((body) =>
+            if (!$scope.dataSource.dataSchema)
             {
-                setupEventHandler();
-            });
-        });
-        EBLoaderService.showLoaderWith('page', promise);
-    }
-
+                const promise = EBDataSourceService.saveDataSource($scope.dataSource).then(() =>
+                {
+                    EBDataSourceService.sampleDataSource($scope.dataSource).success((body) =>
+                    {
+                        setupEventHandler();
+                    });
+                });
+                EBLoaderService.showLoaderWith('page', promise);
+            }
+        }
+    });
 
     $scope.onSaveClicked = function onSaveClicked()
     {
-        const promise = createAndSave();
-        promise.then((body) =>
-        {
-            $state.go('edit_data_source', {id: body.data._id});
-        });
-        return promise;
+        return EBDataSourceService.saveDataSource($scope.dataSource);
     };
 
     $scope.onDeleteClicked = function onDeleteClicked()
@@ -125,7 +98,7 @@ angular.module('eb').controller('EBDataSourceSelectFieldsController', function E
 
     $scope.onContinue = function onContinue()
     {
-        const promise = createAndSave();
+        const promise = EBDataSourceService.saveDataSource($scope.dataSource);
         promise.then(() =>
         {
             $state.go('edit_architecture');

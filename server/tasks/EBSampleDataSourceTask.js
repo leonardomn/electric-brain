@@ -49,6 +49,7 @@ class EBSampleDataSourceTask {
         this.application = application;
         this.socketio = application.socketio;
         this.dataSources = application.db.collection("EBDataSource");
+        this.lastUpdateTime = null;
     }
 
     /**
@@ -92,7 +93,17 @@ class EBSampleDataSourceTask {
                 {
                     field.setIncluded(true);
                 });
-                return this.updateSchema(schema);
+
+                // Update the database and frontend if the last update time is greater then 5 seconds
+                if (this.lastUpdateTime === null || (Date.now() - this.lastUpdateTime.getTime()) > (5 * 1000) )
+                {
+                    this.lastUpdateTime = new Date();
+                    return this.updateSchema(schema);
+                }
+                else
+                {
+                    return Promise.resolve(true);
+                }
             });
         }).then((resultSchema) =>
         {

@@ -73,7 +73,6 @@ angular.module('eb').service('EBDataSourceService', function EBDataSourceService
 
     service.sampleDataSource = function sampleDataSource(dataSource)
     {
-        console.log(dataSource);
         const headers = {};
         return $http({
             method: 'POST',

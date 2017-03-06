@@ -23,7 +23,7 @@
  */
 
 
-angular.module('eb').controller('EBDataSourceSelectTableController', function EBDataSourceSelectTableController($scope, $timeout, $state, EBDataSourceService, config, EBLoaderService)
+angular.module('eb').controller('EBDataSourceSelectTableController', function EBDataSourceSelectTableController($scope, $timeout, $state, EBDataSourceService, config, EBLoaderService, EBNavigationBarService)
 {
     const promise = EBDataSourceService.detectDatabase($scope.dataSource.type).success(function(data)
     {
@@ -45,9 +45,12 @@ angular.module('eb').controller('EBDataSourceSelectTableController', function EB
     {
         $scope.dataSource.name = mongoCollection.name;
         $scope.dataSource.database.collection = mongoCollection.name;
-        $timeout(function()
+        const promise = EBDataSourceService.createDataSource($scope.dataSource).then((body) =>
         {
-            $state.go('^.select_fields', {refreshSchema: true});
-        }, config.thresholdDelay);
+            $state.go('edit_data_source.select_fields', {id: body.data._id, refreshSchema: true});
+            EBNavigationBarService.refreshNavigationBar();
+            return body;
+        });
+        EBLoaderService.showLoaderWith('menu', promise);
     };
 });
