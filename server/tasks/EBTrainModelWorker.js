@@ -76,6 +76,7 @@ class EBTrainModelWorker extends EBStdioScript
             {
                 return Promise.each(objects, (object) =>
                 {
+                    console.error(JSON.stringify(object, null, 4));
                     return this.trainingProcess.loadObject(object.original.id, object.input, object.output);
                 }).then(() =>
                 {

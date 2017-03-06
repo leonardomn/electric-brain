@@ -888,7 +888,9 @@ module.exports.generateDateClassificationDataset = function generateDateClassifi
     for (let objectIndex = 0; objectIndex < 10000; objectIndex += 1)
     {
         // First generate a random date, between 1980 and 2015
-        const date = moment(new Date(new Date("January 1, 1980").getTime() + (Math.random() * 35 * 365.24 * 24 * 60 * 60 * 1000)));
+        const randomDateOffset = Math.random() * 35 * 365 * 24 * 60 * 60 * 1000;
+        const randomTimeOffset = Math.random() * 24 * 60 * 60 * 1000;
+        const date = moment(new Date(new Date("January 1, 1980").getTime() + randomDateOffset + randomTimeOffset));
         const object = {date: date.toDate()};
 
         // Create a few derived classifications
@@ -897,7 +899,7 @@ module.exports.generateDateClassificationDataset = function generateDateClassifi
         object.isWeekend = date.day() === 0 || date.day() === 6;
 
         // Which of the week in the month is it
-        const startWeek = date.startOf('month').week();
+        const startWeek = moment(date).startOf('month').week();
         object.weekInMonth = `week_${date.week() - startWeek + 1}`;
 
         // Roughly what time of the day is it?

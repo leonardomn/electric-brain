@@ -272,7 +272,7 @@ class EBDateInterpretation extends EBInterpretationBase
         }
         if (schema.configuration.interpretation.includeTimeOfDay)
         {
-            const startOfDay = date.startOf('day');
+            const startOfDay = moment(date).startOf('day');
             output.timeOfDay = Math.abs(date.diff(startOfDay)) / 86400000;
         }
         return output;
