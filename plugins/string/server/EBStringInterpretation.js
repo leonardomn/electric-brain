@@ -26,7 +26,8 @@ const
     EBNumberHistogram = require('../../../shared/models/EBNumberHistogram'),
     EBSchema = require("../../../shared/models/EBSchema"),
     EBValueHistogram = require('../../../shared/models/EBValueHistogram'),
-    underscore = require('underscore');
+    underscore = require('underscore'),
+    w2v = require( 'word2vec' );
 
 /**
  * The string interpretation is used for all strings.
@@ -131,8 +132,7 @@ class EBStringInterpretation extends EBInterpretationBase
     transformSchemaForNeuralNetwork(schema)
     {
         // Decide whether to represent this string as an enum or a sequence
-        const representAsEnum = schema.configuration.interpretation.mode === 'classification';
-        if (representAsEnum)
+        if (schema.configuration.interpretation.mode === 'classification')
         {
             schema.type = ['number'];
             schema.enum = [null];
@@ -141,6 +141,28 @@ class EBStringInterpretation extends EBInterpretationBase
                 schema.enum.push(index);
             });
             return schema;
+        }
+        else if (schema.configuration.interpretation.mode === 'word_to_vector')
+        {
+            const asciiLength = 128;
+            return new EBSchema({
+                title: schema.title,
+                type: "vector",
+                items: {
+                    title: `${schema.title}.[]`,
+                    type: "object",
+                    properties: {
+                        character: {
+                            title: `${schema.title}.[].word`,
+                            type: "string",
+                            enum: underscore.range(0, asciiLength),
+                            configuration: {included: true}
+                        }
+                    },
+                    configuration: {included: true}
+                },
+                configuration: {included: true}
+            });
         }
         else
         {

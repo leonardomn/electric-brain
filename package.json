@@ -77,7 +77,8 @@
     "tus-node-server": "https://github.com/electricbrainio/tus-node-server.git#72995a4",
     "underscore": "^1.8.3",
     "webpack": "^1.14.0",
-    "webpack-dev-server": "^1.16.2"
+    "webpack-dev-server": "^1.16.2",
+    "word2vec": "^1.1.0"
   },
   "devDependencies": {
     "mocha": "^3.0.2"

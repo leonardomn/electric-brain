@@ -46,7 +46,8 @@ class EBNeuralNetworkStringComponent extends EBNeuralNetworkComponentBase
      */
     getTensorSchema(schema)
     {
-        return EBTensorSchema.generateDataTensorSchema(1, schema.variableName);
+        return EBTensorSchema.generateDataTensorSchema(200, schema.variableName);
+
     }
 
 
