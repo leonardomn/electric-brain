@@ -245,7 +245,7 @@ class EBNeuralNetworkComponentBase
             code += `    local emptyObject = {}\n`;
             tensorSchema.properties.forEach((property) =>
             {
-                const subFunctionName = `${property.variableName}_generateEmpty`;
+                const subFunctionName = `${property.machineVariableName}_generateEmpty`;
                 const subFunctionCode = this.generateEmptyTensorTableCode(property, subFunctionName);
                 code += `    ${subFunctionCode.replace(/\n/g, "\n    ")}`;
                 code += `table.insert(emptyObject, ${subFunctionName}())\n`;

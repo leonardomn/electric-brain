@@ -176,7 +176,7 @@ class EBNeuralNetworkClassificationComponent extends EBNeuralNetworkComponentBas
     generateInputStack(schema, inputNode)
     {
         return {
-            outputNode: new EBTorchNode(new EBTorchModule("nn.EBOneHot", [schema.enum.length]), inputNode, `${schema.variableName}_inputStack`),
+            outputNode: new EBTorchNode(new EBTorchModule("nn.EBOneHot", [schema.enum.length]), inputNode, `${schema.machineVariableName}_inputStack`),
             outputTensorSchema: EBTensorSchema.generateDataTensorSchema(schema.enum.length, schema.variableName),
             additionalModules: []
         };
@@ -198,9 +198,6 @@ class EBNeuralNetworkClassificationComponent extends EBNeuralNetworkComponentBas
      */
     generateOutputStack(outputSchema, inputNode, inputTensorSchema)
     {
-        // Variable name for this piece
-        const variableName = outputSchema.variableName;
-
         // Get the output size
         const outputSize = outputSchema.enum.length;
 
@@ -211,7 +208,7 @@ class EBNeuralNetworkClassificationComponent extends EBNeuralNetworkComponentBas
         const middleLayerSize = Math.min(1500, Math.max((summaryModule.tensorSchema.tensorSize + outputSize) / 2, 100));
 
         // Create the node in the graph for the summary module
-        const summaryNode = new EBTorchNode(summaryModule.module, inputNode, `${variableName}_summaryNode`);
+        const summaryNode = new EBTorchNode(summaryModule.module, inputNode, `${outputSchema.machineVariableName}_summaryNode`);
 
         const linearUnit = new EBTorchNode(new EBTorchModule("nn.Sequential", [], [
             new EBTorchModule("nn.Linear", [summaryModule.tensorSchema.tensorSize, middleLayerSize]),
@@ -220,11 +217,11 @@ class EBNeuralNetworkClassificationComponent extends EBNeuralNetworkComponentBas
             new EBTorchModule("nn.Tanh", []),
             new EBTorchModule("nn.Linear", [middleLayerSize, outputSize]),
             new EBTorchModule("nn.LogSoftMax")
-        ]), summaryNode, `${variableName}_linearUnit`);
+        ]), summaryNode, `${outputSchema.machineVariableName}_linearUnit`);
         
         return {
             outputNode: linearUnit,
-            outputTensorSchema: EBTensorSchema.generateDataTensorSchema(outputSize, variableName),
+            outputTensorSchema: EBTensorSchema.generateDataTensorSchema(outputSize, outputSchema.variableName),
             additionalModules: []
         };
     }
