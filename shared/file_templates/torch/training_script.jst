@@ -50,9 +50,6 @@ function TrainingScript.new()
     --print(coroutine)
     --local olddefault = coroutine.cstacksize({{=(1024 * 1024 * 256)}})
 
-    -- This is a table where we will store loaded data entries
-    self.dataEntries = {}
-
     -- Initialization optimization state
     self.optimState = {}
 
@@ -104,7 +101,7 @@ function TrainingScript:getCriterion(index)
    return criterion
 end
 
-function TrainingScript:evaluateTrainingIteration(batch)
+function TrainingScript:evaluateTrainingIteration(inputBatch, outputBatch)
     local batchOutputs
     local outputs
 
@@ -112,9 +109,9 @@ function TrainingScript:evaluateTrainingIteration(batch)
     {{= it.generateLocalizeFunction(it.outputSchema, "localizeOutputRoot").replace(/\n/g, "\n    ") }}
 
     if self.gpuEnabled then
-        batch.input = localizeInputRoot(batch.input)
-        for n=1,#batch.output do
-            batch.output[n] = localizeOutputRoot(batch.output[n])
+        inputBatch = localizeInputRoot(inputBatch)
+        for n=1,#outputBatch do
+            outputBatch[n] = localizeOutputRoot(outputBatch[n])
         end
     end
 
@@ -130,7 +127,7 @@ function TrainingScript:evaluateTrainingIteration(batch)
         ------------------- forward pass -------------------
         self.module:training()
 
-        batchOutputs = self.module:forward(batch.input)
+        batchOutputs = self.module:forward(inputBatch)
         outputs = self:unwindBatchOutput(batchOutputs)
 
         ------------------- criterion ----------------------
@@ -138,8 +135,8 @@ function TrainingScript:evaluateTrainingIteration(batch)
         local derivatives = {}
         for n=1,#outputs do
             local criterion = self:getCriterion(n)
-            loss = loss + criterion:forward(outputs[n], batch.output[n])
-            local criterionDerivatives = criterion:backward(outputs[n], batch.output[n])
+            loss = loss + criterion:forward(outputs[n], outputBatch[n])
+            local criterionDerivatives = criterion:backward(outputs[n], outputBatch[n])
             table.insert(derivatives, criterionDerivatives)
         end
 
@@ -150,7 +147,7 @@ function TrainingScript:evaluateTrainingIteration(batch)
             derivativesBatch = localizeOutputRoot(derivativesBatch)
         end
 
-        local inputDerivatives = self.module:backward(batch.input, derivativesBatch)
+        local inputDerivatives = self.module:backward(inputBatch, derivativesBatch)
 
         -- clip gradient element-wise
         self.gradParams:clamp(-5, 5)
@@ -174,41 +171,40 @@ function TrainingScript:evaluateTrainingIteration(batch)
 end
 
 
-function TrainingScript:evaluateBatch(batch)
+function TrainingScript:evaluateBatch(inputBatch)
     ------------------- forward pass -------------------
     self.module:evaluate()
 
     {{= it.generateLocalizeFunction(it.inputSchema, "localizeInputRoot") }}
 
     if self.gpuEnabled then
-        batch.input = localizeInputRoot(batch.input)
+        inputBatch = localizeInputRoot(inputBatch)
     end
 
-    local batchOutputs = self.module:forward(batch.input)
+    local batchOutputs = self.module:forward(inputBatch)
     return self:unwindBatchOutput(batchOutputs)
 end
 
--- Prepares a batch composed of the given data points
-function TrainingScript:prepareBatch(samples)
-    local batch = {}
-
-    local inputSamples = {}
-    for k,v in pairs(samples) do
-        table.insert(inputSamples, self.dataEntries[v].input)
-    end
-
+-- Prepares an input batch
+function TrainingScript:prepareInputBatch(samples)
     {{= it.prepareBatch(it.inputSchema, "prepareInputRoot").replace(/\n/g, "\n    ") }}
 
-    batch.input = prepareInputRoot(inputSamples)
-
-    local outputSamples = {}
-    for k,v in pairs(samples) do
-        table.insert(outputSamples, self.dataEntries[v].output)
+    local converted = {}
+    for n=1,#samples do
+        converted[n] = self:convertInputIn(samples[n])
     end
 
-    batch.output = outputSamples
+    return prepareInputRoot(converted)
+end
 
-    return batch
+-- Prepares an output batch
+function TrainingScript:prepareOutputBatch(samples)
+    local converted = {}
+    for n=1,#samples do
+        converted[n] = self:convertOutputIn(samples[n])
+    end
+
+    return converted
 end
 
 
@@ -313,15 +309,16 @@ function TrainingScript:enterTrainingLoop()
                 end
 
                 -- The iteration command advances the network with one forward and backward pass.
-                -- It must be given the filename of a batch that has been prepared in advance
-                -- using the "prepareBatch"
-                local batchFile = torch.load(command.batchFilename)
-                local batch = batchFile.data
-                local results = self:evaluateTrainingIteration(batch)
+                -- It must be given the filename of input and output batches that have been prepared in advance
+                -- using the "prepareInputBatch" and "prepareOutputBatch"
+                local inputBatchFile = torch.load(command.inputBatchFilename)
+                local outputBatchFile = torch.load(command.outputBatchFilename)
+
+                local results = self:evaluateTrainingIteration(inputBatchFile.data, outputBatchFile.data)
 
                 local convertedResults = {}
                 for n = 1,#results.output do
-                    local id = batchFile.ids[n]
+                    local id = inputBatchFile.ids[n]
                     local result = results.output[n]
                     local converted = self:convertOutputOut(result)
                     converted.id = id
@@ -334,31 +331,30 @@ function TrainingScript:enterTrainingLoop()
                     loss = results.loss
                 }
                 self:sendResponse(response)
-            elseif command.type == "prepareBatch" then
+            elseif command.type == "prepareInputBatch" then
                 -- The prepare batch command assembles a batch and then writes it
                 -- out to a file, so that its ready to go for the main training
                 -- script
-                local batch = self:prepareBatch(command.ids)
-
-                local batchFile = {
-                    data = batch,
+                local batch = {
+                    data = self:prepareInputBatch(command.samples),
                     ids = command.ids
                 }
 
-                torch.save(command.fileName, batchFile)
+                torch.save(command.fileName, batch)
 
-                self:sendResponse({type="batchPrepared"})
-            elseif command.type == "store" then
-                -- The store command is used by the manager process to store a specific data entry for
-                -- quick retrieval later. Then data is provided directly inside the JSON object of
-                -- the command. It is then prepared by conversion to Torch tensors as needed.
-
-                self.dataEntries[command.id] = {
-                    input = self:convertInputIn(command.input),
-                    output = self:convertOutputIn(command.output)
+                self:sendResponse({type="batchInputPrepared"})
+            elseif command.type == "prepareOutputBatch" then
+                -- The prepare batch command assembles a batch and then writes it
+                -- out to a file, so that its ready to go for the main training
+                -- script
+                local batch = {
+                    data = self:prepareOutputBatch(command.samples),
+                    ids = command.ids
                 }
 
-                self:sendResponse({type="stored"})
+                torch.save(command.fileName, batch)
+
+                self:sendResponse({type="batchOutputPrepared"})
             elseif command.type == "stats" then
                 -- The 'stats' command is used to provide statistics up to the surrounding manager
                 -- code
@@ -371,12 +367,6 @@ function TrainingScript:enterTrainingLoop()
                 }
 
                 self:sendResponse({type="stats", stats = stats})
-            elseif command.type == 'forget' then
-                -- The forget command is used by the manager process to indicate to forget a particular
-                -- data entry. We do this to manage the amount of memory used by the process.
-
-                self.dataEntries[command.id] = nil
-                self:sendResponse({type="forgotten"})
             elseif command.type == "evaluate" then
                 -- Initialize the model
                 if not self.moduleInitialized then
@@ -385,12 +375,13 @@ function TrainingScript:enterTrainingLoop()
 
                 -- The evaluate command runs an object through the network and
                 -- return the result
-                local batch = self:prepareBatch(command.samples)
+                local batch = self:prepareInputBatch(command.samples)
+
                 local results = self:evaluateBatch(batch)
 
                 local convertedResults = {}
                 for n = 1,#results do
-                    local id = command.samples[n]
+                    local id = command.ids[n]
                     local result = results[n]
                     local converted = self:convertOutputOut(result)
                     converted.id = id
@@ -401,6 +392,9 @@ function TrainingScript:enterTrainingLoop()
                     type = "evaluationCompleted",
                     objects = convertedResults
                 }
+
+                print(response)
+
                 self:sendResponse(response)
 
             elseif command.type == "evaluateBatch" then

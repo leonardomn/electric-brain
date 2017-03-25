@@ -460,7 +460,8 @@ class EBTrainModelTask {
      * @param {string} ids The list of ids to make a batch from
      * @returns {Promise} A promise that will resolve to an object with two properties:
      *      {
-     *          fileName: String // The name of the file that contains the batch
+     *          inputFileName: String // The name of the file that contains the batch
+     *          outputFileName: String // The name of the file that contains the batch
      *          objects: [object] // The data for the objects objects within the batch
      *      }
      */
@@ -474,19 +475,22 @@ class EBTrainModelTask {
 
         return workerPromise.then((worker) =>
         {
-            const fileName = temp.path({suffix: '.t7'});
+            const inputFileName = temp.path({suffix: '.t7'});
+            const outputFileName = temp.path({suffix: '.t7'});
             return worker.writeAndWaitForMatchingOutput({
                 "type": "prepareBatch",
                 "batchNumber": batchNumber,
                 "ids": ids,
-                "fileName": fileName
+                "inputFileName": inputFileName,
+                "outputFileName": outputFileName
             }, {
                 "type": "batchPrepared",
                 "batchNumber": batchNumber
             }).then((output) =>
             {
                 return {
-                    fileName: fileName,
+                    inputFileName: inputFileName,
+                    outputFileName: outputFileName,
                     objects: output.objects
                 };
             });
@@ -496,7 +500,7 @@ class EBTrainModelTask {
     /**
      * This method is used to put together a training batch
      *
-     * @returns {Promise} A promise that will resolve to the fileName that the batch is stored in.
+     * @returns {Promise} A promise that will resolve to the inputFileName and outputFileName that the batch is stored in.
      */
     prepareTrainingBatch()
     {
@@ -526,7 +530,7 @@ class EBTrainModelTask {
     /**
      * This method is used to put together a testing batch
      *
-     * @returns {Promise} A promise that will resolve to the fileName that the batch is stored in.
+     * @returns {Promise} A promise that will resolve to the inputFileName and outputFileName that the batch is stored in.
      */
     prepareTestingBatch()
     {
@@ -598,7 +602,7 @@ class EBTrainModelTask {
                         {
                             performanceTrace.addTrace('prepare-batch');
                             // console.log('executing', batch);
-                            return self.trainingProcess.executeTrainingIteration(batch.fileName).then((result) =>
+                            return self.trainingProcess.executeTrainingIteration(batch.inputFileName, batch.outputFileName).then((result) =>
                             {
                                 performanceTrace.addTrace('training-iteration');
 
@@ -626,15 +630,23 @@ class EBTrainModelTask {
                                 // Unlink the batch file
                                 return Promise.fromCallback((next) =>
                                 {
-                                    fs.unlink(batch.fileName, (err) =>
+                                    fs.unlink(batch.inputFileName, (err) =>
                                     {
                                         if (err)
                                         {
                                             return next(err);
                                         }
+                                        
+                                        fs.unlink(batch.outputFileName, (err) =>
+                                        {
+                                            if (err)
+                                            {
+                                                return next(err);
+                                            }
 
-                                        performanceTrace.addTrace('delete-batch');
-                                        return next(null, trainingIterationResult);
+                                            performanceTrace.addTrace('delete-batch');
+                                            return next(null, trainingIterationResult);
+                                        });
                                     });
                                 });
                             }).then((trainingIterationResult) =>
@@ -702,14 +714,22 @@ class EBTrainModelTask {
         const self = this;
         return this.prepareTestingBatch().then((batch) =>
         {
-            return self.trainingProcess.processBatch(batch.fileName).then((outputs) =>
+            return self.trainingProcess.processBatch(batch.inputFileName).then((outputs) =>
             {
                 return Promise.mapSeries(underscore.zip(batch.objects, outputs), (pair) => self.getAccuracyFromOutput(pair[0].output, pair[1], true));
             }).then((accuracies) =>
             {
                 return Promise.fromCallback((next) =>
                 {
-                    fs.unlink(batch.fileName, next);
+                    fs.unlink(batch.inputFileName, function(err)
+                    {
+                        if (err)
+                        {
+                            return next(err);
+                        }
+
+                        fs.unlink(batch.outputFileName, next);
+                    });
                 }).then(() =>
                 {
                     const accuracy = math.mean(accuracies);
@@ -790,7 +810,7 @@ class EBTrainModelTask {
                     {
                         this.prepareTestingBatch().then((batch) =>
                         {
-                            return this.trainingProcess.processBatch(batch.fileName).then((outputs) =>
+                            return this.trainingProcess.processBatch(batch.inputFileName).then((outputs) =>
                             {
                                 processedObjects += batch.objects.length;
                                 return Promise.mapSeries(underscore.zip(batch.objects, outputs),
@@ -799,7 +819,15 @@ class EBTrainModelTask {
                             {
                                 return Promise.fromCallback((next) =>
                                 {
-                                    fs.unlink(batch.fileName, next);
+                                    fs.unlink(batch.inputFileName, function(err)
+                                    {
+                                        if (err)
+                                        {
+                                            return next(err);
+                                        }
+
+                                        fs.unlink(batch.outputFileName, next);
+                                    });
                                 }).then(() =>
                                 {
                                     return batchAccuracies;

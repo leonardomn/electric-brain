@@ -567,32 +567,23 @@ class EBModelAPI extends EBAPIRoot
                     function(next)
                     {
                         const object = req.query.data;
-                        const stream = model.architecture.getObjectTransformationStream(self.application.interpretationRegistry);
+                        const stream = model.architecture.getInputTransformationStream(self.application.interpretationRegistry);
                         stream.on('data', function(data)
                         {
-                            const promise = modelProcess.loadObject("1", data.input, data.output );
-                            promise.then(() =>
+                            // Process the provided object
+                            const promise = modelProcess.processObjects([data]);
+                            promise.then((results) =>
                             {
-                                next(null);
+                                const result = results.objects[0];
+                                const promise = model.architecture.convertNetworkOutputObject(self.application.interpretationRegistry, result);
+                                return promise;
+                            }).then((output) =>
+                            {
+                                resultObject = output;
+                                return next();
                             }, (err) => next(err));
                         });
                         stream.end(object);
-                    },
-                    // Process the object
-                    function(next)
-                    {
-                        // Process the provided object
-                        const promise = modelProcess.processObjects(["1"]);
-                        promise.then((results) =>
-                        {
-                            const result = results[0];
-                            const promise = model.architecture.convertNetworkOutputObject(self.application.interpretationRegistry, result);
-                            return promise;
-                        }).then((output) =>
-                        {
-                            resultObject = output;
-                            return next();
-                        }, (err) => next(err));
                     },
                     // Kill the process we started
                     function(next)
