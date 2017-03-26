@@ -153,6 +153,11 @@ class EBDataSourceAPI extends EBAPIRoot
                     "select": {
                         "type": "array",
                         "items": {"type": "string"}
+                    },
+                    "query": {
+                        "type": "object",
+                        "properties": {"isSampling": {"type": "boolean"}},
+                        "additionalProperties": true
                     }
                 }
             },
@@ -515,7 +520,13 @@ class EBDataSourceAPI extends EBAPIRoot
             options.fields = underscore.object(req.query.select, new Array(req.query.select.length).fill(1));
         }
 
-        const queryObject = this.dataSources.find({}, options);
+        let query = {};
+        if (req.query.query)
+        {
+            query = req.query.query;
+        }
+
+        const queryObject = this.dataSources.find(query, options);
         queryObject.toArray(function(err, dataSources)
         {
             if (err)

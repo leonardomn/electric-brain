@@ -89,6 +89,7 @@ class EBSampleDataSourceTask {
             {
                 this.dataSource.objectsCompleted = objectsCompleted;
                 this.dataSource.objectsTotal = objectsTotal;
+                this.dataSource.isSampling = objectsCompleted < objectsTotal;
                 schema.walk((field) =>
                 {
                     field.setIncluded(true);
