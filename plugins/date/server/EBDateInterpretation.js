@@ -253,7 +253,8 @@ class EBDateInterpretation extends EBInterpretationBase
         const output = {};
         if (schema.configuration.interpretation.includeYear)
         {
-            output.year = date.year();
+            // Input years based on their z-scores relative to average year
+            output.year = (date.year() - schema.metadata.statistics.yearMean) / schema.metadata.statistics.yearStandardDeviation;
         }
         if (schema.configuration.interpretation.includeDayOfYear)
         {
@@ -363,7 +364,37 @@ class EBDateInterpretation extends EBInterpretationBase
 
             getFieldStatistics()
             {
+                const average = (data) =>
+                {
+                    const sum = data.reduce((sum, value) =>
+                    {
+                        return Number(sum) + Number(value);
+                    }, 0);
+
+                    const avg = sum / data.length;
+                    return avg;
+                };
+
+                const standardDeviation = (values) =>
+                {
+                    const avg = average(values);
+
+                    const squareDiffs = values.map((value) =>
+                    {
+                        const diff = Number(value) - avg;
+                        const sqrDiff = diff * diff;
+                        return sqrDiff;
+                    });
+
+                    const avgSquareDiff = average(squareDiffs);
+
+                    const stdDev = Math.sqrt(avgSquareDiff);
+                    return stdDev;
+                };
+
                 return {
+                    yearMean: average(this.years),
+                    yearStandardDeviation: standardDeviation(this.years),
                     yearHistogram: EBValueHistogram.computeHistogram(this.years),
                     monthHistogram: EBValueHistogram.computeHistogram(this.months),
                     dayOfWeekHistogram: EBValueHistogram.computeHistogram(this.daysOfWeek)
@@ -384,6 +415,8 @@ class EBDateInterpretation extends EBInterpretationBase
             "id": "EBDateInterpretation.statisticsSchema",
             "type": "object",
             "properties": {
+                yearMean: {"type": "number"},
+                yearStandardDeviation: {"type": "number"},
                 yearHistogram: EBValueHistogram.schema(),
                 monthHistogram: EBValueHistogram.schema(),
                 dayOfWeekHistogram: EBValueHistogram.schema()
