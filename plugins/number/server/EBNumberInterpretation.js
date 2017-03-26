@@ -20,6 +20,7 @@
 
 const
     EBConfusionMatrix = require('../../../shared/models/EBConfusionMatrix'),
+    EBConfusionChart = require('../../../shared/models/EBConfusionChart'),
     EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
@@ -297,6 +298,15 @@ class EBNumberInterpretation extends EBInterpretationBase
         const configuration = schema.configuration.interpretation;
         if (configuration.mode === 'continuous')
         {
+            if (accumulateStatistics)
+            {
+                if (!schema.results.continuousValueConfusionChart)
+                {
+                    schema.results.continuousValueConfusionChart = new EBConfusionChart();
+                }
+                schema.results.continuousValueConfusionChart.accumulateResult(expected, actual);
+            }
+
             // Calculating accuracy here is a bit quack, but we try anyhow
             if (expected !== 0)
             {
@@ -472,7 +482,8 @@ class EBNumberInterpretation extends EBInterpretationBase
             "id": "EBNumberInterpretation.resultsSchema",
             "type": "object",
             "properties": {
-                "discreteValueConfusionMatrix": EBConfusionMatrix.schema()
+                "discreteValueConfusionMatrix": EBConfusionMatrix.schema(),
+                "continuousValueConfusionChart": EBConfusionChart.schema()
             }
         };
     }

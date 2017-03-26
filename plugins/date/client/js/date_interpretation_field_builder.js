@@ -43,19 +43,11 @@ angular.module('eb').directive('ebDateInterpretationFieldBuilder', function ebDa
 
         $scope.$watch('dateValue', function(newValue, oldValue)
         {
-            if (newValue)
-            {
-                console.log(newValue);
-            }
             updateObjectValue();
         });
 
         $scope.$watch('timeValue', function(newValue, oldValue)
         {
-            if (newValue)
-            {
-                console.log(newValue);
-            }
             updateObjectValue();
         });
     }

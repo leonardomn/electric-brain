@@ -1,6 +1,10 @@
 <h3>Number</h3>
 
-<div ng-if="field.results.discreteValueConfusionMatrix.expectedValues.length > 0">
+<div ng-if="field.configuration.interpretation.mode === 'discrete'">
     <eb-confusion-matrix ng-model="field.results.discreteValueConfusionMatrix"></eb-confusion-matrix>
+</div>
+
+<div ng-if="field.configuration.interpretation.mode === 'continuous'">
+    <eb-confusion-chart ng-model="field.results.continuousValueConfusionChart"></eb-confusion-chart>
 </div>
 
