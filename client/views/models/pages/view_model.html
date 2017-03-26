@@ -90,28 +90,14 @@
         </div>
         <div class="col-md-8">
             <uib-tabset active="activeTab">
-                <uib-tab index="0" heading="Code">
-                    <div class="ibox float-e-margins">
-                        <div class="ibox-content">
-                            <eb-architecture-file-browser architecture="model.architecture"></eb-architecture-file-browser>
-                        </div>
-                    </div>
-                </uib-tab>
-                <uib-tab index="1" heading="Data">
+                <uib-tab index="0" heading="Data">
                     <div class="ibox float-e-margins">
                         <div class="ibox-content">
                             <eb-data-browser eb-data-source="model.architecture.dataSource" eb-object-clicked="objectClicked"></eb-data-browser>
                         </div>
                     </div>
                 </uib-tab>
-                <uib-tab index="2" heading="Logs">
-                    <div class="ibox float-e-margins">
-                        <div class="ibox-content">
-                            <div class="task-log" ui-ace="{ onLoad : aceLoaded }" readonly></div>
-                        </div>
-                    </div>
-                </uib-tab>
-                <uib-tab index="3" heading="Training" ng-if="model.training.status !='waiting'" select="reflowCharts()">
+                <uib-tab index="1" heading="Training" ng-if="model.training.status !='waiting'" select="reflowCharts()">
                     <div class="training-charts">
                         <uib-tabset active="activeTrainingChart">
                             <uib-tab index="0" heading="Accuracy" select="reflowCharts()">
@@ -123,7 +109,7 @@
                         </uib-tabset>
                     </div>
                 </uib-tab>
-                <uib-tab index="4" heading="Results" ng-if="model.training.status !='waiting'">
+                <uib-tab index="2" heading="Results" ng-if="model.training.status !='waiting'">
                     <eb-schema-editor
                             title="Results"
                             schema="model.architecture.outputSchema"
@@ -132,16 +118,16 @@
                             show-only-included="true">
                     </eb-schema-editor>
                 </uib-tab>
-                <uib-tab index="5" heading="Download" ng-if="model.training.status !='waiting'">
-                    <h1>Select programming language for bundle</h1>
-                    <br/>
-                    <br/>
-                    <eb-programming-language-selector ng-model="downloadLanguage"></eb-programming-language-selector>
-                    <br/>
-                    <br/>
-                    <a ng-show="downloadLanguage" class="btn btn-primary" href="/api/models/{{model._id}}/bundle/{{downloadLanguage}}">Download bundle</a>
-                </uib-tab>
-                <uib-tab index="6" heading="API" ng-if="model.training.status !='waiting'">
+                <!--<uib-tab index="3" heading="Download" ng-if="model.training.status !='waiting'">-->
+                    <!--<h1>Select programming language for bundle</h1>-->
+                    <!--<br/>-->
+                    <!--<br/>-->
+                    <!--<eb-programming-language-selector ng-model="downloadLanguage"></eb-programming-language-selector>-->
+                    <!--<br/>-->
+                    <!--<br/>-->
+                    <!--<a ng-show="downloadLanguage" class="btn btn-primary" href="/api/models/{{model._id}}/bundle/{{downloadLanguage}}">Download bundle</a>-->
+                <!--</uib-tab>-->
+                <uib-tab index="3" heading="API" ng-if="model.training.status !='waiting'">
                     <h1>API</h1>
                     <br/>
                     <br/>
@@ -150,7 +136,7 @@
                     <br/>
                     <div swagger-ui input-type="json" input="modelAPISpec"></div>
                 </uib-tab>
-                <uib-tab index="7" heading="Test" ng-if="model.training.status !='waiting'">
+                <uib-tab index="4" heading="Test" ng-if="model.training.status !='waiting'">
                     <h1>Test your model</h1>
                     <br/>
                     <eb-object-builder schema="testInputSchema" object="$parent.testObject"></eb-object-builder>

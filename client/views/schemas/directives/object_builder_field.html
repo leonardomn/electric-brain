@@ -26,14 +26,8 @@
         <span><span>{</span>{{field.type[0]}}<span>}</span></span>
         <span>{{field.title}}</span>
     </div>
-    <div class="property-value" ng-if="field.type.includes('string')">
-        <input type="text" ng-model="$parent.$parent.$parent.object[field.variableName]">
-    </div>
-    <div class="property-value" ng-if="field.type.includes('number')">
-        <input type="number" ng-model="$parent.$parent.$parent.object[field.variableName]">
-    </div>
-    <div class="property-value" ng-if="field.type.includes('boolean')">
-        <input type="checkbox" ng-model="$parent.$parent.$parent.object[field.variableName]">
+    <div class="property-value">
+        <eb-dynamic-directive directive-name="eb-{{field.metadata.mainInterpretation}}-interpretation-field-builder" field="field" object="$parent.$parent.$parent.object"></eb-dynamic-directive>
     </div>
 </div>
 <div ng-if="field.type.includes('object')">

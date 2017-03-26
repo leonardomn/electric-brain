@@ -74,19 +74,9 @@ class EBTrainModelWorker extends EBStdioScript
             // All the ids that need to be fetched
             return Promise.map(message.ids, (id) => this.fetchObject(id)).then((objects) =>
             {
-                return Promise.each(objects, (object) =>
+                return this.trainingProcess.prepareInputBatch(message.ids, objects.map((object) => object.input), message.inputFileName).then(() =>
                 {
-                    console.error(JSON.stringify(object, null, 4));
-                    return this.trainingProcess.loadObject(object.original.id, object.input, object.output);
-                }).then(() =>
-                {
-                    return this.trainingProcess.prepareBatch(message.ids, message.fileName);
-                }).then(() =>
-                {
-                    return Promise.each(objects, (object) =>
-                    {
-                        return this.trainingProcess.removeObject(object.original.id);
-                    });
+                    return this.trainingProcess.prepareOutputBatch(message.ids, objects.map((object) => object.output), message.outputFileName);
                 }).then(() =>
                 {
                     return {
@@ -122,11 +112,11 @@ class EBTrainModelWorker extends EBStdioScript
             const objectTransformationStream = this.model.architecture.getObjectTransformationStream(this.application.interpretationRegistry);
             objectTransformationStream.on('error', (err) =>
             {
-                console.log(err);
+                console.error(err);
             });
             customTransformationStream.on('error', (err) =>
             {
-                console.log(err);
+                console.error(err);
             });
 
             this.fetchQueue = async.cargo((items, next) =>

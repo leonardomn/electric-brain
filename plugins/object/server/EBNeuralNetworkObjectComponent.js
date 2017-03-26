@@ -91,12 +91,12 @@ class EBNeuralNetworkObjectComponent extends EBNeuralNetworkComponentBase
         // add it to the array
         children.forEach((subSchema) =>
         {
-            const subFunctionName = `generateTensor_${subSchema.variableName}`;
+            const subFunctionName = `generateTensor_${subSchema.machineVariableName}`;
             let subSchemaCode = this.neuralNetworkComponentDispatch.generateTensorInputCode(subSchema, subFunctionName);
             subSchemaCode = `    ${subSchemaCode.replace(/\n/g, "\n    ")}`;
             code += subSchemaCode;
 
-            code += `table.insert(transformed, ${subFunctionName}(input["${subSchema.variablePathFrom(schema).replace(".", "").replace(/\./g, "\"][\"")}"]))\n`;
+            code += `table.insert(transformed, ${subFunctionName}(input["${subSchema.variableName}"]))\n`;
         });
 
 
@@ -129,7 +129,7 @@ class EBNeuralNetworkObjectComponent extends EBNeuralNetworkComponentBase
         // For all remaining properties, we take them from the table or array
         children.forEach((subSchema) =>
         {
-            const subFunctionName = `generateJSON_${subSchema.machineVariablePath}`;
+            const subFunctionName = `generateJSON_${subSchema.machineVariableName}`;
             let subSchemaCode = this.neuralNetworkComponentDispatch.generateTensorOutputCode(subSchema, subFunctionName);
             subSchemaCode = `    ${subSchemaCode.replace(/\n/g, "\n    ")}`;
             code += subSchemaCode;
@@ -169,17 +169,17 @@ class EBNeuralNetworkObjectComponent extends EBNeuralNetworkComponentBase
         // For all remaining properties, we take them from the table or array
         children.forEach((subSchema) =>
         {
-            const subFunctionName = `prepareBatch_${subSchema.machineVariablePath}`;
+            const subFunctionName = `prepareBatch_${subSchema.machineVariableName}`;
             let subSchemaCode = this.neuralNetworkComponentDispatch.generatePrepareBatchCode(subSchema, subFunctionName);
             subSchemaCode = `    ${subSchemaCode.replace(/\n/g, "\n    ")}`;
             code += subSchemaCode;
 
-            code += `local values_${subSchema.machineVariablePath} = {}\n`;
+            code += `local values_${subSchema.machineVariableName} = {}\n`;
             code += `    for k,v in pairs(input) do\n`;
-            code += `        table.insert(values_${subSchema.machineVariablePath}, input[k][${tablePosition + 1}])\n`;
+            code += `        table.insert(values_${subSchema.machineVariableName}, input[k][${tablePosition + 1}])\n`;
             code += `    end\n`;
 
-            code += `    batch[${tablePosition + 1}] = ${subFunctionName}(values_${subSchema.machineVariablePath})\n`;
+            code += `    batch[${tablePosition + 1}] = ${subFunctionName}(values_${subSchema.machineVariableName})\n`;
 
             tablePosition += 1;
         });
@@ -215,7 +215,7 @@ class EBNeuralNetworkObjectComponent extends EBNeuralNetworkComponentBase
         // For all remaining properties, we take them from the table or array
         children.forEach((subSchema) =>
         {
-            const subFunctionName = `unwindBatch_${subSchema.machineVariablePath}`;
+            const subFunctionName = `unwindBatch_${subSchema.machineVariableName}`;
             let subSchemaCode = this.neuralNetworkComponentDispatch.generateUnwindBatchCode(subSchema, subFunctionName);
             subSchemaCode = `    ${subSchemaCode.replace(/\n/g, "\n    ")}`;
             code += subSchemaCode;
@@ -256,13 +256,13 @@ class EBNeuralNetworkObjectComponent extends EBNeuralNetworkComponentBase
         // Preliminary assertions
         assert(schema.isObject);
         
-        const moduleName = schema.machineVariablePath || "root";
+        const moduleName = schema.machineVariableName || "root";
         // For each variable, create a node that pulls it out of the input
         const children = schema.children;
         const outputs = [];
         children.forEach((childSchema, childIndex) =>
         {
-            const selectFieldNode = new EBTorchNode(new EBTorchModule("nn.SelectTable", [childIndex + 1]), inputNode, `${moduleName}_selectField_${childSchema.machineVariablePath}`);
+            const selectFieldNode = new EBTorchNode(new EBTorchModule("nn.SelectTable", [childIndex + 1]), inputNode, `${moduleName}_selectField_${childSchema.machineVariableName}`);
 
             // Get the input stack for the given variable
             const inputStack = this.neuralNetworkComponentDispatch.generateInputStack(childSchema, selectFieldNode);
@@ -313,7 +313,7 @@ class EBNeuralNetworkObjectComponent extends EBNeuralNetworkComponentBase
         // Preliminary assertions
         assert(outputSchema.isObject);
 
-        const moduleName = outputSchema.machineVariablePath || "root";
+        const moduleName = outputSchema.machineVariableName || "root";
 
         // For each variable, create the output stack
         const children = outputSchema.children;

@@ -1,0 +1,12 @@
+{{field.configuration.interpretation}}
+
+<div ng-if="field.configuration.interpretation.mode === 'classification'">
+    <select ng-model="object[field.variableName]">
+        <option ng-repeat="value in field.metadata.statistics.valueHistogram.values" value="{{value.value}}">{{value.value}}</option>
+    </select>
+</div>
+
+<div ng-if="field.configuration.interpretation.mode === 'sequence'">
+    <input type="text" ng-model="object[field.variableName]">
+</div>
+

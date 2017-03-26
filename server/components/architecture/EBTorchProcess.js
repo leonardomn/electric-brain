@@ -77,9 +77,9 @@ class EBTorchProcess
                         {
                             return next(err);
                         }
-                        // childProcess.execSync('rm -rf /home/bradley/eb/electric-brain/training/*');
-                        // self.scriptFolder = '/home/bradley/eb/electric-brain/training/';
-                        self.scriptFolder = temporaryFolder;
+                        childProcess.execSync('rm -rf /home/bradley/eb/electric-brain/training/*');
+                        self.scriptFolder = '/home/bradley/eb/electric-brain/training/';
+                        // self.scriptFolder = temporaryFolder;
                         try
                         {
                             // Create a list of files that need to be written
@@ -289,6 +289,11 @@ class EBTorchProcess
      */
     loadObject(id, input, output)
     {
+        console.log(id);
+        console.log(input);
+        console.log(output);
+
+
         const self = this;
         const message = {
             type: "store",
@@ -309,104 +314,35 @@ class EBTorchProcess
 
 
     /**
-     * This method causes an object to be forgotten
-     *
-     * @param {string} id The ID of the object to be stored
-     * @param {function(err)} callback The callback after the object has been forgotten
-     */
-    removeObject(id)
-    {
-        const self = this;
-        const message = {
-            type: "forget",
-            id: id
-        };
-        const writeAndWaitPromise = Promise.each(self.processes, (process) =>
-        {
-            return process.writeAndWaitForMatchingOutput(message, {type: "forgotten"});
-        });
-        writeAndWaitPromise.then(() =>
-        {
-            self.allLoadedEntries.splice(self.allLoadedEntries.indexOf(id), 1);
-        });
-        return writeAndWaitPromise;
-    }
-
-
-    /**
      * This method runs a set of objects through the network and returns their processed versions
      *
-     * @param {[string]} ids The IDs of the objects to be tested. These should already have been loaded into the Lua process
+     * @param {objects} objects The objects that need to be processed
      * @param {function(err, accuracy, output)} callback The callback function which will receive the accuracy of the test, along with the output object
      */
-    processObjects(ids)
+    processObjects(objects)
     {
-        return Promise.fromCallback((callback) =>
-        {
-            // Divide all of the ids between the various processes
-            const processBatches = this.processes.map((process) =>
-            {
-                return {
-                    samples: [],
-                    process: process
-                };
-            });
+        const message = {
+            type: "evaluate",
+            samples: objects,
+            ids: objects.map((object, index) => (index + 1).toString())
+        };
 
-            ids.forEach((id, index) => processBatches[index % processBatches.length].samples.push(id));
-
-            // The maximum number of iterations to run for
-            async.map(processBatches, (processBatch, next) =>
-            {
-                if (processBatch.samples.length === 0)
-                {
-                    return next(null, {objects: []});
-                }
-
-                const message = {
-                    type: "evaluate",
-                    samples: processBatch.samples
-                };
-                const promise = processBatch.process.writeAndWaitForMatchingOutput(message, {type: "evaluationCompleted"});
-                promise.then((result) =>
-                {
-                    next(null, result);
-                }, (err) => next(err));
-            }, (err, results) =>
-            {
-                // Now we force each process to synchronize
-                if (err)
-                {
-                    return callback(err);
-                }
-
-                const allResults = {};
-                results.forEach((processResults) =>
-                {
-                    processResults.objects.forEach((object) =>
-                    {
-                        allResults[object.id] = object;
-                    });
-                });
-
-                return callback(null, ids.map((id) => allResults[id]));
-            });
-
-        });
+        return this.processes[0].writeAndWaitForMatchingOutput(message, {type: "evaluationCompleted"});
     }
 
 
     /**
      * This method runs a prepared batch through the network
      *
-     * @param {string} batchFilename The filename of the batch
+     * @param {string} inputBatchFilename The filename of the batch
      * @param {function(err, accuracy, output)} callback The callback function which will receive the accuracy of the test, along with the output object
      */
-    processBatch(batchFilename)
+    processBatch(inputBatchFilename)
     {
         // Choose a bunch of random samples from the set that we have
         const message = {
             type: "evaluateBatch",
-            batchFilename: batchFilename
+            batchFilename: inputBatchFilename
         };
 
         // TODO: Make this work with multiple sub-processes!
@@ -420,15 +356,17 @@ class EBTorchProcess
     /**
      * This method will execute a single training iteration with the given batch.
      *
-     * @param {[string]} batchFilename The filename that contains this training batch
+     * @param {[string]} inputBatchFilename The filename that contains this input batch
+     * @param {[string]} outputBatchFilename The filename that contains this output batch
      * @param {Promise} A Promise that will resolve when batch is complete
      */
-    executeTrainingIteration(batchFilename)
+    executeTrainingIteration(inputBatchFilename, outputBatchFilename)
     {
         // Choose a bunch of random samples from the set that we have
         const message = {
             type: "iteration",
-            batchFilename: batchFilename
+            inputBatchFilename: inputBatchFilename,
+            outputBatchFilename: outputBatchFilename
         };
 
         // TODO: Make this work with multiple sub-processes!
@@ -538,18 +476,37 @@ class EBTorchProcess
 
 
     /**
-     * This method tells the process to create a batch and save it to a file
+     * This method tells the process to create an input-batch file
      *
-     * @param {[string]} ids The ids of the objects to be put into the batch
+     * @param {string} ids This the ids for each of the objects being saved
+     * @param {objects} objects This contains of objects that are being saved
      * @param {string} fileName The filename to write the result too
      *
      * @return {Promise} A promise that will resolve when the batch has been saved
      */
-    prepareBatch(ids, fileName)
+    prepareInputBatch(ids, objects, fileName)
     {
         const self = this;
-        const message = {type: "prepareBatch", ids: ids, fileName: fileName};
-        return self.processes[0].writeAndWaitForMatchingOutput(message, {type: "batchPrepared"});
+
+        const message = {type: "prepareInputBatch", ids: ids, samples: objects, fileName: fileName};
+        return self.processes[0].writeAndWaitForMatchingOutput(message, {type: "batchInputPrepared"});
+    }
+
+
+    /**
+     * This method tells the process to create a batch and save it to a file
+     *
+     * @param {string} ids This the ids for each of the objects being saved
+     * @param {objects} objects This contains of objects that are being saved
+     * @param {string} fileName The filename to write the result too
+     *
+     * @return {Promise} A promise that will resolve when the batch has been saved
+     */
+    prepareOutputBatch(ids, objects, fileName)
+    {
+        const self = this;
+        const message = {type: "prepareOutputBatch", ids: ids, samples: objects, fileName: fileName};
+        return self.processes[0].writeAndWaitForMatchingOutput(message, {type: "batchOutputPrepared"});
     }
 }
 

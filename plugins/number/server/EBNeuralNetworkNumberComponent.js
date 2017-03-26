@@ -167,9 +167,6 @@ class EBNeuralNetworkNumberComponent extends EBNeuralNetworkComponentBase
      */
     generateOutputStack(outputSchema, inputNode, inputTensorSchema)
     {
-        // Variable name for this piece
-        const variableName = outputSchema.variableName;
-
         // Get the tensor-schema for the output
         const outputTensorSchema = this.getTensorSchema(inputTensorSchema);
 
@@ -180,7 +177,7 @@ class EBNeuralNetworkNumberComponent extends EBNeuralNetworkComponentBase
         const middleLayerSize = Math.min(1500, Math.max(summaryModule.tensorSchema.tensorSize / 2, 100));
 
         // Create the node in the graph for the summary module
-        const summaryNode = new EBTorchNode(summaryModule.module, inputNode, `${variableName}_summaryNode`);
+        const summaryNode = new EBTorchNode(summaryModule.module, inputNode, `${outputSchema.machineVariableName}_summaryNode`);
         
         const linearUnit = new EBTorchNode(new EBTorchModule("nn.Sequential", [], [
             new EBTorchModule("nn.Linear", [summaryModule.tensorSchema.tensorSize, middleLayerSize]),
@@ -188,7 +185,7 @@ class EBNeuralNetworkNumberComponent extends EBNeuralNetworkComponentBase
             new EBTorchModule("nn.Linear", [middleLayerSize, middleLayerSize]),
             new EBTorchModule("nn.Tanh", []),
             new EBTorchModule("nn.Linear", [middleLayerSize, outputTensorSchema.tensorSize])
-        ]), summaryNode, `${variableName}_linearUnit`);
+        ]), summaryNode, `${outputSchema.machineVariableName}_linearUnit`);
 
         return {
             outputNode: linearUnit,

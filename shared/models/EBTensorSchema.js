@@ -156,7 +156,7 @@ class EBTensorSchema
         {
             this.properties.forEach((property, index) =>
             {
-                const subFunctionName = `${property.variableName}_localize`;
+                const subFunctionName = `${property.machineVariableName}_localize`;
                 const subFunctionCode = property.generateLocalizeFunction(subFunctionName);
                 code += `    ${subFunctionCode.replace(/\n/g, "\n    ")}`;
                 code += `value[${index + 1}] = ${subFunctionName}(value[${index + 1}])\n`;

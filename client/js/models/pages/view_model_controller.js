@@ -52,7 +52,7 @@ angular.module('eb').controller('EBViewModelController', function EBViewModelCon
 
             if ($scope.model.training.status !== 'waiting')
             {
-                $scope.activeTab = 3;
+                $scope.activeTab = 1;
             }
             else
             {
@@ -67,34 +67,18 @@ angular.module('eb').controller('EBViewModelController', function EBViewModelCon
         EBLoaderService.showLoaderWith('page', promise);
     };
 
-    let aceEditor = null;
-    $scope.aceLoaded = function (_editor)
-    {
-        aceEditor = _editor;
-    };
-
     let socketEventHandler = function (data)
     {
         $timeout(function ()
         {
-            if (data.event === 'log')
-            {
-                log += `${data.message}\n`;
-                if (aceEditor)
-                {
-                    aceEditor.getSelection().moveCursorFileEnd();
-                    aceEditor.getSelection().clearSelection();
-                    aceEditor.insert(`${data.message}\n`);
-                }
-            }
-            else if (data.event === 'update')
+            if (data.event === 'update')
             {
                 // If we just started training, flip over to the graph
                 if (data.model.training.status === 'in_progress' && $scope.model.training.status !== 'in_progress')
                 {
                     $timeout(function ()
                     {
-                        $scope.activeTab = 3;
+                        $scope.activeTab = 1;
                     }, 250);
                 }
 
@@ -175,7 +159,7 @@ angular.module('eb').controller('EBViewModelController', function EBViewModelCon
                 }
             },
             yAxis: [{
-                title: {text: 'Loss'},
+                title: {text: 'Loss'}
                 min: 0
             }]
         },
