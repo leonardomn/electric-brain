@@ -393,8 +393,6 @@ function TrainingScript:enterTrainingLoop()
                     objects = convertedResults
                 }
 
-                print(response)
-
                 self:sendResponse(response)
 
             elseif command.type == "evaluateBatch" then

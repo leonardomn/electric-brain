@@ -112,6 +112,7 @@ class EBSampleDataSourceTask {
             {
                 field.setIncluded(true);
             });
+            this.dataSource.isSampling = false;
             return this.updateSchema(resultSchema);
         }).then(() =>
         {
