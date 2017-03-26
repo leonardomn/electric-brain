@@ -18,10 +18,14 @@
 
 <div class="row">
     <div class="col-md-12" ng-if="dataSource.objectsCompleted > 0 && dataSource.objectsCompleted <dataSource.objectsTotal">
-        <h1>Sampling Progress</h1>
-        <uib-progressbar max="dataSource.objectsTotal" value="dataSource.objectsCompleted">
-            <span style="color:white; white-space:nowrap;">{{dataSource.objectsCompleted}} / {{dataSource.objectsTotal}} objects sampled so far.</span>
-        </uib-progressbar>
+        <div class="ibox">
+            <div class="ibox-content">
+                <h1>Sampling Progress</h1>
+                <uib-progressbar max="dataSource.objectsTotal" value="dataSource.objectsCompleted">
+                    <span style="color:white; white-space:nowrap;">{{dataSource.objectsCompleted}} / {{dataSource.objectsTotal}} objects sampled so far.</span>
+                </uib-progressbar>
+            </div>
+        </div>
     </div>
 </div>
 <div class="row database-fields">

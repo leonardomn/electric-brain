@@ -25,6 +25,14 @@
 
 angular.module('eb').controller('EBDataSourceSelectFieldsController', function EBDataSourceSelectFieldsController($scope, $timeout, $state, $stateParams, EBDataSourceService, config, EBNavigationBarService, EBLoaderService, EBSocketService)
 {
+    let firstUpdateResolver;
+    let firstUpdateResolved = false;
+    const firstUpdatePromise = new Promise(function(resolve, reject)
+    {
+        firstUpdateResolver = resolve;
+    });
+    EBLoaderService.showLoaderWith('page', firstUpdatePromise);
+
     const socketEventHandler = (data) =>
     {
         $timeout(() =>
@@ -42,6 +50,12 @@ angular.module('eb').controller('EBDataSourceSelectFieldsController', function E
                     
                     // Replace ours with the updated one
                     $scope.dataSource = dataSource;
+
+                    if (!firstUpdateResolved)
+                    {
+                        firstUpdateResolved = true;
+                        firstUpdateResolver();
+                    }
                 });
                 EBLoaderService.showLoaderWith('menu', promise);
             }
@@ -63,24 +77,34 @@ angular.module('eb').controller('EBDataSourceSelectFieldsController', function E
         clearEventHandler();
     });
 
+    let hasSetupDataSource = false;
+    function setupDataSource()
+    {
+        if (!$scope.dataSource.dataSchema)
+        {
+            const promise = EBDataSourceService.saveDataSource($scope.dataSource).then(() =>
+            {
+                EBDataSourceService.sampleDataSource($scope.dataSource).success((body) =>
+                {
+                    setupEventHandler();
+                });
+            });
+            EBLoaderService.showLoaderWith('page', promise);
+        }
+        else
+        {
+            setupEventHandler();
+        }
+    }
+
     $scope.$watch('dataSource', function(newValue)
     {
         if (newValue)
         {
-            if (!$scope.dataSource.dataSchema)
+            if (!hasSetupDataSource)
             {
-                const promise = EBDataSourceService.saveDataSource($scope.dataSource).then(() =>
-                {
-                    EBDataSourceService.sampleDataSource($scope.dataSource).success((body) =>
-                    {
-                        setupEventHandler();
-                    });
-                });
-                EBLoaderService.showLoaderWith('page', promise);
-            }
-            else
-            {
-                setupEventHandler();
+                hasSetupDataSource = true;
+                setupDataSource();
             }
         }
     });

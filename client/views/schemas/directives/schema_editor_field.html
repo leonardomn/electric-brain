@@ -19,7 +19,7 @@
 <div ui-tree-handle class="tree-node tree-node-content" ng-click="toggleFieldSubSchema(field, this)" ng-class="{selected: field == selectedField, included: field.metadata.included}">
     <div class="sub-properties-chevron">
         <a class="btn btn-success btn-xs" ng-if="field.type.includes('object') || field.type.includes('array')" data-nodrag>
-            <span class="fa" ng-class="{'fa-chevron-right': field.open, 'fa-chevron-down': !field.open}"></span>
+            <span class="fa" ng-class="{'fa-chevron-right': field.configuration.open, 'fa-chevron-down': !field.configuration.open}"></span>
         </a>
     </div>
     <div class="property-information">
@@ -32,13 +32,13 @@
     </div>
 </div>
 <div ng-if="field.type.includes('object')">
-    <ol ui-tree-nodes="" ng-model="field.properties" ng-class="{hidden: !field.open}">
+    <ol ui-tree-nodes="" ng-model="field.properties" ng-class="{hidden: !field.configuration.open}">
         <li ng-repeat="field in field.properties" ui-tree-node eb-schema-editor-field="field" mode="{{mode}}" selected-field="$parent.$parent.$parent.selectedField">
         </li>
     </ol>
 </div>
 <div ng-if="field.type.includes('array') && field.items.type.includes('object')">
-    <ol ui-tree-nodes="" ng-model="field.items.properties" ng-class="{hidden: !field.open}">
+    <ol ui-tree-nodes="" ng-model="field.items.properties" ng-class="{hidden: !field.configuration.open}">
         <li ng-repeat="field in field.items.properties" ui-tree-node eb-schema-editor-field="field" mode="{{mode}}" selected-field="$parent.$parent.$parent.selectedField">
         </li>
     </ol>

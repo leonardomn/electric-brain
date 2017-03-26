@@ -29,13 +29,13 @@ angular.module('eb').directive('ebSchemaEditorField', function ebSchemaEditorFie
         {
             $scope.selectedField = field;
 
-            if (field.open)
+            if (field.configuration.open)
             {
-                field.open = false;
+                field.configuration.open = false;
             }
             else
             {
-                field.open = true;
+                field.configuration.open = true;
             }
         };
 
