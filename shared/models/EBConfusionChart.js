@@ -56,8 +56,8 @@ class EBConfusionChart
         }
         else
         {
-            // Default size is 1000
-            self.historySize = 1000;
+            // Default size is 100
+            self.historySize = 100;
         }
     }
 
@@ -73,9 +73,9 @@ class EBConfusionChart
             actualValue: actualValue
         });
 
-        while(self.predictions.length > self.historySize)
+        if (self.predictions.length > self.historySize)
         {
-            self.predictions.splice(0, 1);
+            self.predictions.splice(0, self.predictions.length - self.historySize);
         }
     }
 
