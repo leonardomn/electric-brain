@@ -567,7 +567,7 @@ class EBTrainModelTask {
     {
         const self = this;
         const trainingIterations = self.model.parameters.iterations;
-        const saveFrequency = 5000;
+        const saveFrequency = 500;
         const trainingResult = {
             status: 'in_progress',
             percentageComplete: 0,
@@ -888,12 +888,20 @@ class EBTrainModelTask {
             const promise = self.trainingProcess.getTorchModelFileStream();
             promise.then((stream) =>
             {
+                const fileName = `model-${self.model._id}.t7`;
                 stream.pipe(self.gridFS.openUploadStream(`model-${self.model._id}.t7`)).on('error', (error) =>
                 {
                     return callback(error);
                 }).on('finish', () =>
                 {
-                    return callback();
+                    // Delete the older model files, if there are any
+                    self.gridFS.find({filename: fileName}, {
+                        sort: {uploadDate: -1}
+                    }).toArray().then((files) =>
+                    {
+                        const filesToDelete = files.splice(1, files.length - 1);
+                        async.eachSeries(filesToDelete, (file, next) => self.gridFS.delete(file._id, next), callback);
+                    }, (err) => callback(err));
                 });
             }, (err) => callback(err));
         });
