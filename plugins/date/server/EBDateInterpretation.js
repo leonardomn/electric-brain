@@ -22,14 +22,16 @@ const
     EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
+    EBNumberHistogram = require('../../../shared/models/EBNumberHistogram'),
     EBSchema = require('../../../shared/models/EBSchema'),
     EBValueHistogram = require("../../../shared/models/EBValueHistogram"),
+    moment = require('moment'),
     underscore = require('underscore');
 
 /**
- * The string interpretation is used for all strings.
+ * The date interpretation is used for all strings that look like dates
  */
-class EBBooleanInterpretation extends EBInterpretationBase
+class EBDateInterpretation extends EBInterpretationBase
 {
     /**
      * Constructor. Requires the interpretation registry in order to recurse properly
@@ -38,8 +40,27 @@ class EBBooleanInterpretation extends EBInterpretationBase
      */
     constructor(interpretationRegistry)
     {
-        super('boolean');
+        super('date');
         this.interpretationRegistry = interpretationRegistry;
+
+        // This is the list of date formats that we the system will accept
+        this.validDateFormats = [
+            moment.ISO_8601,
+            'YYYY-MM-DDTHH:mm:ss',
+            'YYYY-MM-DDTHH:mm:ss.SSSZ',
+            "MM-DD-YYYY",
+            "YYYY-MM-DD",
+            "YYYY-DD-MM",
+            "DD-MM-YYYY",
+            "MM/DD/YYYY",
+            "YYYY/MM/DD",
+            "YYYY/DD/MM",
+            "DD/MM/YYYY",
+            "MM DD YYYY",
+            "YYYY MM DD",
+            "YYYY DD MM",
+            "DD MM YYYY"
+        ];
     }
 
 
@@ -55,8 +76,9 @@ class EBBooleanInterpretation extends EBInterpretationBase
      */
     getUpstreamInterpretations()
     {
-        return [];
+        return ['string'];
     }
+
 
 
 
@@ -67,7 +89,7 @@ class EBBooleanInterpretation extends EBInterpretationBase
      */
     getJavascriptType()
     {
-        return 'boolean';
+        return 'string';
     }
 
 
@@ -82,20 +104,19 @@ class EBBooleanInterpretation extends EBInterpretationBase
      */
     checkValue(value)
     {
-        const acceptableStringValues = [
-            'true',
-            'false'
-        ];
-
-        // Is it a string and its contents look booleanish
-        if (underscore.isString(value) && acceptableStringValues.indexOf(value.toLowerCase()) !== -1)
+        if (value instanceof Date)
         {
             return Promise.resolve(true);
         }
-        // Is it directly just a boolean value
-        else if (underscore.isBoolean(value))
+        else if (underscore.isString(value))
         {
-            return Promise.resolve(true);
+            const date = moment(value, this.validDateFormats, true);
+            if (date.isValid())
+            {
+                return Promise.resolve(true);
+            }
+
+            return Promise.resolve(false);
         }
         else
         {
@@ -156,10 +177,64 @@ class EBBooleanInterpretation extends EBInterpretationBase
      */
     transformSchemaForNeuralNetwork(schema)
     {
-        // Convert to a number
+        // Create an object composed of several properties
+        const dateComponentProperties = {};
+        if (schema.configuration.interpretation.includeYear)
+        {
+            dateComponentProperties.year = new EBSchema({
+                title: `${schema.title}.year`,
+                type: "number",
+                configuration: {included: true}
+            });
+        }
+        if (schema.configuration.interpretation.includeDayOfYear)
+        {
+            dateComponentProperties.dayOfYear = new EBSchema({
+                title: `${schema.title}.dayOfYear`,
+                type: "number",
+                configuration: {included: true}
+            });
+        }
+        if (schema.configuration.interpretation.includeMonth)
+        {
+            const numberOfMonths = 12;
+            dateComponentProperties.month = new EBSchema({
+                title: `${schema.title}.month`,
+                type: "number",
+                enum: underscore.range(0, numberOfMonths),
+                configuration: {included: true}
+            });
+        }
+        if (schema.configuration.interpretation.includeDayOfMonth)
+        {
+            dateComponentProperties.dayOfMonth = new EBSchema({
+                title: `${schema.title}.dayOfMonth`,
+                type: "number",
+                configuration: {included: true}
+            });
+        }
+        if (schema.configuration.interpretation.includeDayOfWeek)
+        {
+            const numberOfDaysInWeek = 7;
+            dateComponentProperties.dayOfWeek = new EBSchema({
+                title: `${schema.title}.dayOfWeek`,
+                type: "number",
+                enum: underscore.range(0, numberOfDaysInWeek),
+                configuration: {included: true}
+            });
+        }
+        if (schema.configuration.interpretation.includeTimeOfDay)
+        {
+            dateComponentProperties.timeOfDay = new EBSchema({
+                title: `${schema.title}.timeOfDay`,
+                type: "number",
+                configuration: {included: true}
+            });
+        }
         return new EBSchema({
             title: schema.title,
-            type: "number",
+            type: "object",
+            properties: dateComponentProperties,
             configuration: {included: true}
         });
     }
@@ -169,19 +244,39 @@ class EBBooleanInterpretation extends EBInterpretationBase
      * This method should prepare a given value for input into the neural network
      *
      * @param {*} value The value to be transformed
-     * @param {EBSchema} schema The schema for the value
+     * @param {EBSchema} schema The schema for the value to be transformed
      * @return {Promise} A promise that resolves to a new value.
      */
     transformValueForNeuralNetwork(value, schema)
     {
-        if (value)
+        const date = moment(value);
+        const output = {};
+        if (schema.configuration.interpretation.includeYear)
         {
-            return Promise.resolve(1);
+            output.year = date.year();
         }
-        else
+        if (schema.configuration.interpretation.includeDayOfYear)
         {
-            return Promise.resolve(0);
+            output.dayOfYear = date.dayOfYear() / 366;
         }
+        if (schema.configuration.interpretation.includeMonth)
+        {
+            output.month = date.month();
+        }
+        if (schema.configuration.interpretation.includeDayOfMonth)
+        {
+            output.dayOfMonth = date.date() / date.daysInMonth();
+        }
+        if (schema.configuration.interpretation.includeDayOfWeek)
+        {
+            output.dayOfWeek = date.day();
+        }
+        if (schema.configuration.interpretation.includeTimeOfDay)
+        {
+            const startOfDay = moment(date).startOf('day');
+            output.timeOfDay = Math.abs(date.diff(startOfDay)) / 86400000;
+        }
+        return output;
     }
 
 
@@ -194,7 +289,7 @@ class EBBooleanInterpretation extends EBInterpretationBase
      */
     transformValueBackFromNeuralNetwork(value, schema)
     {
-        return Boolean(Math.round(value));
+        throw new Error("Unimplemented.");
     }
 
 
@@ -206,7 +301,14 @@ class EBBooleanInterpretation extends EBInterpretationBase
      */
     generateDefaultConfiguration(schema)
     {
-        return {};
+        return {
+            includeYear: false,
+            includeDayOfYear: true,
+            includeMonth: true,
+            includeDayOfMonth: false,
+            includeDayOfWeek: true,
+            includeTimeOfDay: true
+        };
     }
 
 
@@ -222,14 +324,7 @@ class EBBooleanInterpretation extends EBInterpretationBase
      */
     compareNetworkOutputs(expected, actual, schema, accumulateStatistics)
     {
-        if (expected === actual)
-        {
-            return 1;
-        }
-        else
-        {
-            return 0;
-        }
+        throw new Error("Unimplemented");
     }
 
 
@@ -243,44 +338,36 @@ class EBBooleanInterpretation extends EBInterpretationBase
      */
     createFieldAccumulator()
     {
-        // This needs to be moved to a configuration file of some sort
-        const maxLengthForHistogram = 250;
-
+        const self = this;
         // Create a subclass and immediately instantiate it.
         return new (class extends EBFieldAnalysisAccumulatorBase
         {
             constructor()
             {
                 super();
-                this.truths = 0;
-                this.falses = 0;
+                this.years = [];
+                this.months = [];
+                this.daysOfWeek = [];
             }
 
             accumulateValue(value)
             {
-                if (value)
+                const date = moment(value, this.validDateFormats, true);
+                if (date.isValid())
                 {
-                    this.truths += 1;
-                }
-                else
-                {
-                    this.falses += 1;
+                    this.years.push(date.format("YYYY"));
+                    this.months.push(date.format("MMMM"));
+                    this.daysOfWeek.push(date.format("dddd"));
                 }
             }
 
             getFieldStatistics()
             {
-                const values = [];
-                for(let truthN = 0; truthN < this.truths; truthN += 1)
-                {
-                    values.push('true');
-                }
-                for(let falseN = 0; falseN < this.falses; falseN += 1)
-                {
-                    values.push('false');
-                }
-
-                return {valueHistogram: EBValueHistogram.computeHistogram(values)};
+                return {
+                    yearHistogram: EBValueHistogram.computeHistogram(this.years),
+                    monthHistogram: EBValueHistogram.computeHistogram(this.months),
+                    dayOfWeekHistogram: EBValueHistogram.computeHistogram(this.daysOfWeek)
+                };
             }
         })();
     }
@@ -294,10 +381,12 @@ class EBBooleanInterpretation extends EBInterpretationBase
     static statisticsSchema()
     {
         return {
-            "id": "EBBooleanInterpretation.statisticsSchema",
+            "id": "EBDateInterpretation.statisticsSchema",
             "type": "object",
             "properties": {
-                valueHistogram: EBValueHistogram.schema()
+                yearHistogram: EBValueHistogram.schema(),
+                monthHistogram: EBValueHistogram.schema(),
+                dayOfWeekHistogram: EBValueHistogram.schema()
             }
         };
     }
@@ -311,9 +400,15 @@ class EBBooleanInterpretation extends EBInterpretationBase
     static configurationSchema()
     {
         return {
-            "id": "EBBooleanInterpretation.configurationSchema",
+            "id": "EBDateInterpretation.configurationSchema",
             "type": "object",
             "properties": {
+                includeYear: {"type": "boolean"},
+                includeDayOfYear: {"type": "boolean"},
+                includeMonth: {"type": "boolean"},
+                includeDayOfMonth: {"type": "boolean"},
+                includeDayOfWeek: {"type": "boolean"},
+                includeTimeOfDay: {"type": "boolean"}
             }
         };
     }
@@ -327,11 +422,11 @@ class EBBooleanInterpretation extends EBInterpretationBase
     static resultsSchema()
     {
         return {
-            "id": "EBBooleanInterpretation.resultsSchema",
+            "id": "EBDateInterpretation.resultsSchema",
             "type": "object",
             "properties": {}
         };
     }
 }
 
-module.exports = EBBooleanInterpretation;
+module.exports = EBDateInterpretation;

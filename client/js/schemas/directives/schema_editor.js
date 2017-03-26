@@ -86,13 +86,21 @@ angular.module('eb').directive('ebSchemaEditor', function ebSchemaEditor()
             {
                 if (newValue)
                 {
-                    if (newValue.properties && Object.keys(newValue.properties).length > 0)
+                    if (!$scope.selectedField)
                     {
-                        $scope.selectedField = findFirstField(newValue);
+                        if (newValue.properties && Object.keys(newValue.properties).length > 0)
+                        {
+                            $scope.selectedField = findFirstField(newValue);
+                        }
+                        else
+                        {
+                            $scope.selectedField = null;
+                        }
                     }
                     else
                     {
-                        $scope.selectedField = null;
+                        // Find the same field ont he new object
+                        $scope.selectedField = newValue.find($scope.selectedField.variablePath);
                     }
                 }
             });

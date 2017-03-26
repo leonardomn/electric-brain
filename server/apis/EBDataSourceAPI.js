@@ -27,6 +27,7 @@ const
     mongodb = require('mongodb'),
     queryUtilities = require("../../shared/utilities/query"),
     schemaUtilities = require("../models/schema_utilities"),
+    tasks = require("../tasks/tasks"),
     tus = require('tus-node-server'),
     underscore = require('underscore');
 
@@ -152,6 +153,11 @@ class EBDataSourceAPI extends EBAPIRoot
                     "select": {
                         "type": "array",
                         "items": {"type": "string"}
+                    },
+                    "query": {
+                        "type": "object",
+                        "properties": {"isSampling": {"type": "boolean"}},
+                        "additionalProperties": true
                     }
                 }
             },
@@ -277,6 +283,23 @@ class EBDataSourceAPI extends EBAPIRoot
                 "properties": {"dataSchema": models.EBSchema.schema()}
             },
             "handler": this.getDatabaseCollectionSchema.bind(this)
+        });
+
+        this.registerEndpoint(expressApplication, {
+            "name": "SampleDataSource",
+            "uri": "/dataSource/:id/sample",
+            "method": "POST",
+            "inputSchema": {
+                "id": "/SampleDataSourceInput",
+                "type": "object",
+                "properties": { }
+            },
+            "outputSchema": {
+                "id": "/SampleDataSourceOutput",
+                "type": "object",
+                "properties": { }
+            },
+            "handler": this.startDataSourceSampling.bind(this)
         });
 
         this.registerEndpoint(expressApplication, {
@@ -415,6 +438,28 @@ class EBDataSourceAPI extends EBAPIRoot
 
 
     /**
+     * This endpoint will start a data-source sampling task
+     *
+     * @param {object} req express request object
+     * @param {object} res express response object
+     * @param {function} next express callback
+     */
+    startDataSourceSampling(req, res, next)
+    {
+        console.log("arrived");
+
+        tasks.queue.queueTask("sample_data_source", {_id: Number(req.params.id)}, (err, task) =>
+        {
+            if (err)
+            {
+                return next(err);
+            }
+            return next(null, {});
+        });
+    }
+
+
+    /**
      * This endpoint is used to create a new data source
      *
      * @param {object} req express request object
@@ -475,7 +520,13 @@ class EBDataSourceAPI extends EBAPIRoot
             options.fields = underscore.object(req.query.select, new Array(req.query.select.length).fill(1));
         }
 
-        const queryObject = this.dataSources.find({}, options);
+        let query = {};
+        if (req.query.query)
+        {
+            query = req.query.query;
+        }
+
+        const queryObject = this.dataSources.find(query, options);
         queryObject.toArray(function(err, dataSources)
         {
             if (err)

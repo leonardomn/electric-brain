@@ -567,7 +567,7 @@ class EBTrainModelTask {
     {
         const self = this;
         const trainingIterations = self.model.parameters.iterations;
-        const saveFrequency = 5000;
+        const saveFrequency = 500;
         const trainingResult = {
             status: 'in_progress',
             percentageComplete: 0,
@@ -617,7 +617,10 @@ class EBTrainModelTask {
                                 // Zip together original objects with the actual outputs from the network, and compute accuracies
                                 return Promise.mapSeries(underscore.zip(batch.objects, result.objects), (zipped) =>
                                 {
-                                    return self.getAccuracyFromOutput(zipped[0].output, zipped[1], false);
+                                    return self.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, zipped[1]).then((actual) =>
+                                    {
+                                        return self.getAccuracyFromOutput(zipped[0].original, actual, false);
+                                    });
                                 }).then((accuracies) =>
                                 {
                                     return {
@@ -716,7 +719,14 @@ class EBTrainModelTask {
         {
             return self.trainingProcess.processBatch(batch.inputFileName).then((outputs) =>
             {
-                return Promise.mapSeries(underscore.zip(batch.objects, outputs), (pair) => self.getAccuracyFromOutput(pair[0].output, pair[1], true));
+                // Zip together original objects with the actual outputs from the network, and compute accuracies
+                return Promise.mapSeries(underscore.zip(batch.objects, outputs), (zipped) =>
+                {
+                    return self.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, zipped[1]).then((actual) =>
+                    {
+                        return self.getAccuracyFromOutput(zipped[0].original, actual, true);
+                    });
+                });
             }).then((accuracies) =>
             {
                 return Promise.fromCallback((next) =>
@@ -813,8 +823,15 @@ class EBTrainModelTask {
                             return this.trainingProcess.processBatch(batch.inputFileName).then((outputs) =>
                             {
                                 processedObjects += batch.objects.length;
-                                return Promise.mapSeries(underscore.zip(batch.objects, outputs),
-                                    (pair) => this.getAccuracyFromOutput(pair[0].output, pair[1], true));
+
+                                // Zip together original objects with the actual outputs from the network, and compute accuracies
+                                return Promise.mapSeries(underscore.zip(batch.objects, outputs), (zipped) =>
+                                {
+                                    return this.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, zipped[1]).then((actual) =>
+                                    {
+                                        return this.getAccuracyFromOutput(zipped[0].original, actual, true);
+                                    });
+                                });
                             }).then((batchAccuracies) =>
                             {
                                 return Promise.fromCallback((next) =>
@@ -871,12 +888,20 @@ class EBTrainModelTask {
             const promise = self.trainingProcess.getTorchModelFileStream();
             promise.then((stream) =>
             {
+                const fileName = `model-${self.model._id}.t7`;
                 stream.pipe(self.gridFS.openUploadStream(`model-${self.model._id}.t7`)).on('error', (error) =>
                 {
                     return callback(error);
                 }).on('finish', () =>
                 {
-                    return callback();
+                    // Delete the older model files, if there are any
+                    self.gridFS.find({filename: fileName}, {
+                        sort: {uploadDate: -1}
+                    }).toArray().then((files) =>
+                    {
+                        const filesToDelete = files.splice(1, files.length - 1);
+                        async.eachSeries(filesToDelete, (file, next) => self.gridFS.delete(file._id, next), callback);
+                    }, (err) => callback(err));
                 });
             }, (err) => callback(err));
         });

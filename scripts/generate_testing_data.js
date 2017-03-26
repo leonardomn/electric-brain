@@ -35,6 +35,9 @@ module.exports.generateData = function generateData(next)
         return testingData.generateSequenceCopyTestingDataSet();
     }).then(() =>
     {
+        return testingData.generateDateClassificationDataset();
+    }).then(() =>
+    {
         return testingData.generateSequenceDualCopyTestingDataSet();
     }).then(() =>
     {

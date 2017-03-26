@@ -171,10 +171,10 @@ class EBBundleScript
                 {
                     if (err)
                     {
-                        return next(err);
+                        return callback(err);
                     }
 
-                    return next(null, outputs);
+                    return callback(null, outputs);
                 });
             });
         });

@@ -31,45 +31,33 @@ angular.module('eb').controller('EBArchitectureSelectFieldsController', function
         {
             if ($scope.schemaNeedsRefreshed || (!$scope.architecture.inputSchema || !$scope.architecture.outputSchema))
             {
-                const promise = EBArchitectureService.getTransformedSample($scope.architecture._id).success(function(response)
+                const originalInputSchema = $scope.architecture.inputSchema;
+                $scope.architecture.inputSchema = new shared.models.EBSchema($scope.architecture.dataSource.dataSchema).clone();
+                if (originalInputSchema)
                 {
-                    $scope.setSchemaNeedsRefreshed(false);
-
-                    const originalInputSchema = $scope.architecture.inputSchema;
-                    $scope.architecture.inputSchema = new shared.models.EBSchema(response.schema).clone();
-                    if (originalInputSchema)
-                    {
-                        $scope.architecture.inputSchema.copyConfigurationFrom(originalInputSchema);
-                    }
-                    else
-                    {
-                        $scope.architecture.inputSchema.walk(function(field)
-                        {
-                            field.setIncluded(false);
-                        });
-                    }
-
-                    const originalOutputSchema = $scope.architecture.outputSchema;
-                    $scope.architecture.outputSchema = new shared.models.EBSchema(response.schema).clone();
-                    if (originalOutputSchema)
-                    {
-                        $scope.architecture.outputSchema.copyConfigurationFrom(originalOutputSchema);
-                    }
-                    else
-                    {
-                        $scope.architecture.outputSchema.walk(function(field)
-                        {
-                            field.setIncluded(false);
-                        });
-                    }
-                });
-                
-                let loader = 'page';
-                if ($scope.architecture.inputSchema && $scope.architecture.outputSchema)
-                {
-                    loader = 'menu';
+                    $scope.architecture.inputSchema.copyConfigurationFrom(originalInputSchema);
                 }
-                EBLoaderService.showLoaderWith(loader, promise);
+                else
+                {
+                    $scope.architecture.inputSchema.walk((field) =>
+                    {
+                        field.setIncluded(false);
+                    });
+                }
+
+                const originalOutputSchema = $scope.architecture.outputSchema;
+                $scope.architecture.outputSchema = new shared.models.EBSchema($scope.architecture.dataSource.dataSchema).clone();
+                if (originalOutputSchema)
+                {
+                    $scope.architecture.outputSchema.copyConfigurationFrom(originalOutputSchema);
+                }
+                else
+                {
+                    $scope.architecture.outputSchema.walk((field) =>
+                    {
+                        field.setIncluded(false);
+                    });
+                }
             }
         }
     });

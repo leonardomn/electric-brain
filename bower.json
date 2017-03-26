@@ -31,8 +31,7 @@
     "SpinKit": "spinkit#^1.2.5",
     "colorjs": "^1.0.1",
     "angular-swagger-ui": "^0.3.3",
-    "bluebird": "^3.4.6",
-    "angular-ui-tree": "^2.22.5"
+    "bluebird": "^3.4.6"
   },
   "possible_deprecations": {},
   "resolutions": {

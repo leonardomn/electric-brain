@@ -23,60 +23,100 @@
  */
 
 
-angular.module('eb').controller('EBDataSourceSelectFieldsController', function EBDataSourceSelectFieldsController($scope, $timeout, $state, $stateParams, EBDataSourceService, config, EBNavigationBarService, EBLoaderService)
+angular.module('eb').controller('EBDataSourceSelectFieldsController', function EBDataSourceSelectFieldsController($scope, $timeout, $state, $stateParams, EBDataSourceService, config, EBNavigationBarService, EBLoaderService, EBSocketService)
 {
-    if (!$stateParams.id)
+    let firstUpdateResolver;
+    let firstUpdateResolved = false;
+    const firstUpdatePromise = new Promise(function(resolve, reject)
     {
-        $stateParams.id = 'new';
-    }
-    $scope.isNew = $stateParams.id === 'new';
+        firstUpdateResolver = resolve;
+    });
+    EBLoaderService.showLoaderWith('page', firstUpdatePromise);
 
-    if ($stateParams.refreshSchema)
+    const socketEventHandler = (data) =>
     {
-        const promise = EBDataSourceService.getCollectionSchema($scope.dataSource).success(function(body)
+        $timeout(() =>
         {
-            $scope.dataSource.dataSchema = body.dataSchema;
-            $scope.dataSource.dataSchema.walk(function(field)
+            if (data.event === 'update')
             {
-                field.setIncluded(true);
-            });
+                // Fetch the latest data-source, and copy our current configuration into it
+                const promise = EBDataSourceService.getDataSource($scope.dataSource._id).success((dataSource) =>
+                {
+                    if ($scope.dataSource.dataSchema)
+                    {
+                        // Copy the configuration from that schema into this one
+                        dataSource.dataSchema.copyConfigurationFrom($scope.dataSource.dataSchema);
+                    }
+                    
+                    // Replace ours with the updated one
+                    $scope.dataSource = dataSource;
+
+                    if (!firstUpdateResolved)
+                    {
+                        firstUpdateResolved = true;
+                        firstUpdateResolver();
+                    }
+                });
+                EBLoaderService.showLoaderWith('menu', promise);
+            }
         });
-        EBLoaderService.showLoaderWith('page', promise);
-    }
+    };
 
-
-    function createAndSave()
+    const setupEventHandler = function()
     {
-        if ($stateParams.id === 'new')
+        EBSocketService.socket.on(`data-source-${$scope.dataSource._id}`, socketEventHandler);
+    };
+
+    const clearEventHandler = function()
+    {
+        EBSocketService.socket.removeListener(`data-source-${$scope.dataSource._id}`, socketEventHandler);
+    };
+
+    $scope.$on('$destroy', () =>
+    {
+        clearEventHandler();
+    });
+
+    let hasSetupDataSource = false;
+    function setupDataSource()
+    {
+        if (!$scope.dataSource.dataSchema)
         {
-            const promise = EBDataSourceService.createDataSource($scope.dataSource).then(function success(body)
+            const promise = EBDataSourceService.saveDataSource($scope.dataSource).then(() =>
             {
-                EBNavigationBarService.refreshNavigationBar();
-                return body;
+                EBDataSourceService.sampleDataSource($scope.dataSource).success((body) =>
+                {
+                    setupEventHandler();
+                });
             });
-            return promise;
+            EBLoaderService.showLoaderWith('page', promise);
         }
         else
         {
-            const promise = EBDataSourceService.saveDataSource($scope.dataSource);
-            return promise;
+            setupEventHandler();
         }
     }
 
+    $scope.$watch('dataSource', function(newValue)
+    {
+        if (newValue)
+        {
+            if (!hasSetupDataSource)
+            {
+                hasSetupDataSource = true;
+                setupDataSource();
+            }
+        }
+    });
 
     $scope.onSaveClicked = function onSaveClicked()
     {
-        const promise = createAndSave();
-        promise.then((body) =>
-        {
-            $state.go('edit_data_source', {id: body.data._id});
-        });
-        return promise;
+        return EBDataSourceService.saveDataSource($scope.dataSource);
     };
 
     $scope.onDeleteClicked = function onDeleteClicked()
     {
-        return EBDataSourceService.deleteDataSource($scope.dataSource).then(function success(body)
+        return EBDataSourceService.deleteDataSource($scope.dataSource).then((body) =>
         {
             EBNavigationBarService.refreshNavigationBar();
             $state.go('dashboard');
@@ -86,7 +126,7 @@ angular.module('eb').controller('EBDataSourceSelectFieldsController', function E
 
     $scope.onContinue = function onContinue()
     {
-        const promise = createAndSave();
+        const promise = EBDataSourceService.saveDataSource($scope.dataSource);
         promise.then(() =>
         {
             $state.go('edit_architecture');

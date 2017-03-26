@@ -21,6 +21,7 @@
 const async = require('async'),
     fastCSV = require('fast-csv'),
     fs = require('fs'),
+    moment = require('moment'),
     mongodb = require('mongodb'),
     path = require('path'),
     Promise = require('bluebird'),
@@ -852,10 +853,10 @@ module.exports.generateNumberClassificationDataset = function generateNumberClas
         // Generate two random numbers
         const first = Math.floor(Math.random() * 20) + 2;
         const second = Math.floor(Math.random() * 20) + 2;
-        
+
         // Create a classification based on their product
         const classification = `class_${Math.floor((first * second) / 25) + 1}`;
-        
+
         const object = {
             first,
             second,
@@ -868,6 +869,70 @@ module.exports.generateNumberClassificationDataset = function generateNumberClas
     return saveObjects("number_classification", objects).then(() =>
     {
         return saveObjectsToCSV(path.join(__dirname, "..", "data", "number_classification.csv"), objects);
+    });
+};
+
+
+
+
+/**
+ *  This method is used to generate a data set for testing purposes.
+ *
+ *  This data provides a date as input and expects the network to classify the date along several dimensions
+ *
+ *  @returns {Promise} A promise that will resolve when the data set is generated
+ */
+module.exports.generateDateClassificationDataset = function generateDateClassificationDataset()
+{
+    const objects = [];
+    for (let objectIndex = 0; objectIndex < 10000; objectIndex += 1)
+    {
+        // First generate a random date, between 1980 and 2015
+        const randomDateOffset = Math.random() * 35 * 365 * 24 * 60 * 60 * 1000;
+        const randomTimeOffset = Math.random() * 24 * 60 * 60 * 1000;
+        const date = moment(new Date(new Date("January 1, 1980").getTime() + randomDateOffset + randomTimeOffset));
+        const object = {date: date.toDate()};
+
+        // Create a few derived classifications
+
+        // Is this date on a weekend?
+        object.isWeekend = date.day() === 0 || date.day() === 6;
+
+        // Which of the week in the month is it
+        const startWeek = moment(date).startOf('month').week();
+        object.weekInMonth = `week_${date.week() - startWeek + 1}`;
+
+        // Roughly what time of the day is it?
+        if (date.hour() < 5)
+        {
+            object.timeOfDay = 'late_night';
+        }
+        else if (date.hour() < 12)
+        {
+            object.timeOfDay = 'morning';
+        }
+        else if (date.hour() < 17)
+        {
+            object.timeOfDay = 'afternoon';
+        }
+        else if (date.hour() < 23)
+        {
+            object.timeOfDay = 'evening';
+        }
+        else
+        {
+            object.timeOfDay = 'late_night';
+        }
+        
+        // Which decade is it?
+        object.decade = `decade_${Math.floor((date.year() - 1980) / 10) * 10 + 1980}`;
+        
+        objects.push(object);
+    }
+
+    return saveObjects("date_classification", objects).then(() =>
+    {
+        return saveObjectsToCSV(path.join(__dirname, "..", "data", "date_classification.csv"), objects);
     });
 };
 

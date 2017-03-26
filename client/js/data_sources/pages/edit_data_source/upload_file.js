@@ -23,7 +23,7 @@
  */
 
 
-angular.module('eb').controller('EBDataSourceUploadFileController', function EBDataSourceUploadFileController($scope, $timeout, $state, $stateParams, EBDataSourceService, config, EBLoaderService)
+angular.module('eb').controller('EBDataSourceUploadFileController', function EBDataSourceUploadFileController($scope, $timeout, $state, $stateParams, EBDataSourceService, config, EBLoaderService, EBNavigationBarService)
 {
     $scope.upload = function upload()
     {
@@ -62,7 +62,14 @@ angular.module('eb').controller('EBDataSourceUploadFileController', function EBD
                         $scope.dataSource.name = $scope.file.name;
                         $scope.dataSource.type = 'csv';
                         $scope.dataSource.file = (/.*\/(.*)/g).exec(upload.url)[1];
-                        $state.go('new_data_source.select_fields', {refreshSchema: true});
+
+                        const promise = EBDataSourceService.createDataSource($scope.dataSource).then((body) =>
+                        {
+                            $state.go('edit_data_source.select_fields', {id: body.data._id, refreshSchema: true});
+                            EBNavigationBarService.refreshNavigationBar();
+                            return body;
+                        });
+                        EBLoaderService.showLoaderWith('menu', promise);
                     }, config.thresholdDelay);
 
                     resolve();

@@ -26,7 +26,16 @@ angular.module('eb').directive('ebDataSourceList', function ebDataSourceList(EBD
     return {
         controller($scope)
         {
-            EBDataSourceService.getDataSources({select: ["_id", "name"]}).success(function success(data)
+            let params = {
+                select: ["_id", "name"]
+            };
+
+            if ($scope.filter)
+            {
+                params.query = $scope.filter;
+            }
+
+            EBDataSourceService.getDataSources(params).success(function success(data)
             {
                 $scope.dataSources = data.dataSources;
             });
@@ -49,6 +58,7 @@ angular.module('eb').directive('ebDataSourceList', function ebDataSourceList(EBD
         templateUrl: "views/data_sources/directives/data_source_list.html",
         restrict: "E",
         scope: {
+            filter: '=',
             onDataSourceClicked: "=",
             selectedDataSource: "=",
             showRadioSelection: '='

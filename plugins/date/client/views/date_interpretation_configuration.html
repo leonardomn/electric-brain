@@ -1,0 +1,45 @@
+
+
+
+<form class="form-horizontal">
+    <p>Please select which Date/Time components you would like to include to the neural network model</p>
+
+    <div class="form-group">
+        <label class="col-sm-2 control-label">Components<br/>
+        </label>
+        <div class="col-sm-10">
+            <div>
+                <label>
+                    <input type="checkbox" ng-model="field.configuration.interpretation.includeYear"> Year
+                </label>
+            </div>
+            <div>
+                <label>
+                    <input type="checkbox"  ng-model="field.configuration.interpretation.includeDayOfYear"> Day of Year
+                </label>
+            </div>
+            <div>
+                <label>
+                    <input type="checkbox"  ng-model="field.configuration.interpretation.includeMonth"> Month
+                </label>
+            </div>
+            <div>
+                <label>
+                    <input type="checkbox"  ng-model="field.configuration.interpretation.includeDayOfMonth"> Day of Month
+                </label>
+            </div>
+            <div>
+                <label>
+                    <input type="checkbox"  ng-model="field.configuration.interpretation.includeDayOfWeek"> Day of Week
+                </label>
+            </div>
+            <div>
+                <label>
+                    <input type="checkbox"  ng-model="field.configuration.interpretation.includeTimeOfDay"> Time of Day
+                </label>
+            </div>
+        </div>
+    </div>
+
+</form>
+

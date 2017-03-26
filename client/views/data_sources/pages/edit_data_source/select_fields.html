@@ -16,9 +16,21 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
 
+<div class="row">
+    <div class="col-md-12" ng-if="dataSource.objectsCompleted > 0 && dataSource.objectsCompleted <dataSource.objectsTotal">
+        <div class="ibox">
+            <div class="ibox-content">
+                <h1>Sampling Progress</h1>
+                <uib-progressbar max="dataSource.objectsTotal" value="dataSource.objectsCompleted">
+                    <span style="color:white; white-space:nowrap;">{{dataSource.objectsCompleted}} / {{dataSource.objectsTotal}} objects sampled so far.</span>
+                </uib-progressbar>
+            </div>
+        </div>
+    </div>
+</div>
 <div class="row database-fields">
     <div class="col-md-12">
-        <eb-schema-editor ng-if="dataSource.dataSchema" schema="dataSource.dataSchema" mode="filter" show-field-details="true">
+        <eb-schema-editor ng-if="dataSource.dataSchema" schema="dataSource.dataSchema" mode="filter" show-field-details="true" title="Data Source">
             <div class="row">
                 <div class="col-xs-12">
                     <div class="pull-right">
@@ -29,8 +41,5 @@
                 </div>
             </div>
         </eb-schema-editor>
-    </div>
-    <div class="col-md-6">
-
     </div>
 </div>

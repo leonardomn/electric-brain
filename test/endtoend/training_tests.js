@@ -386,4 +386,32 @@ describe("End to end tests", function()
             });
         });
     });
+
+
+    it.only("Should be able to train a model using date classification dataset", () =>
+    {
+        const test = new EBModelTest({
+            dataSource: {
+                name: "date_classification",
+                type: "mongo",
+                database: {
+                    uri: "mongodb://localhost:27017/electric_brain_testing",
+                    collection: "date_classification"
+                }
+            },
+            inputFields: ['.date'],
+            outputFields: ['.isWeekend', '.weekInMonth', '.timeOfDay', '.decade'],
+            modelParameters: {
+                batchSize: 16,
+                testingBatchSize: 4,
+                iterations: 200
+            },
+            results: {minimumAccuracy: 100}
+        });
+
+        return testingData.generateDateClassificationDataset().then(() =>
+        {
+            return test.run(application);
+        });
+    });
 });

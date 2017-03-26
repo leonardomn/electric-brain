@@ -71,6 +71,17 @@ angular.module('eb').service('EBDataSourceService', function EBDataSourceService
         });
     };
 
+    service.sampleDataSource = function sampleDataSource(dataSource)
+    {
+        const headers = {};
+        return $http({
+            method: 'POST',
+            url: `/api/dataSource/${dataSource._id}/sample`,
+            headers,
+            data: dataSource
+        });
+    };
+
     service.createDataSource = function createDataSource(data)
     {
         const headers = {};

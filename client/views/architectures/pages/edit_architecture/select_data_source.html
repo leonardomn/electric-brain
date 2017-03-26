@@ -33,17 +33,17 @@
                         <br/>
                         <h2>Data source?</h2>
                         <br/>
-                        <eb-data-source-list selected-data-source="architecture.dataSource" show-radio-selection="true"></eb-data-source-list>
-                        <br/>
-                        <div ng-if="architecture.dataSource">
-                            <h2>Query?</h2>
-                            <br/>
-                            <eb-database-query-editor query="architecture.dataSource.query" schema="architecture.dataSource.dataSchema"></eb-database-query-editor>
-                            <br/>
-                            <h2>Transformation?</h2>
-                            <br/>
-                            <eb-transformation-editor architecture="architecture"></eb-transformation-editor>
-                        </div>
+                        <eb-data-source-list filter="{isSampling: false}" selected-data-source="architecture.dataSource" show-radio-selection="true"></eb-data-source-list>
+                        <!--<br/>-->
+                        <!--<div ng-if="architecture.dataSource">-->
+                            <!--<h2>Query?</h2>-->
+                            <!--<br/>-->
+                            <!--<eb-database-query-editor query="architecture.dataSource.query" schema="architecture.dataSource.dataSchema"></eb-database-query-editor>-->
+                            <!--<br/>-->
+                            <!--<h2>Transformation?</h2>-->
+                            <!--<br/>-->
+                            <!--<eb-transformation-editor architecture="architecture"></eb-transformation-editor>-->
+                        <!--</div>-->
                     </div>
                 </div>
             </div>
