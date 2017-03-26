@@ -45,6 +45,7 @@ class EBDateInterpretation extends EBInterpretationBase
 
         // This is the list of date formats that we the system will accept
         this.validDateFormats = [
+            moment.ISO_8601,
             'YYYY-MM-DDTHH:mm:ss',
             'YYYY-MM-DDTHH:mm:ss.SSSZ',
             "MM-DD-YYYY",

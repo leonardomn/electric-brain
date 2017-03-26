@@ -159,7 +159,7 @@ angular.module('eb').controller('EBViewModelController', function EBViewModelCon
                 }
             },
             yAxis: [{
-                title: {text: 'Loss'}
+                title: {text: 'Loss'},
                 min: 0
             }]
         },

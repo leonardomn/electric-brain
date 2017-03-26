@@ -107,6 +107,10 @@ class EBSampleDataSourceTask {
             });
         }).then((resultSchema) =>
         {
+            resultSchema.walk((field) =>
+            {
+                field.setIncluded(true);
+            });
             return this.updateSchema(resultSchema);
         }).then(() =>
         {
