@@ -101,8 +101,8 @@ class EBArchitecture
     }
 
     /**
-     * This method returns a NodeJS stream that can be used to transform objects into the inputs
-     * and outputs for the neural network
+     * This method returns a NodeJS stream that is used for transformed raw objects into the inputs
+     * and outputs required for the neural network.
      *
      * @param {EBInterpretationRegistry} registry The registry for the transformation stream
      * @returns {Stream} A standard NodeJS transformation stream that you can write() to, read()
@@ -112,8 +112,69 @@ class EBArchitecture
     {
         const self = this;
 
+        // Get the input stream
+        const inputTransformStream = this.getInputTransformationStream(registry);
+        const outputTransformStream = this.getOutputTransformationStream(registry);
+
+        return new stream.Transform({
+            highWaterMark: 1,
+            readableObjectMode: true,
+            writableObjectMode: true,
+            transform(object, encoding, next)
+            {
+                const transform = this;
+                const inputPromise = Promise.fromCallback((callback) =>
+                {
+                    inputTransformStream.once("data", (output) =>
+                    {
+                        return callback(null, output);
+                    });
+                    inputTransformStream.once("error", (error) =>
+                    {
+                        return callback(error);
+                    });
+                    inputTransformStream.write(object);
+                });
+
+                const outputPromise = Promise.fromCallback((callback) =>
+                {
+                    outputTransformStream.once("data", (output) =>
+                    {
+                        return callback(null, output);
+                    });
+                    outputTransformStream.once("error", (error) =>
+                    {
+                        return callback(error);
+                    });
+                    outputTransformStream.write(object);
+                });
+                
+                Promise.join(inputPromise, outputPromise).then((results) =>
+                {
+                    transform.push({
+                        input: results[0],
+                        output: results[1],
+                        original: object
+                    });
+                    return next();
+                }, (err) => next(err));
+            }
+        });
+    }
+
+    /**
+     * This method returns a NodeJS stream that can be used to transform just the input-portion
+     * of objects for a neural network.
+     *
+     * @param {EBInterpretationRegistry} registry The registry for the transformation stream
+     * @returns {Stream} A standard NodeJS transformation stream that you can write() to, read()
+     *                   from, and pipe() wherever you want
+     */
+    getInputTransformationStream(registry)
+    {
+        const self = this;
+
         const inputSchema = self.neuralNetworkInputSchema(registry);
-        const outputSchema = self.neuralNetworkOutputSchema(registry);
 
         // Set a default value of 0 for everything
         inputSchema.walk(function(schema)
@@ -123,16 +184,8 @@ class EBArchitecture
                 schema.default = 0;
             }
         });
-        outputSchema.walk(function(schema)
-        {
-            if (schema.isField)
-            {
-                schema.default = 0;
-            }
-        });
 
         const filterInputFunction = inputSchema.filterFunction();
-        const filterOutputFunction = outputSchema.filterFunction();
 
         return new stream.Transform({
             highWaterMark: 1,
@@ -143,24 +196,80 @@ class EBArchitecture
                 const transform = this;
 
                 const inputObject = deepcopy(object);
-                const outputObject = deepcopy(object);
 
                 try
                 {
                     const inputPromise = registry.getInterpretation('object').transformValueForNeuralNetwork(inputObject, self.inputSchema.filterIncluded());
-                    const outputPromise = registry.getInterpretation('object').transformValueForNeuralNetwork(outputObject, self.outputSchema.filterIncluded());
-                    Promise.join(inputPromise, outputPromise).then((transformed) =>
+                    inputPromise.then((transformed) =>
                     {
-                        const transformedInputObject = transformed[0];
-                        const transformedOutputObject = transformed[1];
+                        const transformedInputObject = transformed;
+                        try
+                        {
+                            transform.push(filterInputFunction(transformedInputObject));
+
+                            return next();
+                        }
+                        catch (err)
+                        {
+                            console.error(`Object in our database is not valid according to our data schema: ${err.toString()}`);
+                            console.error(err.stack);
+
+                            return next();
+                        }
+                    }, (err) => next(err));
+                }
+                catch(err)
+                {
+                    console.log(err);
+                }
+            }
+        });
+    }
+
+    /**
+     * This method returns a NodeJS stream that can be used to transforms raw objects into
+     * output objects for training the neural network.
+     *
+     * @param {EBInterpretationRegistry} registry The registry for the transformation stream
+     * @returns {Stream} A standard NodeJS transformation stream that you can write() to, read()
+     *                   from, and pipe() wherever you want
+     */
+    getOutputTransformationStream(registry)
+    {
+        const self = this;
+
+        const outputSchema = self.neuralNetworkOutputSchema(registry);
+
+        // Set a default value of 0 for everything
+        outputSchema.walk(function(schema)
+        {
+            if (schema.isField)
+            {
+                schema.default = 0;
+            }
+        });
+
+        const filterOutputFunction = outputSchema.filterFunction();
+
+        return new stream.Transform({
+            highWaterMark: 1,
+            readableObjectMode: true,
+            writableObjectMode: true,
+            transform(object, encoding, next)
+            {
+                const transform = this;
+                const outputObject = deepcopy(object);
+
+                try
+                {
+                    const outputPromise = registry.getInterpretation('object').transformValueForNeuralNetwork(outputObject, self.outputSchema.filterIncluded());
+                    outputPromise.then((transformed) =>
+                    {
+                        const transformedOutputObject = transformed;
 
                         try
                         {
-                            transform.push({
-                                input: filterInputFunction(transformedInputObject),
-                                output: filterOutputFunction(transformedOutputObject),
-                                original: object
-                            });
+                            transform.push(filterOutputFunction(transformedOutputObject));
 
                             return next();
                         }
@@ -223,6 +332,56 @@ class EBArchitecture
                     }
                 }, (err) => next(err));
             }
+        });
+    }
+
+    /**
+     * This method converts a single raw object into an input object for a neural network
+     *
+     * @param {EBInterpretationRegistry} registry The interpretation registry
+     * @param {object} networkOutput The output from the network
+     * @return {Promise} Resolves a promise Which will receive the transformed object
+     */
+    convertInputObject(registry, object)
+    {
+        const self = this;
+        return Promise.fromCallback((callback) =>
+        {
+            const stream = self.getInputTransformationStream(registry);
+            stream.on("data", (output) =>
+            {
+                return callback(null, output);
+            });
+            stream.on("error", (error) =>
+            {
+                return callback(error);
+            });
+            stream.end(object);
+        });
+    }
+
+    /**
+     * This method converts a single raw object into an output object for a neural network
+     *
+     * @param {EBInterpretationRegistry} registry The interpretation registry
+     * @param {object} networkOutput The output from the network
+     * @return {Promise} Resolves a promise Which will receive the transformed object
+     */
+    convertOutputObject(registry, object)
+    {
+        const self = this;
+        return Promise.fromCallback((callback) =>
+        {
+            const stream = self.getOutputTransformationStream(registry);
+            stream.on("data", (output) =>
+            {
+                return callback(null, output);
+            });
+            stream.on("error", (error) =>
+            {
+                return callback(error);
+            });
+            stream.end(object);
         });
     }
 
