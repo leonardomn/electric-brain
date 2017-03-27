@@ -24,24 +24,6 @@
             </div>
             <div class="ibox-content">
                 <div>
-                    <h2>Network Diagram</h2>
-
-                    <uib-tabset active="currentDiagram" ng-if="diagrams">
-                        <uib-tab ng-repeat="diagram in diagrams" heading="{{diagram.file}}">
-                            <div>
-                                <div class="architecture-diagram-container">
-                                    <img ez-plus
-                                         ezp-model="{large:'data:image/svg+xml;base64, ' + diagram.data}"
-                                         ezp-options="{scrollZoom: true, zoomWindowWidth: 600, zoomWindowHeight: 600}"
-                                         id="diagram_{{$index}}" src='data:image/svg+xml;base64, {{diagram.data}}' class="architecture-diagram"/>
-                                </div>
-                            </div>
-                        </uib-tab>
-                    </uib-tabset>
-
-                    <eb-loader-button class="pull-right" on-click="reloadDiagrams()" title="Reload"></eb-loader-button>
-                </div>
-                <div>
                     <h2>Options</h2>
 
                     <eb-schema-editor
@@ -59,6 +41,24 @@
                             show-field-details="false"
                             show-only-included="true">
                     </eb-schema-editor>
+                </div>
+                <div>
+                    <h2>Network Diagram</h2>
+
+                    <eb-loader-button class="pull-right" on-click="reloadDiagrams()" title="Reload"></eb-loader-button>
+
+                    <uib-tabset active="currentDiagram" ng-if="diagrams">
+                        <uib-tab ng-repeat="diagram in diagrams" heading="{{diagram.file}}">
+                            <div>
+                                <div class="architecture-diagram-container">
+                                    <img ez-plus
+                                         ezp-model="{large:'data:image/svg+xml;base64, ' + diagram.data}"
+                                         ezp-options="{scrollZoom: true, zoomWindowWidth: 600, zoomWindowHeight: 600}"
+                                         id="diagram_{{$index}}" src='data:image/svg+xml;base64, {{diagram.data}}' class="architecture-diagram"/>
+                                </div>
+                            </div>
+                        </uib-tab>
+                    </uib-tabset>
                 </div>
             </div>
         </div>
