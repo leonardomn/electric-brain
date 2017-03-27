@@ -87,7 +87,8 @@ class EBFrontendAPI extends EBAPIRoot
             "bower_components/highcharts-ng/dist/highcharts-ng.min.js",
             "bower_components/angular-ez-plus/js/angular-ezplus.js",
             "bower_components/angular-swagger-ui/dist/scripts/swagger-ui.min.js",
-            "bower_components/angular-flot/angular-flot.js"
+            "bower_components/angular-flot/angular-flot.js",
+            "bower_components/flot-axislabels/jquery.flot.axislabels.js"
         ];
     }
 

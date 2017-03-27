@@ -213,6 +213,7 @@ class EBNeuralNetworkClassificationComponent extends EBNeuralNetworkComponentBas
         const linearUnit = new EBTorchNode(new EBTorchModule("nn.Sequential", [], [
             new EBTorchModule("nn.Linear", [summaryModule.tensorSchema.tensorSize, middleLayerSize]),
             new EBTorchModule("nn.Tanh", []),
+            new EBTorchModule("nn.Dropout", [0.4]),
             new EBTorchModule("nn.Linear", [middleLayerSize, middleLayerSize]),
             new EBTorchModule("nn.Tanh", []),
             new EBTorchModule("nn.Linear", [middleLayerSize, outputSize]),
