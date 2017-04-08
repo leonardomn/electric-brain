@@ -77,9 +77,9 @@ class EBTorchProcess
                         {
                             return next(err);
                         }
-                        childProcess.execSync('rm -rf /home/bradley/eb/electric-brain/training/*');
-                        self.scriptFolder = '/home/bradley/eb/electric-brain/training/';
-                        // self.scriptFolder = temporaryFolder;
+                        // childProcess.execSync('rm -rf /home/bradley/eb/electric-brain/training/*');
+                        // self.scriptFolder = '/home/bradley/eb/electric-brain/training/';
+                        self.scriptFolder = temporaryFolder;
                         try
                         {
                             // Create a list of files that need to be written
