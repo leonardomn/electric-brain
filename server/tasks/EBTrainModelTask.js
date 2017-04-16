@@ -72,7 +72,7 @@ class EBTrainModelTask {
         this.testingSetPosition = 0;
         this.trainingSetPosition = 0;
 
-        const numWorkers = 1;
+        const numWorkers = 4;
         this.workers = [];
         for (let workerIndex = 0; workerIndex < numWorkers; workerIndex += 1)
         {
