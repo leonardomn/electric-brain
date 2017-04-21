@@ -31,7 +31,6 @@ angular.module('eb').controller('EBDataSourceSelectFieldsController', function E
     {
         firstUpdateResolver = resolve;
     });
-    EBLoaderService.showLoaderWith('page', firstUpdatePromise);
 
     const socketEventHandler = (data) =>
     {
@@ -84,6 +83,7 @@ angular.module('eb').controller('EBDataSourceSelectFieldsController', function E
         {
             const promise = EBDataSourceService.saveDataSource($scope.dataSource).then(() =>
             {
+                EBLoaderService.showLoaderWith('page', firstUpdatePromise);
                 EBDataSourceService.sampleDataSource($scope.dataSource).success((body) =>
                 {
                     setupEventHandler();

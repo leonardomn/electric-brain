@@ -32,7 +32,7 @@ angular.module('eb').controller('EBArchitectureSelectFieldsController', function
             if ($scope.schemaNeedsRefreshed || (!$scope.architecture.inputSchema || !$scope.architecture.outputSchema))
             {
                 const originalInputSchema = $scope.architecture.inputSchema;
-                $scope.architecture.inputSchema = new shared.models.EBSchema($scope.architecture.dataSource.dataSchema).clone();
+                $scope.architecture.inputSchema = new shared.models.EBSchema($scope.architecture.dataSource.dataSchema.filterIncluded()).clone();
                 if (originalInputSchema)
                 {
                     $scope.architecture.inputSchema.copyConfigurationFrom(originalInputSchema);
@@ -46,7 +46,7 @@ angular.module('eb').controller('EBArchitectureSelectFieldsController', function
                 }
 
                 const originalOutputSchema = $scope.architecture.outputSchema;
-                $scope.architecture.outputSchema = new shared.models.EBSchema($scope.architecture.dataSource.dataSchema).clone();
+                $scope.architecture.outputSchema = new shared.models.EBSchema($scope.architecture.dataSource.dataSchema.filterIncluded()).clone();
                 if (originalOutputSchema)
                 {
                     $scope.architecture.outputSchema.copyConfigurationFrom(originalOutputSchema);

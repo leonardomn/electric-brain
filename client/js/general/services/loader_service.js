@@ -41,6 +41,8 @@ angular.module('eb').service('EBLoaderService', function EBLoaderService($rootSc
      */
     service.showLoaderWith = function(loader, promise)
     {
+        console.error(new Error().stack);
+
         if (loader === 'page')
         {
             activePromises.page += 1;
