@@ -5,7 +5,7 @@ MAINTAINER Electric Brain <info@electricbrain.io>
 
 # Install some basic system dependencies
 RUN apt-get update
-RUN apt-get install systemd mongodb rabbitmq-server gcc g++ git wget nodejs sudo vim npm -y
+RUN apt-get install systemd mongodb rabbitmq-server gcc g++ git wget nodejs sudo vim npm graphviz -y
 RUN ln -s /usr/bin/nodejs /usr/bin/node
 
 # Installed the Torch and dependencies
