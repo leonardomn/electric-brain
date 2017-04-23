@@ -97,7 +97,7 @@
                         </div>
                     </div>
                 </uib-tab>
-                <uib-tab index="2" heading="Training" ng-if="model.training.status !='waiting'" select="reflowCharts()">
+                <uib-tab index="2" heading="Accuracy" ng-if="model.training.status !='waiting'" select="reflowCharts()">
                     <div class="training-charts" ng-if="activeTab === 2">
                         <uib-tabset active="activeTrainingChart">
                             <uib-tab index="0" heading="Accuracy" select="reflowCharts()">
@@ -109,7 +109,7 @@
                         </uib-tabset>
                     </div>
                 </uib-tab>
-                <uib-tab index="3" heading="Results" ng-if="model.training.status !='waiting'">
+                <uib-tab index="3" heading="Accuracy Breakdown" ng-if="model.training.status !='waiting'">
                     <div ng-if="activeTab === 3">
                         <eb-schema-editor
                                 title="Results"
@@ -129,9 +129,9 @@
                     <!--<br/>-->
                     <!--<a ng-show="downloadLanguage" class="btn btn-primary" href="/api/models/{{model._id}}/bundle/{{downloadLanguage}}">Download bundle</a>-->
                 <!--</uib-tab>-->
-                <uib-tab index="4" heading="API" ng-if="model.training.status !='waiting'">
+                <uib-tab index="4" heading="Integration" ng-if="model.training.status !='waiting'">
                     <div ng-if="activeTab === 4">
-                        <h1>API</h1>
+                        <h1>Integration API</h1>
                         <br/>
                         <br/>
                         <h2>Endpoint</h2>
@@ -140,9 +140,9 @@
                         <div swagger-ui input-type="json" input="modelAPISpec"></div>
                     </div>
                 </uib-tab>
-                <uib-tab index="5" heading="Test" ng-if="model.training.status !='waiting'">
+                <uib-tab index="5" heading="Use Model" ng-if="model.training.status !='waiting'">
                     <div ng-if="activeTab === 5">
-                        <h1>Test your model</h1>
+                        <h1>Use your model</h1>
                         <br/>
                         <eb-object-builder schema="testInputSchema" object="$parent.testObject"></eb-object-builder>
                         <br>
