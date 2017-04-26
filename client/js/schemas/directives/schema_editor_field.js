@@ -54,7 +54,8 @@ angular.module('eb').directive('ebSchemaEditorField', function ebSchemaEditorFie
         scope: {
             field: '=ebSchemaEditorField',
             selectedField: '=',
-            mode: '@'
+            mode: '@',
+            showOnlyIncluded: '='
         }
     };
 });
