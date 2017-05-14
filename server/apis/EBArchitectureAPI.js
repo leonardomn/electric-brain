@@ -455,7 +455,7 @@ class EBArchitectureAPI extends EBAPIRoot
             else
             {
                 const architecture = new models.EBArchitecture(architectureObject);
-                const process = new EBTorchProcess(architecture);
+                const process = new EBTorchProcess(architecture, self.application.config.get('overrideModelFolder'));
                 async.series([
                     function generateCode(next)
                     {

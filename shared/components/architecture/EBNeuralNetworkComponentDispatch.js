@@ -82,6 +82,10 @@ class EBNeuralNetworkComponentDispatch
         {
             return this.plugins['image'];
         }
+        else if (schema.isString)
+        {
+            return this.plugins['word'];
+        }
         else
         {
             throw new Error(`Unknown plugin for EBSchema: ${schema.toString()}`);

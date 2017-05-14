@@ -17,7 +17,6 @@
 */
 
 const beaver = require('beaver');
-const registry = require('./task_registry').registry;
 
 const EBTrainModelTask = require("./EBTrainModelTask");
 const EBSampleDataSourceTask = require("./EBSampleDataSourceTask");
@@ -42,16 +41,16 @@ function setupTasks(application)
         };
     }
 
-    registry.registerTask({
+    application.taskRegistry.registerTask({
         name: "train_model",
         timeout: null, // no timeout. This can take forever.
         concurrencyPerWorker: 1,
         maximumAttempts: 2,
         func: wrapTaskClass(EBTrainModelTask)
     });
-    
-    
-    registry.registerTask({
+
+
+    application.taskRegistry.registerTask({
         name: "sample_data_source",
         timeout: null, // no timeout. This can take forever.
         concurrencyPerWorker: 1,
@@ -62,6 +61,5 @@ function setupTasks(application)
 
 
 module.exports = {
-    queue: require('./task_registry').queue,
     setupTasks: setupTasks
 };

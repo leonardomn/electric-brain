@@ -1,10 +1,21 @@
 
 <h3>String</h3>
 
-<select class="form-control" ng-model="field.configuration.interpretation.mode">
-    <option value="classification">classification</option>
-    <option value="sequence">sequence</option>
-</select>
 
-
-
+<div>
+    <h2>Choose how the string should be processed?</h2>
+    <div class="btn-group">
+        <label class="btn btn-warning" ng-model="field.configuration.interpretation.mode" uib-btn-radio="'classification'">
+            <i class="fa fa-check" ng-show="field.configuration.interpretation.mode == 'classification'"></i>&nbsp;Enumeration / Classification
+        </label>
+        <label class="btn btn-warning" ng-model="field.configuration.interpretation.mode" uib-btn-radio="'sequence'">
+            <i class="fa fa-check" ng-show="field.configuration.interpretation.mode == 'sequence'"></i>&nbsp;Jumbled Letters
+        </label>
+        <label class="btn btn-warning" ng-model="field.configuration.interpretation.mode" uib-btn-radio="'english_word'">
+            <i class="fa fa-check" ng-show="field.configuration.interpretation.mode == 'english_word'"></i>&nbsp;Single English Word
+        </label>
+        <label class="btn btn-warning" ng-model="field.configuration.interpretation.mode" uib-btn-radio="'english_text'">
+            <i class="fa fa-check" ng-show="field.configuration.interpretation.mode == 'english_text'"></i>&nbsp;English Text
+        </label>
+    </div>
+</div>

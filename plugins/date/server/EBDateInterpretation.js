@@ -303,10 +303,10 @@ class EBDateInterpretation extends EBInterpretationBase
     generateDefaultConfiguration(schema)
     {
         return {
-            includeYear: false,
+            includeYear: true,
             includeDayOfYear: true,
             includeMonth: true,
-            includeDayOfMonth: false,
+            includeDayOfMonth: true,
             includeDayOfWeek: true,
             includeTimeOfDay: true
         };

@@ -19,6 +19,7 @@
 "use strict";
 
 const
+    natural = require('natural'),
     EBConfusionMatrix = require("../../../shared/models/EBConfusionMatrix"),
     EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
@@ -42,6 +43,7 @@ class EBStringInterpretation extends EBInterpretationBase
     {
         super('string');
         this.interpretationRegistry = interpretationRegistry;
+        this.wordTokenizer = new natural.TreebankWordTokenizer();
     }
 
 
@@ -130,9 +132,8 @@ class EBStringInterpretation extends EBInterpretationBase
      */
     transformSchemaForNeuralNetwork(schema)
     {
-        // Decide whether to represent this string as an enum or a sequence
-        const representAsEnum = schema.configuration.interpretation.mode === 'classification';
-        if (representAsEnum)
+        // Output a different schema depending on the mode for the string
+        if (schema.configuration.interpretation.mode === 'classification')
         {
             schema.type = ['number'];
             schema.enum = [null];
@@ -142,7 +143,7 @@ class EBStringInterpretation extends EBInterpretationBase
             });
             return schema;
         }
-        else
+        else if (schema.configuration.interpretation.mode === 'sequence')
         {
             // Vanilla ascii sequence representation
             const asciiLength = 128;
@@ -165,6 +166,28 @@ class EBStringInterpretation extends EBInterpretationBase
                 configuration: {included: true}
             });
         }
+        else if (schema.configuration.interpretation.mode === 'english_word')
+        {
+            return schema;
+        }
+        else if (schema.configuration.interpretation.mode === 'english_text')
+        {
+
+            return new EBSchema({
+                title: schema.title,
+                type: "array",
+                items: {
+                    title: `${schema.title}.[]`,
+                    type: "string",
+                    configuration: {included: true}
+                },
+                configuration: {included: true}
+            });
+        }
+        else
+        {
+            throw new Error(`Unrecognized interpretation mode: ${schema.configuration.interpretation.mode }`)
+        }
     }
 
 
@@ -177,9 +200,8 @@ class EBStringInterpretation extends EBInterpretationBase
      */
     transformValueForNeuralNetwork(value, schema)
     {
-        // Decide whether to represent this string as an enum or a sequence
-        const representAsEnum = schema.configuration.interpretation.mode === 'classification';
-        if (representAsEnum)
+        // Output a different value depending on the mode for the string
+        if (schema.configuration.interpretation.mode === 'classification')
         {
             const values = underscore.map(schema.metadata.statistics.valueHistogram.values, (value) => value.value);
             const index = values.indexOf(value);
@@ -193,7 +215,7 @@ class EBStringInterpretation extends EBInterpretationBase
                 return index + 1;
             }
         }
-        else
+        else if (schema.configuration.interpretation.mode === 'sequence')
         {
             const output = [];
             const asciiLength = 128;
@@ -209,6 +231,18 @@ class EBStringInterpretation extends EBInterpretationBase
             }
             return output;
         }
+        else if(schema.configuration.interpretation.mode === 'english_word')
+        {
+            return value.toLowerCase();
+        }
+        else if(schema.configuration.interpretation.mode === 'english_text')
+        {
+            return this.wordTokenizer.tokenize(value.toLowerCase());
+        }
+        else
+        {
+            throw new Error(`Unrecognized interpretation mode: ${schema.configuration.interpretation.mode }`)
+        }
     }
 
 
@@ -222,8 +256,7 @@ class EBStringInterpretation extends EBInterpretationBase
     transformValueBackFromNeuralNetwork(value, schema)
     {
         // Decide whether to represent this string as an enum or a sequence
-        const representAsEnum = schema.configuration.interpretation.mode === 'classification';
-        if (representAsEnum)
+        if (schema.configuration.interpretation.mode === 'classification')
         {
             if (value === 0)
             {
@@ -235,7 +268,7 @@ class EBStringInterpretation extends EBInterpretationBase
                 return values[value - 1];
             }
         }
-        else
+        else if (schema.configuration.interpretation.mode === 'sequence')
         {
             let output = "";
             value.forEach((character) =>
@@ -243,6 +276,18 @@ class EBStringInterpretation extends EBInterpretationBase
                 output += String.fromCharCode(character.character);
             });
             return output;
+        }
+        else if (schema.configuration.interpretation.mode === 'english_word')
+        {
+            return value;
+        }
+        else if (schema.configuration.interpretation.mode === 'english_text')
+        {
+            return value.join(' ');
+        }
+        else
+        {
+            throw new Error(`Unrecognized interpretation mode: ${schema.configuration.interpretation.mode }`)
         }
     }
 

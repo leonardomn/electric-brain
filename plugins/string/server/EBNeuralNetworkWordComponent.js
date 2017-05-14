@@ -27,7 +27,7 @@ const EBNeuralNetworkComponentBase = require('../../../shared/components/archite
 /**
  * This is a base class for various neural network components
  */
-class EBNeuralNetworkNumberComponent extends EBNeuralNetworkComponentBase
+class EBNeuralNetworkWordComponent extends EBNeuralNetworkComponentBase
 {
     /**
      * Constructor
@@ -46,7 +46,7 @@ class EBNeuralNetworkNumberComponent extends EBNeuralNetworkComponentBase
      */
     getTensorSchema(schema)
     {
-        return EBTensorSchema.generateDataTensorSchema(1, schema.variableName);
+        return EBTensorSchema.generateDataTensorSchema(300, schema.variableName);
     }
 
 
@@ -60,9 +60,11 @@ class EBNeuralNetworkNumberComponent extends EBNeuralNetworkComponentBase
     {
         let code = '';
         code += `local ${name} = function (input)\n`;
-        code += `    local result = torch.zeros(1, 1)\n`;
-        code += `    result[1][1] = input\n`;
-        code += `    return result\n`;
+        code += `    local tensor = torch.ByteTensor(#input)\n`;
+        code += `    for n=1,#input do\n`;
+        code += `       tensor[n] = string.byte(input, n)\n`;
+        code += `    end\n`;
+        code += `    return tensor\n`;
         code += `end\n`;
         return code
     }
@@ -78,7 +80,7 @@ class EBNeuralNetworkNumberComponent extends EBNeuralNetworkComponentBase
     {
         let code = '';
         code += `local ${name} = function (input)\n`;
-        code += `    return input[1][1]\n`;
+        code += `    return input\n`;
         code += `end\n`;
         return code;
     }
@@ -96,11 +98,7 @@ class EBNeuralNetworkNumberComponent extends EBNeuralNetworkComponentBase
         let code = '';
 
         code += `local ${name} = function (input)\n`;
-        code += `    local batch = torch.zeros(#input,1)\n`;
-        code += `    for k,v in pairs(input) do\n`;
-        code += `        batch:narrow(1, k, 1):copy(input[k])\n`;
-        code += `    end\n`;
-        code += `    return batch\n`;
+        code += `    return input\n`;
         code += `end\n`;
 
         return code;
@@ -119,11 +117,7 @@ class EBNeuralNetworkNumberComponent extends EBNeuralNetworkComponentBase
         let code = '';
 
         code += `local ${name} = function (input)\n`;
-        code += `    local samples = {}\n`;
-        code += `    for k=1,input:size()[1] do\n`;
-        code += `        table.insert(samples, input:narrow(1, k, 1))\n`;
-        code += `    end\n`;
-        code += `    return samples\n`;
+        code += `    return input\n`;
         code += `end\n`;
 
         return code;
@@ -145,7 +139,7 @@ class EBNeuralNetworkNumberComponent extends EBNeuralNetworkComponentBase
     generateInputStack(schema, inputNode)
     {
         return {
-            outputNode: new EBTorchNode(new EBTorchModule("nn.Identity"), inputNode, `${schema.machineVariableName}_inputStack`),
+            outputNode: new EBTorchNode(new EBTorchModule("nn.EBWordEmbedder", [10000]), inputNode, `${schema.machineVariableName}_inputStack`),
             outputTensorSchema: this.getTensorSchema(schema),
             additionalModules: []
         };
@@ -167,34 +161,7 @@ class EBNeuralNetworkNumberComponent extends EBNeuralNetworkComponentBase
      */
     generateOutputStack(outputSchema, inputNode, inputTensorSchema)
     {
-        // Get the tensor-schema for the output
-        const outputTensorSchema = this.getTensorSchema(inputTensorSchema);
-
-        // Create a summary module for the input tensor
-        const summaryModule = this.createSummaryModule(inputTensorSchema);
-
-        // Calculate the middle layer size as half way between input and output size
-        const middleLayerSize = Math.min(1500, Math.max(summaryModule.tensorSchema.tensorSize / 2, 100));
-
-        // Create the node in the graph for the summary module
-        const summaryNode = new EBTorchNode(summaryModule.module, inputNode, `${outputSchema.machineVariableName}_summaryNode`);
-        
-        const linearUnit = new EBTorchNode(new EBTorchModule("nn.Sequential", [], [
-            new EBTorchModule("nn.Linear", [summaryModule.tensorSchema.tensorSize, middleLayerSize]),
-            new EBTorchModule("nn.Tanh", []),
-            new EBTorchModule("nn.Linear", [middleLayerSize, middleLayerSize]),
-            new EBTorchModule("nn.Tanh", []),
-            new EBTorchModule("nn.Dropout", [0.4]),
-            new EBTorchModule("nn.Linear", [middleLayerSize, middleLayerSize]),
-            new EBTorchModule("nn.Tanh", []),
-            new EBTorchModule("nn.Linear", [middleLayerSize, outputTensorSchema.tensorSize])
-        ]), summaryNode, `${outputSchema.machineVariableName}_linearUnit`);
-
-        return {
-            outputNode: linearUnit,
-            outputTensorSchema: outputTensorSchema,
-            additionalModules: []
-        };
+        throw new Error("No output stack yet!");
     }
 
 
@@ -214,4 +181,4 @@ class EBNeuralNetworkNumberComponent extends EBNeuralNetworkComponentBase
     }
 }
 
-module.exports = EBNeuralNetworkNumberComponent;
+module.exports = EBNeuralNetworkWordComponent;

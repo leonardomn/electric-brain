@@ -1184,7 +1184,7 @@ function encode_value(self, value, parents, etc, options, indent, for_key)
             for s=1,#value:size() do
                 str = str .. tostring(value:size()[s])
                 if s < #value:size() then
-                    str = str .. ' x '
+                    str = (str .. ' x ')
                 end
             end
             str = str .. ')'

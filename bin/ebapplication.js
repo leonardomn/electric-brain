@@ -21,7 +21,6 @@
 "use strict";
 
 const
-    config = require('../server/config/config'),
     EBApplication = require("../server/EBApplication"),
     async = require("async"),
     util = require('util');
@@ -52,8 +51,8 @@ module.exports = function main(done)
         }
         else
         {
-            console.log(`Electric Brain application server 0.0.1 started on port ${config.api.port}`);
-            console.log(`To access the application, go to http://localhost:${config.api.port}/app/`);
+            console.log(`Electric Brain application server 0.0.1 started on port ${application.config.get('port')}`);
+            console.log(`To access the application, go to http://localhost:${application.config.get('port')}/app/`);
             return done(null);
         }
     });
