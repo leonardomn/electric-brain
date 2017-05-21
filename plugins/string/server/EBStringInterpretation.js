@@ -233,11 +233,11 @@ class EBStringInterpretation extends EBInterpretationBase
         }
         else if(schema.configuration.interpretation.mode === 'english_word')
         {
-            return value.toLowerCase();
+            return value.toString().toLowerCase();
         }
         else if(schema.configuration.interpretation.mode === 'english_text')
         {
-            return this.wordTokenizer.tokenize(value.toLowerCase());
+            return this.wordTokenizer.tokenize(value.toString().toLowerCase());
         }
         else
         {
