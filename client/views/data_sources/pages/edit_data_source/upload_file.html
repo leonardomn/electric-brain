@@ -25,7 +25,7 @@
             </div>
         </div>
 
-        <div class="row">
+        <div class="row" style="margin-top: 50px;">
             <div class="col-md-12">
                 <div class="upload-button-container" ng-show="!file">
                     <input type="file" name="csvUploadFile" id="csvUploadFile" class="upload-input" fileread="file" />
@@ -39,6 +39,29 @@
                 </div>
 
                 <uib-progressbar ng-if="uploading" max="bytesTotal" value="bytesUploaded" type="success"><b>{{bytesUploaded / (1024*1024) | number:2}}mb / {{bytesTotal / (1024*1024) | number:2}}mb</b></uib-progressbar>
+            </div>
+        </div>
+
+
+
+        <div class="row" style="margin-top: 50px;">
+            <div class="col-md-12">
+                <h2 ng-click="isCollapsed = !isCollapsed" style="cursor:pointer;">
+                    <span>Advanced</span>
+                    <i class="fa fa-arrow-circle-down" ng-show="isCollapsed"></i>
+                    <i class="fa fa-arrow-circle-up" ng-show="!isCollapsed"></i>
+                </h2>
+
+                <br/>
+
+                <div uib-collapse="!isCollapsed">
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Sample Size</label>
+                        <div class="col-sm-4"><input class="form-control" type="number" ng-model="sampleSize"></div>
+                        <div class="col-sm-6"><p>The sample size determines how many rows / objects the engine will look at in order to determine the schema for the data. If your data has a lot of distinct classes, you may need to increase the sample size in order to capture them all properly.</p></div>
+                    </div>
+
+                </div>
             </div>
         </div>
     </div>

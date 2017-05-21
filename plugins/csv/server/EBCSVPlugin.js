@@ -350,42 +350,6 @@ class EBCSVPlugin extends EBDataSourcePlugin
         });
     }
 
-
-    /**
-     * This method should sample the data from the data-source and determine what the schema is.
-     *
-     * @param {EBDataSource} dataSource This should be the EBDataSource object to find the tables with it
-     * @returns {Promise} A promise that will resolve to the EBSchema object for this data-source.
-     */
-    detectSchema(dataSource)
-    {
-        const maxNumberOfObjectsToSample = 5000;
-        const examplesToKeep = 10;
-        const exampleIndexes = randomUtilities.getRandomIntegers(maxNumberOfObjectsToSample, examplesToKeep);
-
-        const schemaDetector = new EBSchemaDetector(this.application);
-        let objectIndex = 0;
-
-        return this.sample(maxNumberOfObjectsToSample, dataSource,
-            function(object)
-            {
-                let keepForSample = false;
-                if (exampleIndexes.indexOf(objectIndex) !== -1)
-                {
-                    keepForSample = true;
-                }
-
-                // Accumulate the converted version of the object
-                objectIndex += 1;
-                return schemaDetector.accumulateObject(object, keepForSample);
-
-            }).then(function success()
-        {
-            const schema = schemaDetector.getSchema();
-            return schema;
-        });
-    }
-
     /**
      * This method will convert all of the string values in the Mongo query portion provided into
      * mongo.ObjectIDs

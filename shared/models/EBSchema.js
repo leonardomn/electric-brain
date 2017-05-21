@@ -20,6 +20,7 @@
 
 const
     Ajv = require('ajv'),
+    assert = require('assert'),
     async = require('async'),
     deepdiff = require("deep-diff").diff,
     EBConfusionMatrix = require("./EBConfusionMatrix"),
@@ -55,6 +56,9 @@ class EBSchema
     {
         const self = this;
         self[_parent] = null;
+
+        // rawSchema.type MUST be present
+        assert(rawSchema.type);
 
         if (!depth)
         {

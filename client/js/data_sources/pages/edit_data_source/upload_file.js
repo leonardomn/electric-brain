@@ -25,6 +25,7 @@
 
 angular.module('eb').controller('EBDataSourceUploadFileController', function EBDataSourceUploadFileController($scope, $timeout, $state, $stateParams, EBDataSourceService, config, EBLoaderService, EBNavigationBarService)
 {
+    $scope.sampleSize = 500;
     $scope.upload = function upload()
     {
         return new Promise(function(resolve, reject)
@@ -32,6 +33,7 @@ angular.module('eb').controller('EBDataSourceUploadFileController', function EBD
             $scope.uploading = true;
             $scope.bytesTotal = $scope.file.size;
             $scope.bytesUploaded = 0;
+
             // Create a new tus upload
             const upload = new tus.Upload($scope.file, {
                 resume: false,
@@ -62,6 +64,7 @@ angular.module('eb').controller('EBDataSourceUploadFileController', function EBD
                         $scope.dataSource.name = $scope.file.name;
                         $scope.dataSource.type = 'csv';
                         $scope.dataSource.file = (/.*\/(.*)/g).exec(upload.url)[1];
+                        $scope.dataSource.sampleSize = $scope.sampleSize;
 
                         const promise = EBDataSourceService.createDataSource($scope.dataSource).then((body) =>
                         {
