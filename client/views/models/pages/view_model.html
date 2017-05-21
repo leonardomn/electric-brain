@@ -62,7 +62,7 @@
                             <p>Completed {{model.training.completedIterations}} / {{model.training.totalIterations}}</p>
                             <p>Loss {{model.training.currentLoss | number:3}}</p>
                             <p>Accuracy {{(model.training.currentAccuracy * 100) | number:1}}</p>
-                            <p>Time per 1000 iterations: {{model.training.currentTimePerIteration | number:1}} seconds</p>
+                            <p>Time per 1000 iterations: <eb-time-duration seconds="model.training.currentTimePerIteration"></eb-time-duration></p>
 
                             <uib-progressbar max="100" value="model.training.percentageComplete"><span style="color:white; white-space:nowrap;">{{model.training.percentageComplete | number:1}}&percnt;</span></uib-progressbar>
                         </div>

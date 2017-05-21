@@ -110,6 +110,16 @@ class EBTensorSchema
     }
 
     /**
+     * Returns the machine variable name for this tensor schema
+     *
+     * @return {string} A string which is the modified version of the variable name
+     */
+    get machineVariableName()
+    {
+        return this.variableName.replace(/\W/g, "");
+    }
+
+    /**
      * Returns true if this schema is representing a tensor
      *
      * @return {boolean} True/false if this schema represents a tensor

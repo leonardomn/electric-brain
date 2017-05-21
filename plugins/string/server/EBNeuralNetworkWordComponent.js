@@ -60,7 +60,7 @@ class EBNeuralNetworkWordComponent extends EBNeuralNetworkComponentBase
     {
         let code = '';
         code += `local ${name} = function (input)\n`;
-        code += `    local tensor = torch.ByteTensor(#input)\n`;
+        code += `    local tensor = torch.DoubleTensor(#input)\n`;
         code += `    for n=1,#input do\n`;
         code += `       tensor[n] = string.byte(input, n)\n`;
         code += `    end\n`;
