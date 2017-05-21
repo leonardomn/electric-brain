@@ -53,7 +53,7 @@ module.exports.getUniqueID = function(application, collectionName, callback)
         }
         else
         {
-            return callback(null, counter.value.seq);
+            return callback(null, counter.value.seq + 1);
         }
     });
 }

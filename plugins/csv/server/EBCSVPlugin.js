@@ -285,7 +285,7 @@ class EBCSVPlugin extends EBDataSourcePlugin
                                 return newRow;
                             });
 
-                            async.each(altered, (row, next) =>
+                            async.eachSeries(altered, (row, next) =>
                             {
                                 iterator(underscore.omit(row, "_id", "ebCSVFile", "ebRowIndex")).then((value) =>
                                     {

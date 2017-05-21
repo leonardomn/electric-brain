@@ -126,7 +126,7 @@ class EBDataSourcePlugin
     {
         const maxNumberOfObjectsToSample = dataSource.sampleSize;
         const examplesToKeep = 10;
-        const objectsBetweenIteratorCalls = 25;
+        const objectsBetweenIteratorCalls = 100;
         const exampleIndexes = randomUtilities.getRandomIntegers(maxNumberOfObjectsToSample, examplesToKeep);
 
         const schemaDetector = new EBSchemaDetector(this.application);
@@ -143,11 +143,11 @@ class EBDataSourcePlugin
 
                 // Accumulate the converted version of the object
                 objectIndex += 1;
-
+                const callIterator = (objectIndex % objectsBetweenIteratorCalls) === 0;
                 return schemaDetector.accumulateObject(object, keepForSample).then(() =>
                 {
                     let iteratorPromise = Promise.resolve();
-                    if (objectIndex % objectsBetweenIteratorCalls === 0)
+                    if (callIterator)
                     {
                         iteratorPromise = iterator(schemaDetector.getSchema(), objectIndex, maxNumberOfObjectsToSample);
                     }
