@@ -315,7 +315,7 @@ class EBApplication
 
         expressApplication.use(bodyParser.json({
             inflate: true,
-            limit: '1mb'
+            limit: '10mb'
         }));
 
         expressApplication.use(flattener);

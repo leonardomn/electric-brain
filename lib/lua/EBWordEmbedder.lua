@@ -3,9 +3,8 @@ require('nn')
 
 local EBWordEmbedder, parent = torch.class('nn.EBWordEmbedder', 'nn.Container')
 local sqlite3 = require("lsqlite3")
-local embeddingDB = sqlite3.open("../scripts/word_vectors")
-local vectorRequest = embeddingDB:prepare("SELECT tensor FROM word_vectors WHERE word = ?")
-print(embeddingDB:error_message())
+local embeddingDB = assert(sqlite3.open("../scripts/word_vectors"))
+local vectorRequest = assert(embeddingDB:prepare("SELECT tensor FROM word_vectors WHERE word = ?"))
 
 local globalWordMapping = {}
 local globalNextIndex = 1
@@ -24,10 +23,17 @@ function EBWordEmbedder:__init(maxExtraSymbols)
     self:add(self.wordVectors)
 end
 
+
+function EBWordEmbedder:bytesToString(bytes)
+    local s = {}
+    for i = 1, bytes:size(1) do
+        s[i] = string.char(bytes[i])
+    end
+    return table.concat(s)
+end
+
 function EBWordEmbedder:updateOutput(input)
     -- The input must be a table of words. We look up each word in the database
-    print(input)
-
     local vectors = {}
 
     local outputTensor = torch.zeros(#input, 300)
@@ -39,16 +45,15 @@ function EBWordEmbedder:updateOutput(input)
 
         --print(torch.type(word))
 
+        --print(embeddingDB:error_message())
         if torch.type(word) == 'torch.ByteTensor' then
-
-            vectorRequest:bind_values("the")
-            vectorRequest:step()
+            -- Create a string from the byte tensor
+            vectorRequest:bind_values(self:bytesToString(word))
 
             local count = 0
             for row in vectorRequest:nrows() do
                 count = count + 1
-                print(vectorRequest:get_value(1))
-                outputTensor[n]:copy(torch.load(vectorRequest:get_value(1)[1]))
+                outputTensor[n]:copy(torch.deserialize(vectorRequest:get_value(0)))
             end
             vectorRequest:reset()
 
@@ -59,8 +64,6 @@ function EBWordEmbedder:updateOutput(input)
                     globalNextIndex = globalNextIndex + 1
                     globalWordMapping[word] = wordIndex
                 end
-                print(wordIndex)
-                print(globalNextIndex)
                 lookupTensor[1] = wordIndex
                 outputTensor[n]:copy(self.wordVectors:updateOutput(lookupTensor))
             end
@@ -91,7 +94,6 @@ function EBWordEmbedder:updateGradInput(input, gradOutput)
 
     local lookupTensor = torch.LongTensor(1)
     for n=1,#input do
-        print(input[n])
         local word = input[n]
         local gradient = gradOutput[n]
 
@@ -102,13 +104,30 @@ function EBWordEmbedder:updateGradInput(input, gradOutput)
         end
     end
 
-    if type(input) == 'number' then
-        return 0
+    self.gradInput = EBWordEmbedder.recursiveEmptyTensor(input)
+    return self.gradInput
+end
+
+
+
+function EBWordEmbedder.recursiveEmptyTensor(t2)
+    if torch.type(t2) == 'table' then
+        local t1 = {}
+        for key,_ in pairs(t2) do
+            t1[key] = EBWordEmbedder.recursiveEmptyTensor(t2[key])
+        end
+        return t1
+    elseif torch.isTensor(t2) then
+        local t1 = t2.new()
+        t1:resizeAs(t2)
+        t1:zero()
+        return t1
     else
-        self.gradInput:resize(input:size()):zero()
-        return self.gradInput
+        error("expecting tensor or table thereof. Got "
+                ..torch.type(t2).." instead")
     end
 end
+
 
 function EBWordEmbedder:type(type, typecache)
     return parent.type(self, type, typecache)

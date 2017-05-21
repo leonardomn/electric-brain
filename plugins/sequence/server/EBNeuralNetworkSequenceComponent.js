@@ -164,6 +164,8 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
         code += `    for k,v in pairs(input) do\n`;
         code += `       batch[1][k] = input[k][1][1]\n`;
         code += `    end\n`;
+        code += `    -- Enforce a maximum length\n`;
+        code += `    longest = math.min(longest, 500)\n`;
         code += `    for n=1,longest do\n`;
         code += `        local samples = {}\n`;
         code += `        for k,v in pairs(input) do\n`;
@@ -273,7 +275,7 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
         const fuseRNNInputTensors = new EBTorchNode(new EBTorchModule("nn.JoinTable", ["1"]), unsqueezeInput, `${moduleName}_fuseRNNInputTensors`);
 
         // Run through the LSTM itself
-        const lstmInternalSize = 100;
+        const lstmInternalSize = 150;
         const lstmModule = new EBTorchNode(new EBTorchModule("nn.Sequential", [], [
             new EBTorchModule('nn.SeqBRNN', [summaryModule.tensorSchema.tensorSize, lstmInternalSize]),
             new EBTorchModule('nn.SeqBRNN', [lstmInternalSize, lstmInternalSize])

@@ -359,7 +359,7 @@ class EBCSVPlugin extends EBDataSourcePlugin
      */
     detectSchema(dataSource)
     {
-        const maxNumberOfObjectsToSample = 500;
+        const maxNumberOfObjectsToSample = 5000;
         const examplesToKeep = 10;
         const exampleIndexes = randomUtilities.getRandomIntegers(maxNumberOfObjectsToSample, examplesToKeep);
 
