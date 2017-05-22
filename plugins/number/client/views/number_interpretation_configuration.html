@@ -11,7 +11,7 @@
 </div>
 
 <div ng-if="field.configuration.interpretation.mode === 'continuous'">
-    <h2>Define your scaling function</h2>
+    <h3>Define your scaling function</h3>
     <div class="btn-group">
         <label class="btn btn-warning" ng-model="field.configuration.interpretation.scalingFunction" uib-btn-radio="'linear'">
             <i class="fa fa-check" ng-show="field.configuration.interpretation.scalingFunction == 'linear'"></i>&nbsp;Linear
@@ -26,7 +26,7 @@
 </div>
 
 <div ng-if="field.configuration.interpretation.mode === 'discrete'">
-    <h2>Define your discrete values</h2>
+    <h3>Define your discrete values</h3>
     <div class="col-md-8">
         <div class="discrete-discrete-value" ng-repeat="discreteValue in field.configuration.interpretation.discreteValues">
             <div class="add-discrete-value-button" ng-if="$index > 0">
@@ -89,4 +89,9 @@
             </div>
         </div>
     </div>
+</div>
+
+
+<div>
+    <eb-neural-stack-editor></eb-neural-stack-editor>
 </div>
