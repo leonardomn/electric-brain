@@ -180,7 +180,7 @@ class EBTensorSchema
             const subFunctionName = `${name}_localizeItems`;
             const subFunctionCode = this.items.generateLocalizeFunction(subFunctionName);
             code += `    ${subFunctionCode.replace(/\n/g, "\n    ")}`;
-            code += `    for n=1,#value[2] do`;
+            code += `    for n=1,#value[2] do\n`;
             code += `       value[2][n] = ${subFunctionName}(value[2][n])\n`;
             code += `    end\n`;
             code += `    return value\n`;
@@ -188,6 +188,9 @@ class EBTensorSchema
         }
         else if (this.isTensor)
         {
+            code += `    if torch.type(value) == 'table' then\n`;
+            code += `       return value\n`;
+            code += `    end\n`;
             code += `    return value:cuda()\n`;
             code += `end\n`;
         }
