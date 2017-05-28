@@ -134,10 +134,6 @@ angular.module('eb').config(function config($stateProvider, $urlRouterProvider, 
         templateUrl: "views/architectures/pages/edit_architecture/select_fields.html",
         controller: "EBArchitectureSelectFieldsController"
     });
-    $stateProvider.state('edit_architecture.configure_fields', {
-        templateUrl: "views/architectures/pages/edit_architecture/configure_fields.html",
-        controller: "EBArchitectureConfigureFieldsController"
-    });
     $stateProvider.state('edit_architecture.design_architecture', {
         templateUrl: "views/architectures/pages/edit_architecture/design_architecture.html",
         controller: "EBArchitectureDesignArchitectureController"

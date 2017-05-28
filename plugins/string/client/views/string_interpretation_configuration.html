@@ -1,21 +1,51 @@
 
-<h3>String</h3>
-
 
 <div>
     <h2>Choose how the string should be processed?</h2>
-    <div class="btn-group">
-        <label class="btn btn-warning" ng-model="field.configuration.interpretation.mode" uib-btn-radio="'classification'">
-            <i class="fa fa-check" ng-show="field.configuration.interpretation.mode == 'classification'"></i>&nbsp;Enumeration / Classification
-        </label>
-        <label class="btn btn-warning" ng-model="field.configuration.interpretation.mode" uib-btn-radio="'sequence'">
-            <i class="fa fa-check" ng-show="field.configuration.interpretation.mode == 'sequence'"></i>&nbsp;Jumbled Letters
-        </label>
-        <label class="btn btn-warning" ng-model="field.configuration.interpretation.mode" uib-btn-radio="'english_word'">
-            <i class="fa fa-check" ng-show="field.configuration.interpretation.mode == 'english_word'"></i>&nbsp;Single English Word
-        </label>
-        <label class="btn btn-warning" ng-model="field.configuration.interpretation.mode" uib-btn-radio="'english_text'">
-            <i class="fa fa-check" ng-show="field.configuration.interpretation.mode == 'english_text'"></i>&nbsp;English Text
-        </label>
+    <br/>
+    <eb-basic-radio-element ng-model="field.configuration.interpretation.mode" values="stringConfigurationValues" titles="stringConfigurationTitles"></eb-basic-radio-element>
+</div>
+
+<div ng-if="field.configuration.interpretation.mode === 'classification'">
+    <br/>
+    <br/>
+
+    <h2>Confirm the list of known classes:</h2>
+    <br/>
+
+    <div class="form-group">
+        <div class="input-group">
+            <input type="text" class="form-control" ng-model="$parent.newValueText">
+            <span class="input-group-btn" ng-click="addValue()">
+                <button type="button" class="btn btn-primary">Add</button>
+            </span>
+        </div>
     </div>
+    <table ng-table="classificationValuesTable" class="table table-condensed table-bordered table-striped">
+        <tr ng-repeat="value in $data">
+            <td data-title="'Index'">{{$index + 1}}</td>
+            <td data-title="'Value'">{{value}}</td>
+            <td>
+                <button class="btn btn-danger btn-sm pull-right" ng-click="deleteValue(value)"><span class="glyphicon glyphicon-trash"></span></button>
+            </td>
+        </tr>
+    </table>
+</div>
+
+
+<div ng-if="(field.configuration.interpretation.mode === 'sequence' || field.configuration.interpretation.mode === 'english_text') && mode =='input'">
+    <br/>
+    <br/>
+    <h2>Customize the stack:</h2>
+    <br/>
+    <eb-neural-stack-editor layers="field.configuration.interpretation.stack.sequenceLayers" mode="sequence"></eb-neural-stack-editor>
+</div>
+
+
+<div ng-if="(field.configuration.interpretation.mode === 'classification' || field.configuration.interpretation.mode === 'english_word') && mode =='output'">
+    <br/>
+    <br/>
+    <h2>Customize the stack:</h2>
+    <br/>
+    <eb-neural-stack-editor layers="field.configuration.interpretation.stack.fixedLayers" mode="fixed"></eb-neural-stack-editor>
 </div>

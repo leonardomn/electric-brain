@@ -19,14 +19,19 @@
         </div>
 
         <div class="col-sm-3">
-            <div class="pull-right" ui-tree-handle style="padding:0px;" title="Drag">
+            <div class="pull-right" ui-tree-handle style="padding:0px;" title="Drag" ng-if="!node.locked">
                 <span class="btn btn-default">
                     <i class="fa fa-bars" style="font-size: 20px;"></i>
                 </span>
             </div>
-            <div class="pull-right" style="padding:0px;" title="Delete">
+            <div class="pull-right" style="padding:0px;" title="Delete" ng-if="!node.locked">
                 <span class="btn btn-danger" ng-click="removeLayer(node)">
                     <span class="fa fa-minus"></span>
+                </span>
+            </div>
+            <div class="pull-right" ng-if="node.locked">
+                <span class="btn btn-default" style="cursor:not-allowed;">
+                    <i class="fa fa-lock" aria-hidden="true"></i>
                 </span>
             </div>
         </div>
@@ -34,10 +39,10 @@
 </div>
 
 <div ng-if="isEditorOpen" class="row tree-node-content">
-    <div class="form-group" ng-repeat="param in node.parameters">
+    <div class="form-group" ng-repeat="param in node.parameters track by $index">
         <label class="col-sm-4 control-label">{{param.name}}</label>
         <div class="col-sm-8">
-            <input class="form-control" type="text" ng-model="param.value">
+            <input class="form-control" type="text" ng-model="node[param.name]" ng-disabled="node.locked">
         </div>
     </div>
 </div>

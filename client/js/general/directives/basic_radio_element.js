@@ -19,22 +19,26 @@
 "use strict";
 
 /**
- * This directive provides the menu for configuring fields being interpretted as binary data.
+ * This is general purpose module which allows the use to put together database queries.
  */
-angular.module('eb').directive('ebBinaryInterpretationConfiguration', function ebBinaryInterpretationConfiguration($timeout)
+angular.module('eb').directive('ebBasicRadioElement', function($timeout)
 {
-    function controller($scope, $element, $attrs)
+    const controller = function($scope, $element, $attrs)
     {
-        
-    }
+        $scope.selectItem = function selectItem(item)
+        {
+            $scope.ngModel = item;
+        };
+    };
 
     return {
-        templateUrl: "/plugins/binary/views/binary_interpretation_configuration.html",
+        templateUrl: "views/general/directives/basic_radio_element.html",
         controller,
-        restrict: "A",
+        restrict: "E",
         scope: {
-            field: '=',
-            mode: '='
+            ngModel: "=",
+            values: "=",
+            titles: '='
         }
     };
 });

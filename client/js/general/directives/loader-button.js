@@ -21,7 +21,7 @@
 /**
  * This element represents a button that can show a loading icon built right into it.
  */
-angular.module('eb').directive('ebLoaderButton', function ebLoaderButton($timeout, $uibModal)
+angular.module('eb').directive('ebLoaderButton', function ebLoaderButton($timeout, $uibModal, EBDialogService)
 {
     const controller = function($scope)
     {
@@ -38,18 +38,7 @@ angular.module('eb').directive('ebLoaderButton', function ebLoaderButton($timeou
             let confirmationPromise = new Promise(function(resolve){resolve(true)});
             if ($scope.confirm)
             {
-                const instance = $uibModal.open({
-                    templateUrl: 'views/general/dialogs/confirmation_dialog.html',
-                    controller: 'EBLoaderButtonConfirmationController',
-                    windowClass: 'loader-button-confirmation',
-                    backdrop: false,
-                    resolve: {
-                        title: () => $scope.confirmTitle,
-                        message: () => $scope.confirmMessage
-                    }
-                });
-
-                confirmationPromise = instance.result;
+                confirmationPromise = EBDialogService.showConfirmationDialog($scope.confirmTitle, $scope.confirmMessage);
             }
 
             confirmationPromise.then(function(result)
@@ -105,21 +94,5 @@ angular.module('eb').directive('ebLoaderButton', function ebLoaderButton($timeou
             confirmTitle: '@',
             confirmMessage: '@'
         }
-    };
-});
-
-angular.module('eb').controller('EBLoaderButtonConfirmationController', function EBLoaderButtonConfirmationController($scope, title, message, $uibModalInstance)
-{
-    $scope.title = title;
-    $scope.message = message;
-
-    $scope.delete = function()
-    {
-        $uibModalInstance.close(true);
-    };
-
-    $scope.cancel = function()
-    {
-        $uibModalInstance.close(false);
     };
 });

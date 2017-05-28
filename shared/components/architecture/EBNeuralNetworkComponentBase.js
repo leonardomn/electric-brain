@@ -276,11 +276,11 @@ class EBNeuralNetworkComponentBase
 
 
     /**
-     * Returns a JSON-Schema schema for this architectures
+     * Returns a JSON-Schema schema for this neural network component
      *
-     * @returns {object} The JSON-Schema that can be used for validating this architectures in its raw form
+     * @returns {object} The JSON-Schema that can be used for validating the configuration for this neural network component.
      */
-    static schema()
+    static configurationSchema()
     {
         throw new Error('Unimplemented');
     }

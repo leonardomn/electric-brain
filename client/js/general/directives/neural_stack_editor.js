@@ -22,19 +22,83 @@
 /**
  * The neural stack editor allows you to customize the neural network
  */
-angular.module('eb').directive('ebNeuralStackEditor', function ebNeuralStackEditor($timeout, EBNeuralLayerSchemas, EBImageNetworkLayerTypes, EBNeuralNetworkTemplates)
+angular.module('eb').directive('ebNeuralStackEditor', function ebNeuralStackEditor($timeout, EBImageNetworkLayerTypes)
 {
     const controller = function($scope)
     {
-        $scope.layers = [];
+        $scope.$watch('layers', function(newValue, oldValue)
+        {
+            if (newValue)
+            {
+                // If any of the layers aren't module objects, change them into module objects
+                if (_.any($scope.layers, (layer) => !(layer instanceof shared.models.EBNeuralNetworkEditorModule)))
+                {
+                    $scope.layers = _.map(newValue, (layer) => new shared.models.EBNeuralNetworkEditorModule(layer));
+                }
+            }
+        });
 
-        $scope.layerSchemas = EBNeuralLayerSchemas;
-        $scope.templates = EBNeuralNetworkTemplates;
-        
+        if ($scope.mode === 'fixed')
+        {
+            $scope.layerSchemas = _.filter(_.values(shared.models.EBNeuralNetworkEditorModule.knownLayers), (layerSchema) => layerSchema.fixed);
+
+            $scope.templates = [
+                {
+                    name: "Small MLP",
+                    generateTemplate: function()
+                    {
+                        return shared.models.EBNeuralNetworkTemplateGenerator.generateMultiLayerPerceptronTemplate('small');
+                    }
+                },
+                {
+                    name: "Medium MLP",
+                    generateTemplate: function()
+                    {
+                        return shared.models.EBNeuralNetworkTemplateGenerator.generateMultiLayerPerceptronTemplate('medium');
+                    }
+                },
+                {
+                    name: "Large MLP",
+                    generateTemplate: function()
+                    {
+                        return shared.models.EBNeuralNetworkTemplateGenerator.generateMultiLayerPerceptronTemplate('large');
+                    }
+                }
+            ];
+        }
+        else if ($scope.mode === 'sequence')
+        {
+            $scope.layerSchemas = _.filter(_.values(shared.models.EBNeuralNetworkEditorModule.knownLayers), (layerSchema) => layerSchema.sequence);
+
+            $scope.templates = [
+                {
+                    name: "Small LSTM",
+                    generateTemplate: function()
+                    {
+                        return shared.models.EBNeuralNetworkTemplateGenerator.generateMultiLayerLSTMTemplate('small', 1);
+                    }
+                },
+                {
+                    name: "Medium LSTM",
+                    generateTemplate: function()
+                    {
+                        return shared.models.EBNeuralNetworkTemplateGenerator.generateMultiLayerLSTMTemplate('medium', 1);
+                    }
+                },
+                {
+                    name: "Large LSTM",
+                    generateTemplate: function()
+                    {
+                        return shared.models.EBNeuralNetworkTemplateGenerator.generateMultiLayerLSTMTemplate('large', 1);
+                    }
+                }
+            ];
+        }
+
         $scope.newLayerSelected = function(layerSchema)
         {
             // Create a deep clone of the new layer and add it to our list
-            $scope.layers.unshift(JSON.parse(JSON.stringify(layerSchema)));
+            $scope.layers.unshift(shared.models.EBNeuralNetworkEditorModule.createNewLayer(layerSchema.name));
 
             $scope.newLayerType = null;
         };
@@ -42,8 +106,8 @@ angular.module('eb').directive('ebNeuralStackEditor', function ebNeuralStackEdit
 
         $scope.templateNetworkSelected = function(template)
         {
-            $scope.layers = JSON.parse(JSON.stringify(template.layers));
-
+            // Clone each of the layers
+            $scope.layers = _.map(template.generateTemplate(), (layer) => new shared.models.EBNeuralNetworkEditorModule(layer));
             $scope.newTemplateNetwork = null;
         };
         
@@ -58,12 +122,30 @@ angular.module('eb').directive('ebNeuralStackEditor', function ebNeuralStackEdit
         {
             $scope.layers.splice($scope.layers.indexOf(layer), 1);
         };
+
+        $scope.treeOptions = {
+            accept: accept
+        };
+
+
+        function accept(sourceNodeScope, destNodesScope, destIndex)
+        {
+            // We don't allow any manipulation of the order of locked layers
+            if ($scope.layers[destIndex].locked)
+            {
+                return false;
+            }
+            return true;
+        }
     };
 
     return {
         templateUrl: "views/general/directives/neural_stack_editor.html",
         controller,
         restrict: "E",
-        scope: {}
+        scope: {
+            layers: '=',
+            mode: '@'
+        }
     };
 });

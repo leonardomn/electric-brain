@@ -24,6 +24,8 @@ const
     EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
+    EBNeuralNetworkEditorModule = require("../../../shared/models/EBNeuralNetworkEditorModule"),
+    EBNeuralNetworkTemplateGenerator = require("../../../shared/models/EBNeuralNetworkTemplateGenerator"),
     EBNumberHistogram = require('../../../shared/models/EBNumberHistogram'),
     EBSchema = require("../../../shared/models/EBSchema"),
     EBValueHistogram = require('../../../shared/models/EBValueHistogram'),
@@ -135,6 +137,11 @@ class EBStringInterpretation extends EBInterpretationBase
         // Output a different schema depending on the mode for the string
         if (schema.configuration.interpretation.mode === 'classification')
         {
+            // Ensure the schema has a component configuration
+            schema.configuration.component = {
+                layers: schema.configuration.interpretation.stack.fixedLayers
+            };
+
             schema.type = ['number'];
             schema.enum = [null];
             schema.metadata.statistics.valueHistogram.values.forEach((number, index) =>
@@ -158,35 +165,58 @@ class EBStringInterpretation extends EBInterpretationBase
                             title: `${schema.title}.[].character`,
                             type: "number",
                             enum: underscore.range(0, asciiLength),
-                            configuration: {included: true}
+                            configuration: {
+                                included: true,
+                                component: {}
+                            }
                         }
                     },
-                    configuration: {included: true}
+                    configuration: {
+                        included: true,
+                        // Ensure the schema has a component configuration
+                        component: {}
+                    }
                 },
-                configuration: {included: true}
+                configuration: {
+                    included: true,
+                    // Ensure the schema has a component configuration
+                    component: {
+                        layers: schema.configuration.interpretation.stack.sequenceLayers
+                    }
+                }
             });
         }
         else if (schema.configuration.interpretation.mode === 'english_word')
         {
+            // Ensure that the schema has a component configuration
+            schema.configuration.component = {};
+            
             return schema;
         }
         else if (schema.configuration.interpretation.mode === 'english_text')
         {
-
             return new EBSchema({
                 title: schema.title,
                 type: "array",
                 items: {
                     title: `${schema.title}.[]`,
                     type: "string",
-                    configuration: {included: true}
+                    configuration: {
+                        included: true,
+                        component: {}
+                    }
                 },
-                configuration: {included: true}
+                configuration: {
+                    included: true,
+                    component: {
+                        layers: schema.configuration.interpretation.stack.sequenceLayers
+                    }
+                }
             });
         }
         else
         {
-            throw new Error(`Unrecognized interpretation mode: ${schema.configuration.interpretation.mode }`)
+            throw new Error(`Unrecognized interpretation mode: ${schema.configuration.interpretation.mode }`);
         }
     }
 
@@ -287,7 +317,7 @@ class EBStringInterpretation extends EBInterpretationBase
         }
         else
         {
-            throw new Error(`Unrecognized interpretation mode: ${schema.configuration.interpretation.mode }`)
+            throw new Error(`Unrecognized interpretation mode: ${schema.configuration.interpretation.mode }`);
         }
     }
 
@@ -300,14 +330,24 @@ class EBStringInterpretation extends EBInterpretationBase
      */
     generateDefaultConfiguration(schema)
     {
+        let configuration = {};
         if (schema.metadata.statistics.valueHistogram.cardinality > 0.6)
         {
-            return {mode: "sequence"};
+            configuration.mode = "sequence";
         }
         else
         {
-            return {mode: "classification"};
+            configuration.mode = "classification";
         }
+
+        configuration.classificationValues = underscore.sortBy(schema.metadata.statistics.valueHistogram.values.map((value) => (value.value)), (value) => value);
+
+        configuration.stack = {
+            sequenceLayers: EBNeuralNetworkTemplateGenerator.generateMultiLayerLSTMTemplate('medium'),
+            fixedLayers: EBNeuralNetworkTemplateGenerator.generateMultiLayerPerceptronTemplate('medium')
+        };
+
+        return configuration;
     }
 
 
@@ -440,7 +480,24 @@ class EBStringInterpretation extends EBInterpretationBase
             "properties": {
                 mode: {
                     "type": "string",
-                    "enum": ["classification", "sequence"]
+                    "enum": ["classification", "sequence", "english_word", "english_text"]
+                },
+                classificationValues: {
+                    "type": "array",
+                    "items": {"type": "string"}
+                },
+                stack: {
+                    "type": ["object"],
+                    "properties": {
+                        "sequenceLayers": {
+                            "type": "array",
+                            "items": EBNeuralNetworkEditorModule.schema()
+                        },
+                        "fixedLayers": {
+                            "type": "array",
+                            "items": EBNeuralNetworkEditorModule.schema()
+                        }
+                    }
                 }
             }
         };

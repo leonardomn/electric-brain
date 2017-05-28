@@ -184,7 +184,10 @@ class EBDateInterpretation extends EBInterpretationBase
             dateComponentProperties.year = new EBSchema({
                 title: `${schema.title}.year`,
                 type: "number",
-                configuration: {included: true}
+                configuration: {
+                    included: true,
+                    component: {}
+                }
             });
         }
         if (schema.configuration.interpretation.includeDayOfYear)
@@ -192,7 +195,10 @@ class EBDateInterpretation extends EBInterpretationBase
             dateComponentProperties.dayOfYear = new EBSchema({
                 title: `${schema.title}.dayOfYear`,
                 type: "number",
-                configuration: {included: true}
+                configuration: {
+                    included: true,
+                    component: {}
+                }
             });
         }
         if (schema.configuration.interpretation.includeMonth)
@@ -202,7 +208,10 @@ class EBDateInterpretation extends EBInterpretationBase
                 title: `${schema.title}.month`,
                 type: "number",
                 enum: underscore.range(0, numberOfMonths),
-                configuration: {included: true}
+                configuration: {
+                    included: true,
+                    component: {}
+                }
             });
         }
         if (schema.configuration.interpretation.includeDayOfMonth)
@@ -210,7 +219,10 @@ class EBDateInterpretation extends EBInterpretationBase
             dateComponentProperties.dayOfMonth = new EBSchema({
                 title: `${schema.title}.dayOfMonth`,
                 type: "number",
-                configuration: {included: true}
+                configuration: {
+                    included: true,
+                    component: {}
+                }
             });
         }
         if (schema.configuration.interpretation.includeDayOfWeek)
@@ -220,7 +232,10 @@ class EBDateInterpretation extends EBInterpretationBase
                 title: `${schema.title}.dayOfWeek`,
                 type: "number",
                 enum: underscore.range(0, numberOfDaysInWeek),
-                configuration: {included: true}
+                configuration: {
+                    included: true,
+                    component: {}
+                }
             });
         }
         if (schema.configuration.interpretation.includeTimeOfDay)
@@ -228,14 +243,20 @@ class EBDateInterpretation extends EBInterpretationBase
             dateComponentProperties.timeOfDay = new EBSchema({
                 title: `${schema.title}.timeOfDay`,
                 type: "number",
-                configuration: {included: true}
+                configuration: {
+                    included: true,
+                    component: {}
+                }
             });
         }
         return new EBSchema({
             title: schema.title,
             type: "object",
             properties: dateComponentProperties,
-            configuration: {included: true}
+            configuration: {
+                included: true,
+                component: {}
+            }
         });
     }
 

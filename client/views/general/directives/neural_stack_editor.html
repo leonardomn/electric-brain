@@ -9,13 +9,11 @@
             <div class="panel-body">
                 <div class="row">
                     <div class="col-sm-8">
-
-                        <div ui-tree id="tree-root">
+                        <div ui-tree="treeOptions" id="tree-root">
                             <ol ui-tree-nodes ng-model="layers">
                                 <li ng-repeat="node in layers" ui-tree-node ng-include="'views/general/directives/neural_layer.html'"></li>
                             </ol>
                         </div>
-
                     </div>
                     <div class="col-sm-4">
                         <h4>Add Layer</h4>

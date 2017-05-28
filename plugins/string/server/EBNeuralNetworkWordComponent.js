@@ -179,6 +179,21 @@ class EBNeuralNetworkWordComponent extends EBNeuralNetworkComponentBase
         // Create MSE module
         return new EBTorchModule("nn.MSECriterion");
     }
+
+
+    /**
+     * Returns a JSON-Schema schema for this neural network component
+     *
+     * @returns {object} The JSON-Schema that can be used for validating the configuration for this neural network component.
+     */
+    static configurationSchema()
+    {
+        return {
+            "id": "EBNeuralNetworkWordComponent.configurationSchema",
+            "type": "object",
+            "properties": {}
+        };
+    }
 }
 
 module.exports = EBNeuralNetworkWordComponent;

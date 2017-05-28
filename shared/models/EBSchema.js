@@ -25,7 +25,6 @@ const
     deepdiff = require("deep-diff").diff,
     EBConfusionMatrix = require("./EBConfusionMatrix"),
     EBFieldMetadata = require("./EBFieldMetadata"),
-    EBSchemaNeuralNetworkConfiguration = require('./EBSchemaNeuralNetworkConfiguration'),
     stringUtilities = require("../utilities/string"),
     underscore = require('underscore');
 
@@ -1816,6 +1815,10 @@ class EBSchema
                     "properties": {
                         "included": {"type": "boolean"},
                         "interpretation": {
+                            "type": "object",
+                            "additionalProperties": true
+                        },
+                        "component": {
                             "type": "object",
                             "additionalProperties": true
                         }

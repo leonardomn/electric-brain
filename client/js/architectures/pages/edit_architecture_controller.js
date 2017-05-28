@@ -109,8 +109,6 @@ angular.module('eb').controller('EBEditArchitectureController', function EBEditA
         }
         else
         {
-            console.log(JSON.stringify($scope.architecture, null, 1));
-            
             return EBArchitectureService.saveArchitecture($scope.architecture);
         }
     };

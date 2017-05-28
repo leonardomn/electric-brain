@@ -33,7 +33,8 @@ angular.module('eb').directive('ebSequenceInterpretationConfiguration', function
         controller,
         restrict: "A",
         scope: {
-            field: '='
+            field: '=',
+            mode: '='
         }
     };
 });

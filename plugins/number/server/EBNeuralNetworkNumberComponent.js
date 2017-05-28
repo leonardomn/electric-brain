@@ -22,6 +22,7 @@ const EBNeuralNetworkComponentBase = require('../../../shared/components/archite
     EBTorchModule = require('../../../shared/models/EBTorchModule'),
     EBTorchNode = require('../../../shared/models/EBTorchNode'),
     EBTensorSchema = require('../../../shared/models/EBTensorSchema'),
+    EBNeuralNetworkEditorModule = require('../../../shared/models/EBNeuralNetworkEditorModule'),
     underscore = require('underscore');
 
 /**
@@ -173,22 +174,14 @@ class EBNeuralNetworkNumberComponent extends EBNeuralNetworkComponentBase
         // Create a summary module for the input tensor
         const summaryModule = this.createSummaryModule(inputTensorSchema);
 
-        // Calculate the middle layer size as half way between input and output size
-        const middleLayerSize = Math.min(1500, Math.max(summaryModule.tensorSchema.tensorSize / 2, 100));
-
         // Create the node in the graph for the summary module
         const summaryNode = new EBTorchNode(summaryModule.module, inputNode, `${outputSchema.machineVariableName}_summaryNode`);
         
-        const linearUnit = new EBTorchNode(new EBTorchModule("nn.Sequential", [], [
-            new EBTorchModule("nn.Linear", [summaryModule.tensorSchema.tensorSize, middleLayerSize]),
-            new EBTorchModule("nn.Tanh", []),
-            new EBTorchModule("nn.Linear", [middleLayerSize, middleLayerSize]),
-            new EBTorchModule("nn.Tanh", []),
-            new EBTorchModule("nn.Dropout", [0.4]),
-            new EBTorchModule("nn.Linear", [middleLayerSize, middleLayerSize]),
-            new EBTorchModule("nn.Tanh", []),
-            new EBTorchModule("nn.Linear", [middleLayerSize, outputTensorSchema.tensorSize])
-        ]), summaryNode, `${outputSchema.machineVariableName}_linearUnit`);
+        const stack = EBNeuralNetworkEditorModule.createModuleChain(outputSchema.configuration.component.layers, summaryModule.tensorSchema, {
+            outputSize: 1
+        });
+        
+        const linearUnit = new EBTorchNode(stack.module, summaryNode, `${outputSchema.machineVariableName}_linearUnit`);
 
         return {
             outputNode: linearUnit,
@@ -211,6 +204,27 @@ class EBNeuralNetworkNumberComponent extends EBNeuralNetworkComponentBase
     {
         // Create MSE module
         return new EBTorchModule("nn.MSECriterion");
+    }
+
+
+
+    /**
+     * Returns a JSON-Schema schema for this neural network component
+     *
+     * @returns {object} The JSON-Schema that can be used for validating the configuration for this neural network component.
+     */
+    static configurationSchema()
+    {
+        return {
+            "id": "EBNeuralNetworkNumberComponent.configurationSchema",
+            "type": "object",
+            "properties": {
+                "layers": {
+                    "type": "array",
+                    "items": EBNeuralNetworkEditorModule.schema()
+                }
+            }
+        };
     }
 }
 
