@@ -37,16 +37,15 @@ angular.module('eb').controller('EBNewModelController', function EBNewModelContr
 
     $scope.onTrainModelClicked = function onTrainModelClicked()
     {
-        EBModelService.createModel($scope.model).then(function success(body)
+        return EBModelService.createModel($scope.model).then(function success(body)
         {
             EBNavigationBarService.refreshNavigationBar();
             
             const id = body.data._id;
-            EBModelService.trainModel(body.data).then(function success(body)
+            return EBModelService.trainModel(body.data).then(function success(body)
             {
-                // ignore, for now
+                $state.go('view_model', {id: id});
             });
-            $state.go('view_model', {id: id});
         });
 
     };
