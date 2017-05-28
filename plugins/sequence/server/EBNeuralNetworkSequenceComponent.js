@@ -165,8 +165,13 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
         code += `    for k,v in pairs(input) do\n`;
         code += `       batch[1][k] = input[k][1][1]\n`;
         code += `    end\n`;
-        code += `    -- Enforce a maximum length\n`;
-        code += `    longest = math.min(longest, 500)\n`;
+        
+        if (schema.configuration.component.enforceSequenceLengthLimit)
+        {
+            code += `    -- Enforce a maximum length\n`;
+            code += `    longest = math.min(longest, ${schema.configuration.component.maxSequenceLength})\n`;
+        }
+        
         code += `    for n=1,longest do\n`;
         code += `        local samples = {}\n`;
         code += `        for k,v in pairs(input) do\n`;
@@ -392,7 +397,13 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
                 "layers": {
                     "type": "array",
                     "items": EBNeuralNetworkEditorModule.schema()
-                }
+                },
+                "enforceSequenceLengthLimit": {
+                    "type": "boolean"
+                },
+                "maxSequenceLength": {
+                    "type": "number"
+                },
             }
         };
     }

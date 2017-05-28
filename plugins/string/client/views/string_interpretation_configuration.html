@@ -36,6 +36,21 @@
 <div ng-if="(field.configuration.interpretation.mode === 'sequence' || field.configuration.interpretation.mode === 'english_text') && mode =='input'">
     <br/>
     <br/>
+    <h2>Enforce a sequence length limit?</h2>
+    <br/>
+    <eb-basic-radio-element ng-model="field.configuration.interpretation.enforceSequenceLengthLimit" values="sequenceLengthLimitConfigurationValues" titles="sequenceLengthLimitConfigurationTitles"></eb-basic-radio-element>
+    <div ng-if="field.configuration.interpretation.enforceSequenceLengthLimit">
+        <br/>
+        <h2>Set the maximum sequence length</h2>
+        <br/>
+        <div class="form-group">
+            <div class="input-group">
+                <input type="number" class="form-control" ng-model="field.configuration.interpretation.maxSequenceLength">
+            </div>
+        </div>
+    </div>
+    <br/>
+    <br/>
     <h2>Customize the stack:</h2>
     <br/>
     <eb-neural-stack-editor layers="field.configuration.interpretation.stack.sequenceLayers" mode="sequence"></eb-neural-stack-editor>

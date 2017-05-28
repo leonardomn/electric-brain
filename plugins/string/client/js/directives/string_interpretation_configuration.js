@@ -38,6 +38,17 @@ angular.module('eb').directive('ebStringInterpretationConfiguration', function e
             'Single English Word',
             'English Text'
         ];
+        
+        
+        $scope.sequenceLengthLimitConfigurationValues = [
+            true,
+            false
+        ];
+
+        $scope.sequenceLengthLimitConfigurationTitles = [
+            'Yes',
+            'No'
+        ];
 
         $scope.$watch('field', function(newValue)
         {

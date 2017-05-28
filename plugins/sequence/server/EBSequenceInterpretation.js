@@ -158,6 +158,8 @@ class EBSequenceInterpretation extends EBInterpretationBase
 
         // We have to make sure that the schema, as well as its item objects have a component
         newSchema.configuration.component = {
+            enforceSequenceLengthLimit: schema.configuration.interpretation.enforceSequenceLengthLimit,
+            maxSequenceLength: schema.configuration.interpretation.maxSequenceLength,
             layers: schema.configuration.interpretation.stack.sequenceLayers
         };
         newSchema.items.configuration.component = {};
@@ -213,6 +215,9 @@ class EBSequenceInterpretation extends EBInterpretationBase
         configuration.stack = {
             sequenceLayers: EBNeuralNetworkTemplateGenerator.generateMultiLayerLSTMTemplate('medium')
         };
+
+        configuration.enforceSequenceLengthLimit = false;
+        configuration.maxSequenceLength = 2500;
 
         return configuration;
     }
@@ -278,6 +283,13 @@ class EBSequenceInterpretation extends EBInterpretationBase
             "id": "EBSequenceInterpretation.configurationSchema",
             "type": "object",
             "properties": {
+                enforceSequenceLengthLimit: {
+                    "type": "boolean"
+                },
+
+                maxSequenceLength: {
+                    "type": "number"
+                },
                 stack: {
                     "type": ["object"],
                     "properties": {

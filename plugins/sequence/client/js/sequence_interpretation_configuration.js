@@ -25,7 +25,15 @@ angular.module('eb').directive('ebSequenceInterpretationConfiguration', function
 {
     function controller($scope, $element, $attrs)
     {
+        $scope.sequenceLengthLimitConfigurationValues = [
+            true,
+            false
+        ];
 
+        $scope.sequenceLengthLimitConfigurationTitles = [
+            'Yes',
+            'No'
+        ];
     }
 
     return {

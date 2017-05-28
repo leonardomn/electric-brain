@@ -181,7 +181,9 @@ class EBStringInterpretation extends EBInterpretationBase
                     included: true,
                     // Ensure the schema has a component configuration
                     component: {
-                        layers: schema.configuration.interpretation.stack.sequenceLayers
+                        layers: schema.configuration.interpretation.stack.sequenceLayers,
+                        enforceSequenceLengthLimit: schema.configuration.interpretation.enforceSequenceLengthLimit,
+                        maxSequenceLength: schema.configuration.interpretation.maxSequenceLength
                     }
                 }
             });
@@ -209,7 +211,9 @@ class EBStringInterpretation extends EBInterpretationBase
                 configuration: {
                     included: true,
                     component: {
-                        layers: schema.configuration.interpretation.stack.sequenceLayers
+                        layers: schema.configuration.interpretation.stack.sequenceLayers,
+                        enforceSequenceLengthLimit: schema.configuration.interpretation.enforceSequenceLengthLimit,
+                        maxSequenceLength: schema.configuration.interpretation.maxSequenceLength
                     }
                 }
             });
@@ -346,6 +350,9 @@ class EBStringInterpretation extends EBInterpretationBase
             sequenceLayers: EBNeuralNetworkTemplateGenerator.generateMultiLayerLSTMTemplate('medium'),
             fixedLayers: EBNeuralNetworkTemplateGenerator.generateMultiLayerPerceptronTemplate('medium')
         };
+        
+        configuration.enforceSequenceLengthLimit = false;
+        configuration.maxSequenceLength = 2500;
 
         return configuration;
     }
@@ -486,6 +493,16 @@ class EBStringInterpretation extends EBInterpretationBase
                     "type": "array",
                     "items": {"type": "string"}
                 },
+                
+                enforceSequenceLengthLimit: {
+                    "type": "boolean"
+                },
+                
+                maxSequenceLength: {
+                    "type": "number"
+                },
+                
+                
                 stack: {
                     "type": ["object"],
                     "properties": {
