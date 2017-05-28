@@ -58,7 +58,7 @@ class EBTrainModelWorker extends EBStdioScript
                 else
                 {
                     this.model = new models.EBModel(objects[0]);
-                    this.trainingProcess = new EBTorchProcess(this.model.architecture);
+                    this.trainingProcess = new EBTorchProcess(this.model.architecture, this.application.config.get('overrideModelFolder'));
                     this.trainingProcess.generateCode(this.application.interpretationRegistry, this.application.neuralNetworkComponentDispatch).then(() =>
                     {
                         return this.trainingProcess.startProcess();

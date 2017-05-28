@@ -20,11 +20,11 @@
 
 const
     Ajv = require('ajv'),
+    assert = require('assert'),
     async = require('async'),
     deepdiff = require("deep-diff").diff,
     EBConfusionMatrix = require("./EBConfusionMatrix"),
     EBFieldMetadata = require("./EBFieldMetadata"),
-    EBSchemaNeuralNetworkConfiguration = require('./EBSchemaNeuralNetworkConfiguration'),
     stringUtilities = require("../utilities/string"),
     underscore = require('underscore');
 
@@ -55,6 +55,9 @@ class EBSchema
     {
         const self = this;
         self[_parent] = null;
+
+        // rawSchema.type MUST be present
+        assert(rawSchema.type);
 
         if (!depth)
         {
@@ -1812,6 +1815,10 @@ class EBSchema
                     "properties": {
                         "included": {"type": "boolean"},
                         "interpretation": {
+                            "type": "object",
+                            "additionalProperties": true
+                        },
+                        "component": {
                             "type": "object",
                             "additionalProperties": true
                         }

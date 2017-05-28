@@ -21,11 +21,83 @@
 /**
  * Represents a single field being configured within the neural network
  */
-angular.module('eb').directive('ebStringInterpretationConfiguration', function ebStringInterpretationConfiguration($timeout, EBDataSourceService)
+angular.module('eb').directive('ebStringInterpretationConfiguration', function ebStringInterpretationConfiguration($timeout, EBDataSourceService, NgTableParams, EBDialogService)
 {
     function controller($scope, $element, $attrs)
     {
+        $scope.stringConfigurationValues = [
+            'classification',
+            'sequence',
+            'english_word',
+            'english_text'
+        ];
+
+        $scope.stringConfigurationTitles = [
+            'Enumeration / Classification',
+            'Letter by Letter',
+            'Single English Word',
+            'English Text'
+        ];
         
+        
+        $scope.sequenceLengthLimitConfigurationValues = [
+            true,
+            false
+        ];
+
+        $scope.sequenceLengthLimitConfigurationTitles = [
+            'Yes',
+            'No'
+        ];
+
+        $scope.$watch('field', function(newValue)
+        {
+            if (newValue)
+            {
+                $scope.classificationValuesTable = new NgTableParams({
+                    count: 25
+                }, {
+                    counts: [10, 25, 50, 100],
+                    dataset: $scope.field.configuration.interpretation.classificationValues,
+                    paginationMaxBlocks: 13,
+                    paginationMinBlocks: 2,
+                });
+            }
+        });
+
+        $scope.newValueText = "";
+
+        $scope.addValue = function addValue()
+        {
+            if (!$scope.newValueText)
+            {
+                EBDialogService.showErrorDialog(`You must enter some text for the classification.`);
+            }
+            else if ($scope.field.configuration.interpretation.classificationValues.indexOf($scope.newValueText) !== -1)
+            {
+                EBDialogService.showErrorDialog(`The value ${$scope.newValueText} already exists in the list`);
+            }
+            else
+            {
+                $scope.field.configuration.interpretation.classificationValues.push($scope.newValueText);
+                $scope.newValueText = "";
+                $scope.classificationValuesTable.reload();
+            }
+        };
+        
+        $scope.deleteValue = function deleteValue(value)
+        {
+            $scope.field.configuration.interpretation.classificationValues.splice($scope.field.configuration.interpretation.classificationValues.indexOf(value), 1);
+
+            $scope.classificationValuesTable.reload().then(function(data)
+            {
+                if (data.length === 0 && $scope.classificationValuesTable.total() > 0)
+                {
+                    $scope.classificationValuesTable.page($scope.classificationValuesTable.page() - 1);
+                    $scope.classificationValuesTable.reload();
+                }
+            });
+        };
     }
 
     return {
@@ -33,7 +105,8 @@ angular.module('eb').directive('ebStringInterpretationConfiguration', function e
         controller,
         restrict: "A",
         scope: {
-            field: '='
+            field: '=',
+            mode: '='
         }
     };
 });

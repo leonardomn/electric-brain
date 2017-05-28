@@ -70,34 +70,53 @@ class EBTorchProcess
             async.series([
                 function writeGeneratedFiles(next)
                 {
-                    // First, create a temporary folder to put all of the model files in
-                    temp.mkdir('electric-brain-model', (err, temporaryFolder) =>
-                    {
-                        if (err)
+                    async.waterfall([
+                        function(next)
                         {
-                            return next(err);
-                        }
-                        // childProcess.execSync('rm -rf /home/bradley/eb/electric-brain/training/*');
-                        // self.scriptFolder = '/home/bradley/eb/electric-brain/training/';
-                        self.scriptFolder = temporaryFolder;
-                        try
-                        {
-                            // Create a list of files that need to be written
-                            const files = self.architecture.generateFiles(registry, neuralNetworkComponentDispatch);
-                            
-                            // Write out each of the files
-                            const writeFilePromise = Promise.each(files,(file) =>
+                            if (!self.scriptFolder)
                             {
-                                totalFiles += 1;
-                                return Promise.fromCallback((next) => fs.writeFile(path.join(self.scriptFolder, file.path), file.data, next));
-                            });
-                            writeFilePromise.then(() => next());
-                        }
-                        catch (err)
+                                // First, create a temporary folder to put all of the model files in
+                                temp.mkdir('electric-brain-model', (err, temporaryFolder) => {
+                                    if (err)
+                                    {
+                                        return next(err);
+                                    }
+
+                                    return next(null, temporaryFolder);
+                                });
+                            }
+                            else
+                            {
+                                // if (fs.existsSync(self.scriptFolder))
+                                // {
+                                //     childProcess.execSync(`rm -rf ${path.join(self.scriptFolder, "*")}`)
+                                // }
+
+                                return next(null, self.scriptFolder);
+                            }
+                        },
+                        function(temporaryFolder, next)
                         {
-                            return next(err);
+                            self.scriptFolder = temporaryFolder;
+                            try
+                            {
+                                // Create a list of files that need to be written
+                                const files = self.architecture.generateFiles(registry, neuralNetworkComponentDispatch);
+
+                                // Write out each of the files
+                                const writeFilePromise = Promise.each(files,(file) =>
+                                {
+                                    totalFiles += 1;
+                                    return Promise.fromCallback((next) => fs.writeFile(path.join(self.scriptFolder, file.path), file.data, next));
+                                });
+                                writeFilePromise.then(() => next());
+                            }
+                            catch (err)
+                            {
+                                return next(err);
+                            }
                         }
-                    });
+                    ], next);
                 },
                 function writeLibraryFiles(next)
                 {

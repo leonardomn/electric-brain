@@ -266,7 +266,7 @@ class EBModelAPI extends EBAPIRoot
      */
     trainModel(req, res, next)
     {
-        this.models.find({_id: Number(req.params.id)}).toArray(function(err, modelObjects)
+        this.models.find({_id: Number(req.params.id)}).toArray((err, modelObjects) =>
         {
             if (err)
             {
@@ -278,7 +278,7 @@ class EBModelAPI extends EBAPIRoot
             }
             else
             {
-                tasks.queue.queueTask("train_model", {_id: Number(req.params.id)}, function(err, task)
+                this.application.taskQueue.queueTask("train_model", {_id: Number(req.params.id)}, function(err, task)
                 {
                     if (err)
                     {
@@ -517,7 +517,7 @@ class EBModelAPI extends EBAPIRoot
             else
             {
                 const model = new models.EBModel(modelObject);
-                const modelProcess = new EBTorchProcess(new models.EBArchitecture(model.architecture));
+                const modelProcess = new EBTorchProcess(new models.EBArchitecture(model.architecture), self.application.config.get('overrideModelFolder'));
                 async.series([
                     // Generate the code
                     function generateCode(next)

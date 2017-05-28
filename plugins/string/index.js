@@ -17,6 +17,7 @@
 */
 
 const EBStringInterpretation = require('./server/EBStringInterpretation');
+const EBNeuralNetworkWordComponent = require('./server/EBNeuralNetworkWordComponent');
 
 /*
  * Plugins must define a series of standard methods.
@@ -26,6 +27,9 @@ module.exports = {
     "name": "string",
     "folder": __dirname,
     "dataSources": {},
-    "interpretations": {'string': EBStringInterpretation}
+    "interpretations": {'string': EBStringInterpretation},
+    "neuralNetworkComponents": {
+        'word': EBNeuralNetworkWordComponent
+    }
 };
 

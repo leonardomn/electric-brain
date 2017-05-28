@@ -53,6 +53,13 @@ class EBDataSource
                 self[key] = rawDataSource[key];
             }
         });
+
+
+        // If there is new sampleSize, set a default value
+        if (!self.sampleSize)
+        {
+            self.sampleSize = 500;
+        }
     }
 
     /**
@@ -74,6 +81,9 @@ class EBDataSource
                 "type": {
                     "type": "string",
                     "enum": ["mongo", "csv"]
+                },
+                "sampleSize": {
+                    "type": "number"
                 },
                 "file": {"type": "string"},
                 "database": {

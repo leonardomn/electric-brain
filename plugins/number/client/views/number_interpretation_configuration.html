@@ -1,32 +1,23 @@
-<h3>Number</h3>
-
-
-<div class="btn-group">
-    <label class="btn btn-primary" ng-model="field.configuration.interpretation.mode" uib-btn-radio="'continuous'">
-        <i class="fa fa-area-chart"></i>&nbsp;Continuous
-    </label>
-    <label class="btn btn-primary" ng-model="field.configuration.interpretation.mode" uib-btn-radio="'discrete'">
-        <i class="fa fa-bar-chart"></i>&nbsp;Discrete
-    </label>
+<div class="row">
+    <h2>Choose how the string should be processed?</h2>
+    <br/>
+    <eb-basic-radio-element ng-model="field.configuration.interpretation.mode" values="numberConfigurationValues" titles="numberConfigurationTitles"></eb-basic-radio-element>
 </div>
 
-<div ng-if="field.configuration.interpretation.mode === 'continuous'">
+
+<div ng-if="field.configuration.interpretation.mode === 'continuous'" class="row">
+    <br/>
+    <br/>
     <h2>Define your scaling function</h2>
-    <div class="btn-group">
-        <label class="btn btn-warning" ng-model="field.configuration.interpretation.scalingFunction" uib-btn-radio="'linear'">
-            <i class="fa fa-check" ng-show="field.configuration.interpretation.scalingFunction == 'linear'"></i>&nbsp;Linear
-        </label>
-        <label class="btn btn-warning" ng-model="field.configuration.interpretation.scalingFunction" uib-btn-radio="'quadratic'">
-            <i class="fa fa-check" ng-show="field.configuration.interpretation.scalingFunction == 'quadratic'"></i>&nbsp;Quadratic
-        </label>
-        <label class="btn btn-warning" ng-model="field.configuration.interpretation.scalingFunction" uib-btn-radio="'logarithmic'">
-            <i class="fa fa-check" ng-show="field.configuration.interpretation.scalingFunction == 'logarithmic'"></i>&nbsp;Logarithmic
-        </label>
-    </div>
+    <br/>
+    <eb-basic-radio-element ng-model="field.configuration.interpretation.scalingFunction" values="scalingFunctionValues" titles="scalingFunctionTitles"></eb-basic-radio-element>
 </div>
 
-<div ng-if="field.configuration.interpretation.mode === 'discrete'">
+<div ng-if="field.configuration.interpretation.mode === 'discrete'" class="row">
+    <br/>
+    <br/>
     <h2>Define your discrete values</h2>
+    <br/>
     <div class="col-md-8">
         <div class="discrete-discrete-value" ng-repeat="discreteValue in field.configuration.interpretation.discreteValues">
             <div class="add-discrete-value-button" ng-if="$index > 0">
@@ -90,3 +81,13 @@
         </div>
     </div>
 </div>
+
+
+<div ng-if="mode =='output'" class="row">
+    <br/>
+    <br/>
+    <h2>Customize the stack:</h2>
+    <br/>
+    <eb-neural-stack-editor layers="field.configuration.interpretation.stack.fixedLayers" mode="fixed"></eb-neural-stack-editor>
+</div>
+

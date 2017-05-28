@@ -60,6 +60,16 @@ class EBTorchModule
         }
     }
 
+    /**
+     * Adds a node as a child of this one. It will be added to the end of the list of children
+     *
+     * @param {EBTorchModule} child The child module to be added.
+     */
+    addChildModule(child)
+    {
+        this.children.push(child);
+    }
+
 
     /**
      * Returns the lua code which can declare this module

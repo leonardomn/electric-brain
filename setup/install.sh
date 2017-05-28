@@ -30,7 +30,7 @@ install_dependencies_darwin() {
 
     # Install dependencies:
     brew update
-    brew install mongodb rabbitmq node@4 graphviz
+    brew install mongodb rabbitmq node@4 graphviz sqlite
     brew link node@4 --force
     brew services start mongodb
     brew services start rabbitmq
@@ -62,7 +62,7 @@ install_dependencies_redhat() {
 
     # Now install nodejs, mongodb
     sudo yum -y update
-    sudo yum -y install mongodb mongodb-server nodejs git graphviz gcc-c++
+    sudo yum -y install mongodb mongodb-server nodejs git graphviz gcc-c++ sqlite3-devel
 
     install_rabbitmq_redhat
 
@@ -76,7 +76,7 @@ install_dependencies_ubuntu() {
     curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
 
     sudo apt update
-    sudo apt install mongodb rabbitmq-server nodejs graphviz git build-essential -y
+    sudo apt install mongodb rabbitmq-server nodejs graphviz git build-essential libsqlite3-dev -y
 }
 
 
@@ -98,6 +98,7 @@ install_torch() {
         sudo /usr/local/bin/luarocks install rnn
         sudo /usr/local/bin/luarocks install underscore
         sudo /usr/local/bin/luarocks install luasocket
+        sudo /usr/local/bin/luarocks install lsqlite3
     fi
 }
 

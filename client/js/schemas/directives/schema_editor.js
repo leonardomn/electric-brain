@@ -54,11 +54,11 @@ angular.module('eb').directive('ebSchemaEditor', function ebSchemaEditor()
                     $scope.fieldListSize = 'col-md-12';
                 }
             }
-            else if ($scope.mode === 'configure_neural_network')
+            else if ($scope.mode === 'configure_neural_network_input')
             {
                 $scope.fieldListSize = 'col-md-4';
             }
-            else if ($scope.mode === 'configure_interpretation')
+            else if ($scope.mode === 'configure_neural_network_output')
             {
                 $scope.fieldListSize = 'col-md-4';
             }

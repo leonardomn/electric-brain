@@ -24,6 +24,8 @@ const
     EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
+    EBNeuralNetworkEditorModule = require('../../../shared/models/EBNeuralNetworkEditorModule'),
+    EBNeuralNetworkTemplateGenerator = require("../../../shared/models/EBNeuralNetworkTemplateGenerator"),
     EBNumberHistogram = require('../../../shared/models/EBNumberHistogram'),
     EBSchema = require("../../../shared/models/EBSchema"),
     underscore = require('underscore');
@@ -104,8 +106,7 @@ class EBNumberInterpretation extends EBInterpretationBase
         }
     }
 
-
-
+    
     /**
      * This method should transform a given schema for a value following this interpretation.
      * It should return a new schema for the interpreted version.
@@ -162,6 +163,10 @@ class EBNumberInterpretation extends EBInterpretationBase
 
         if (configuration.mode === 'continuous')
         {
+            schema.configuration.component = {
+                layers: configuration.stack.fixedLayers
+            };
+
             return schema;
         }
         else
@@ -171,7 +176,12 @@ class EBNumberInterpretation extends EBInterpretationBase
                 title: `${schema.title}`,
                 type: "number",
                 enum: underscore.range(0, configuration.discreteValues.length),
-                configuration: {included: true}
+                configuration: {
+                    included: true,
+                    component: {
+                        layers: configuration.stack.fixedLayers
+                    }
+                }
             });
         }
     }
@@ -278,7 +288,10 @@ class EBNumberInterpretation extends EBInterpretationBase
     {
         return {
             mode: "continuous",
-            scalingFunction: "linear"
+            scalingFunction: "linear",
+            stack: {
+                fixedLayers: EBNeuralNetworkTemplateGenerator.generateMultiLayerPerceptronTemplate('medium')
+            }
         };
     }
 
@@ -463,6 +476,15 @@ class EBNumberInterpretation extends EBInterpretationBase
                             "top": {"type": ["number", "null"]},
                             "bottom": {"type": ["number", "null"]},
                             "name": {"type": "string"}
+                        }
+                    }
+                },
+                "stack": {
+                    "type": ["object"],
+                    "properties": {
+                        "fixedLayers": {
+                            "type": "array",
+                            "items": EBNeuralNetworkEditorModule.schema()
                         }
                     }
                 }

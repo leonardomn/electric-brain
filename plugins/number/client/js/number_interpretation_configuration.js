@@ -25,6 +25,28 @@ angular.module('eb').directive('ebNumberInterpretationConfiguration', function e
 {
     function controller($scope, $element, $attrs)
     {
+        $scope.numberConfigurationValues = [
+            'discrete',
+            'continuous'
+        ];
+
+        $scope.numberConfigurationTitles = [
+            'Discrete',
+            'Continuous'
+        ];
+        
+        $scope.scalingFunctionValues = [
+            'linear',
+            'quadratic',
+            'logarithmic'
+        ];
+
+        $scope.scalingFunctionTitles = [
+            'Linear',
+            'Quadratic',
+            'Logarithmic'
+        ];
+
         $scope.$watch('field.configuration.interpretation.mode', function(newValue, oldValue)
         {
             if (newValue === 'discrete')
@@ -165,7 +187,8 @@ angular.module('eb').directive('ebNumberInterpretationConfiguration', function e
         controller,
         restrict: "A",
         scope: {
-            field: '='
+            field: '=',
+            mode: '='
         }
     };
 });

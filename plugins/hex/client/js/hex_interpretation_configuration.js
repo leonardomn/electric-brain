@@ -33,7 +33,8 @@ angular.module('eb').directive('ebHexInterpretationConfiguration', function ebHe
         controller,
         restrict: "A",
         scope: {
-            field: '='
+            field: '=',
+            mode: '='
         }
     };
 });

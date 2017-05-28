@@ -145,12 +145,17 @@ class EBObjectInterpretation extends EBInterpretationBase
      */
     transformSchemaForNeuralNetwork(schema)
     {
-        return schema.transform((subSchema) =>
+        let newSchema = schema.transform((subSchema) =>
         {
             // Get the schema's main interpretation
             const interpretation = this.interpretationRegistry.getInterpretation(subSchema.metadata.mainInterpretation);
             return interpretation.transformSchemaForNeuralNetwork(subSchema);
         });
+
+        // We have to make sure that the schema has a component configuration for the schema
+        newSchema.configuration.component = {};
+        
+        return newSchema;
     }
 
 

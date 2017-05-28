@@ -30,5 +30,26 @@
                 <eb-basic-list-element items="selectedDatabase.collections" on-item-selected="selectMongoCollection(item)" show-radio-selection="true"></eb-basic-list-element>
             </div>
         </div>
+
+        <div class="row" style="margin-top: 50px;">
+            <div class="col-md-12">
+                <h2 ng-click="isCollapsed = !isCollapsed" style="cursor:pointer;">
+                    <span>Advanced</span>
+                    <i class="fa fa-arrow-circle-down" ng-show="isCollapsed"></i>
+                    <i class="fa fa-arrow-circle-up" ng-show="!isCollapsed"></i>
+                </h2>
+
+                <br/>
+
+                <div uib-collapse="!isCollapsed">
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">Sample Size</label>
+                        <div class="col-sm-4"><input class="form-control" type="number" ng-model="sampleSize"></div>
+                        <div class="col-sm-6"><p>The sample size determines how many rows / objects the engine will look at in order to determine the schema for the data. If your data has a lot of distinct classes, you may need to increase the sample size in order to capture them all properly.</p></div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
     </div>
 </div>

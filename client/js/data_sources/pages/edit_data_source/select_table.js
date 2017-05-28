@@ -25,6 +25,8 @@
 
 angular.module('eb').controller('EBDataSourceSelectTableController', function EBDataSourceSelectTableController($scope, $timeout, $state, EBDataSourceService, config, EBLoaderService, EBNavigationBarService)
 {
+    $scope.sampleSize = 500;
+
     const promise = EBDataSourceService.detectDatabase($scope.dataSource.type).success(function(data)
     {
         $scope.mongoDatabases = data.databases;
@@ -45,6 +47,7 @@ angular.module('eb').controller('EBDataSourceSelectTableController', function EB
     {
         $scope.dataSource.name = mongoCollection.name;
         $scope.dataSource.database.collection = mongoCollection.name;
+        $scope.dataSource.sampleSize = $scope.sampleSize;
         const promise = EBDataSourceService.createDataSource($scope.dataSource).then((body) =>
         {
             $state.go('edit_data_source.select_fields', {id: body.data._id, refreshSchema: true});

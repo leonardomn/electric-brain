@@ -21,7 +21,6 @@
 "use strict";
 
 const
-    config = require('../server/config/config'),
     EBApplication = require("../server/EBApplication"),
     async = require("async"),
     util = require('util');

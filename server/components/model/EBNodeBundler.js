@@ -64,7 +64,7 @@ class EBNodeBundler
                 bucketName: 'EBModel.torch'
             });
 
-            self.trainingProcess = new EBTorchProcess(new models.EBArchitecture(model.architecture));
+            self.trainingProcess = new EBTorchProcess(new models.EBArchitecture(model.architecture), self.application.config.get('overrideModelFolder'));
 
             const zipFile = temp.path({suffix: '.zip'});
 

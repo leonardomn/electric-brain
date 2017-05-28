@@ -57,59 +57,87 @@ class EBNumberHistogram
      */
     static computeHistogram(values)
     {
-        // The number of buckets
-        let desiredNumberOfBuckets = 20;
-
         if (values.length === 0)
         {
             return new EBNumberHistogram();
         }
 
-        // Compute the 10% and 90% quantiles
-        const lower = 0.1;
-        const upper = 0.8;
+        // The number of buckets
+        let buckets = [];
+        let singleValue = false;
+
+        // Compute the 5% and 95% quantiles
+        const lower = 0.05;
+        const upper = 0.95;
         const lowerQuantile = quantile(values, lower);
         const upperQuantile = quantile(values, upper);
 
-        // We create a bucket that covers the inner 80% of the data thoroughly and spills over to the edges
-        let bucketSize = (upperQuantile - lowerQuantile) / (desiredNumberOfBuckets * 0.8);
-        let start = lowerQuantile - bucketSize;
-        let singleValue = false;
+        // We must find the optimal number of bins, between 1 bin and 30 bins
+        let bestScore = Infinity;
+        let optimalBuckets = null;
+        const range = (upperQuantile - lowerQuantile);
+        const maxBuckets = 20;
 
-        // If there is only one number, then bucketSize will be 0. We have to treat this case special
-        if (bucketSize === 0)
+        for (let numberOfBuckets = 1; numberOfBuckets < maxBuckets; numberOfBuckets += 1)
         {
-            bucketSize = 1;
-            desiredNumberOfBuckets = 3;
-            start = lowerQuantile - 1;
-            singleValue = true;
-        }
+            // We create a bucket that covers the inner 80% of the data thoroughly and spills over to the edges
+            const bucketSize = range / numberOfBuckets;
+            const start = lowerQuantile;
+            singleValue = false;
+            let emptyBuckets = false;
 
-        const buckets = [];
-        for (let bucket = 0; bucket < desiredNumberOfBuckets; bucket += 1)
-        {
-            const lowerBound = start + (bucket * bucketSize);
-            const upperBound = start + ((bucket + 1) * bucketSize);
-
-            let frequency = 0;
-
-            // Go through all the values and count up how many fall into this bucket
-            values.forEach(function(value)
+            buckets = [];
+            for (let bucket = 0; bucket < numberOfBuckets; bucket += 1)
             {
-                if ((value >= lowerBound && value < upperBound) || (singleValue && value === lowerBound))
-                {
-                    frequency += 1;
-                }
-            });
+                const lowerBound = start + (bucket * bucketSize);
+                const upperBound = start + ((bucket + 1) * bucketSize);
 
-            buckets.push({
-                lowerBound: lowerBound,
-                upperBound: upperBound,
-                frequency: frequency
-            });
+                let frequency = 0;
+
+                // Go through all the values and count up how many fall into this bucket
+                values.forEach((value) =>
+                {
+                    if ((value >= lowerBound && value < upperBound) || (singleValue && value === lowerBound))
+                    {
+                        frequency += 1;
+                    }
+                });
+
+                if (frequency === 0)
+                {
+                    emptyBuckets = true;
+                    break;
+                }
+
+                buckets.push({
+                    lowerBound: lowerBound,
+                    upperBound: upperBound,
+                    frequency: frequency
+                });
+            }
+
+            if (!emptyBuckets)
+            {
+                const mean = values.length / numberOfBuckets;
+                let squareDiffs = 0;
+                buckets.forEach((bucket) =>
+                {
+                    squareDiffs += (bucket.frequency - mean) * (bucket.frequency - mean);
+                });
+                const stdDev = squareDiffs / numberOfBuckets;
+                const score = ((2 * mean) - (stdDev)) / (bucketSize * bucketSize);
+                if (score < bestScore)
+                {
+                    optimalBuckets = buckets;
+                    bestScore = score;
+                }
+            }
         }
 
-        return new EBNumberHistogram({buckets: buckets, singleValue: singleValue});
+        return new EBNumberHistogram({
+            buckets: optimalBuckets,
+            singleValue: singleValue
+        });
     }
 
     /**

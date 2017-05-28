@@ -22,6 +22,8 @@ const
     EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
+    EBNeuralNetworkEditorModule = require("../../../shared/models/EBNeuralNetworkEditorModule"),
+    EBNeuralNetworkTemplateGenerator = require('../../../shared/models/EBNeuralNetworkTemplateGenerator'),
     EBNumberHistogram = require('../../../shared/models/EBNumberHistogram'),
     Promise = require('bluebird'),
     underscore = require('underscore');
@@ -147,12 +149,22 @@ class EBSequenceInterpretation extends EBInterpretationBase
      */
     transformSchemaForNeuralNetwork(schema)
     {
-        return schema.transform((subSchema) =>
+        let newSchema = schema.transform((subSchema) =>
         {
             // Get the schema's main interpretation
             const interpretation = this.interpretationRegistry.getInterpretation(subSchema.metadata.mainInterpretation);
             return interpretation.transformSchemaForNeuralNetwork(subSchema);
         });
+
+        // We have to make sure that the schema, as well as its item objects have a component
+        newSchema.configuration.component = {
+            enforceSequenceLengthLimit: schema.configuration.interpretation.enforceSequenceLengthLimit,
+            maxSequenceLength: schema.configuration.interpretation.maxSequenceLength,
+            layers: schema.configuration.interpretation.stack.sequenceLayers
+        };
+        newSchema.items.configuration.component = {};
+
+        return newSchema;
     }
 
 
@@ -198,7 +210,16 @@ class EBSequenceInterpretation extends EBInterpretationBase
      */
     generateDefaultConfiguration(schema)
     {
-        return {};
+        let configuration = {};
+
+        configuration.stack = {
+            sequenceLayers: EBNeuralNetworkTemplateGenerator.generateMultiLayerLSTMTemplate('medium')
+        };
+
+        configuration.enforceSequenceLengthLimit = false;
+        configuration.maxSequenceLength = 2500;
+
+        return configuration;
     }
 
 
@@ -262,7 +283,22 @@ class EBSequenceInterpretation extends EBInterpretationBase
             "id": "EBSequenceInterpretation.configurationSchema",
             "type": "object",
             "properties": {
-                lstmInternalSize: {"type": "number"}
+                enforceSequenceLengthLimit: {
+                    "type": "boolean"
+                },
+
+                maxSequenceLength: {
+                    "type": "number"
+                },
+                stack: {
+                    "type": ["object"],
+                    "properties": {
+                        "sequenceLayers": {
+                            "type": "array",
+                            "items": EBNeuralNetworkEditorModule.schema()
+                        }
+                    }
+                }
             }
         };
     }

@@ -41,12 +41,12 @@
         <eb-schema-field-details field="selectedField"></eb-schema-field-details>
     </div>
 
-    <div class="col-md-8" ng-if="selectedField && mode=='configure_neural_network'">
-        <eb-schema-field-neural-network-configuration field="selectedField"></eb-schema-field-neural-network-configuration>
+    <div class="col-md-8" ng-if="selectedField && mode=='configure_neural_network_input'">
+        <eb-schema-field-neural-network-configuration field="selectedField" mode="input"></eb-schema-field-neural-network-configuration>
     </div>
 
-    <div class="col-md-8" ng-if="selectedField && mode=='configure_interpretation'">
-        <eb-schema-interpretation-configuration field="selectedField"></eb-schema-interpretation-configuration>
+    <div class="col-md-8" ng-if="selectedField && mode=='configure_neural_network_output'">
+        <eb-schema-field-neural-network-configuration field="selectedField" mode="output"></eb-schema-field-neural-network-configuration>
     </div>
 
     <div class="col-md-8" ng-if="selectedField && mode=='results'">

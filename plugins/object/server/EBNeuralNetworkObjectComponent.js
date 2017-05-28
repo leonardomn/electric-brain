@@ -21,6 +21,7 @@
 const
     assert = require('assert'),
     EBNeuralNetworkComponentBase = require('../../../shared/components/architecture/EBNeuralNetworkComponentBase'),
+    EBNeuralNetworkEditorModule = require("../../../shared/models/EBNeuralNetworkEditorModule"),
     EBTorchModule = require('../../../shared/models/EBTorchModule'),
     EBTorchNode = require('../../../shared/models/EBTorchNode'),
     EBTensorSchema = require('../../../shared/models/EBTensorSchema'),
@@ -375,14 +376,19 @@ class EBNeuralNetworkObjectComponent extends EBNeuralNetworkComponentBase
         return new EBTorchModule("nn.ParallelCriterion", [], criterions);
     }
 
+
     /**
-     * Returns a JSON-Schema schema for this architectures
+     * Returns a JSON-Schema schema for this neural network component
      *
-     * @returns {object} The JSON-Schema that can be used for validating this architectures in its raw form
+     * @returns {object} The JSON-Schema that can be used for validating the configuration for this neural network component.
      */
-    static schema()
+    static configurationSchema()
     {
-        throw new Error('Unimplemented');
+        return {
+            "id": "EBNeuralNetworkObjectComponent.configurationSchema",
+            "type": "object",
+            "properties": {}
+        };
     }
 }
 

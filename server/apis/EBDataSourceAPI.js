@@ -446,9 +446,7 @@ class EBDataSourceAPI extends EBAPIRoot
      */
     startDataSourceSampling(req, res, next)
     {
-        console.log("arrived");
-
-        tasks.queue.queueTask("sample_data_source", {_id: Number(req.params.id)}, (err, task) =>
+        this.application.taskQueue.queueTask("sample_data_source", {_id: Number(req.params.id)}, (err, task) =>
         {
             if (err)
             {

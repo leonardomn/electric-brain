@@ -33,7 +33,8 @@ angular.module('eb').directive('ebDateInterpretationConfiguration', function ebD
         controller,
         restrict: "A",
         scope: {
-            field: '='
+            field: '=',
+            mode: '='
         }
     };
 });

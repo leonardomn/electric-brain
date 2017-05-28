@@ -72,7 +72,7 @@ class EBTrainModelTask {
         this.testingSetPosition = 0;
         this.trainingSetPosition = 0;
 
-        const numWorkers = 1;
+        const numWorkers = 4;
         this.workers = [];
         for (let workerIndex = 0; workerIndex < numWorkers; workerIndex += 1)
         {
@@ -114,7 +114,7 @@ class EBTrainModelTask {
             else
             {
                 self.model = new models.EBModel(objects[0]);
-                self.trainingProcess = new EBTorchProcess(self.model.architecture);
+                self.trainingProcess = new EBTorchProcess(self.model.architecture, self.application.config.get('overrideModelFolder'));
                 return Promise.resolve();
             }
         }).then(()=>
@@ -219,7 +219,7 @@ class EBTrainModelTask {
                     frontendUpdateDelay = Math.max(0, self.frontendUpdateInterval - (Date.now() - self.lastFrontendUpdateTime.getTime()));
                 }
 
-                function updateFrontend()
+                const updateFrontend = function updateFrontend()
                 {
                     self.isFrontendUpdateScheduled = false;
                     self.lastFrontendUpdateTime = new Date();
@@ -228,7 +228,7 @@ class EBTrainModelTask {
                         event: 'update',
                         model: self.model
                     });
-                }
+                };
 
                 setTimeout(updateFrontend, frontendUpdateDelay);
             }
@@ -238,7 +238,7 @@ class EBTrainModelTask {
             {
                 self.isDatabaseUpdateScheduled = true;
 
-                function updateDatabase()
+                const updateDatabase = function updateDatabase()
                 {
                     self.isDatabaseUpdateScheduled = true;
                     self.lastDatabaseUpdateTime = new Date();
@@ -257,7 +257,7 @@ class EBTrainModelTask {
                             updateDatabase();
                         }
                     });
-                }
+                };
 
                 let databaseUpdateDelay = 0;
                 if (self.lastDatabaseUpdateTime)

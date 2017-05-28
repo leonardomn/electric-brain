@@ -18,7 +18,9 @@
 
 "use strict";
 
-const Promise = require('bluebird');
+const Promise = require('bluebird'),
+    randomUtilities = require('../../../shared/utilities/random'),
+    EBSchemaDetector = require("../../../server/components/datasource/EBSchemaDetector");
 
 /**
  *  This is the base class for different possible sources of data for the Electric Brain engine.
@@ -122,7 +124,44 @@ class EBDataSourcePlugin
      */
     detectSchema(dataSource, iterator)
     {
-        return Promise.rejected(new Error('Unimplemented'));
+        const maxNumberOfObjectsToSample = dataSource.sampleSize;
+        const examplesToKeep = 10;
+        const objectsBetweenIteratorCalls = 100;
+        const exampleIndexes = randomUtilities.getRandomIntegers(maxNumberOfObjectsToSample, examplesToKeep);
+
+        const schemaDetector = new EBSchemaDetector(this.application);
+        let objectIndex = 0;
+
+        return this.sample(maxNumberOfObjectsToSample, dataSource,
+            (object) =>
+            {
+                let keepForSample = false;
+                if (exampleIndexes.indexOf(objectIndex) !== -1)
+                {
+                    keepForSample = true;
+                }
+
+                // Accumulate the converted version of the object
+                objectIndex += 1;
+                const callIterator = (objectIndex % objectsBetweenIteratorCalls) === 0;
+                return schemaDetector.accumulateObject(object, keepForSample).then(() =>
+                {
+                    let iteratorPromise = Promise.resolve();
+                    if (callIterator)
+                    {
+                        iteratorPromise = iterator(schemaDetector.getSchema(), objectIndex, maxNumberOfObjectsToSample);
+                    }
+
+                    return iteratorPromise;
+                });
+            }).then(() =>
+        {
+            const schema = schemaDetector.getSchema();
+            return iterator(schema, maxNumberOfObjectsToSample, maxNumberOfObjectsToSample).then(() =>
+            {
+                return schema;
+            });
+        });
     }
 }
 

@@ -18,7 +18,10 @@
 
 "use strict";
 
-const Promise = require('bluebird'),
+const
+    Ajv = require('ajv'),
+    assert = require('assert'),
+    Promise = require('bluebird'),
     underscore = require('underscore');
 
 /**
@@ -33,6 +36,10 @@ class EBNeuralNetworkComponentDispatch
     constructor()
     {
         this.plugins = {};
+        this.configurationValidators = {};
+        this.ajv = new Ajv({
+            "allErrors": true
+        });
     }
 
     /**
@@ -49,42 +56,71 @@ class EBNeuralNetworkComponentDispatch
      * This method registers a plugin with the dispatch.
      *
      * @param {string} type The machine name of the data source type
-     * @param {EBDataSourcePlugin} plugin The plugin to be registered.
+     * @param {EBNeuralNetworkComponent} plugin The plugin to be registered.
      */
     registerPlugin(type, plugin)
     {
         this.plugins[type] = plugin;
+        this.configurationValidators[type] = this.ajv.compile(plugin.constructor.configurationSchema());
     }
-
 
     /**
      * This method gets the correct neural network plugin for the given EBSchema
      */
     getPluginForSchema(schema)
     {
+        let plugin;
+        let validationFunction;
         if (schema.isObject)
         {
-            return this.plugins['object'];
+            plugin = this.plugins['object'];
+            validationFunction = this.configurationValidators['object'];
         }
         else if (schema.isArray)
         {
-            return this.plugins['sequence'];
+            plugin = this.plugins['sequence'];
+            validationFunction = this.configurationValidators['sequence'];
         }
         else if (schema.enum)
         {
-            return this.plugins['classification'];
+            plugin = this.plugins['classification'];
+            validationFunction = this.configurationValidators['classification'];
         }
         else if (schema.isNumber)
         {
-            return this.plugins['number'];
+            plugin = this.plugins['number'];
+            validationFunction = this.configurationValidators['number'];
         }
         else if (schema.metadata.mainInterpretation === 'image')
         {
-            return this.plugins['image'];
+            plugin = this.plugins['image'];
+            validationFunction = this.configurationValidators['image'];
+        }
+        else if (schema.isString)
+        {
+            plugin = this.plugins['word'];
+            validationFunction = this.configurationValidators['word'];
         }
         else
         {
             throw new Error(`Unknown plugin for EBSchema: ${schema.toString()}`);
+        }
+        
+        // Validate that the schema has a component configuration
+        if (!schema.configuration.component)
+        {
+            assert.fail(schema.configuration.component, {}, `There was no neural network component configuration provided for ${schema}`);
+        }
+        
+        // Ensure that the configuration matches the components schema
+        const valid = validationFunction(schema.configuration.component);
+        if (valid)
+        {
+            return plugin;
+        }
+        else
+        {
+            assert.fail(validationFunction.errors, [], `Validation of the neural network component failed. This is critical for core neural network generation functions:\n${JSON.stringify(validationFunction.errors, null, 4)}`);
         }
     }
 

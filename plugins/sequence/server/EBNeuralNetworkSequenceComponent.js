@@ -21,6 +21,7 @@
 const
     assert = require('assert'),
     EBNeuralNetworkComponentBase = require('../../../shared/components/architecture/EBNeuralNetworkComponentBase'),
+    EBNeuralNetworkEditorModule = require("../../../shared/models/EBNeuralNetworkEditorModule"),
     EBTorchCustomModule = require('../../../shared/models/EBTorchCustomModule'),
     EBTorchModule = require('../../../shared/models/EBTorchModule'),
     EBTorchNode = require('../../../shared/models/EBTorchNode'),
@@ -164,6 +165,13 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
         code += `    for k,v in pairs(input) do\n`;
         code += `       batch[1][k] = input[k][1][1]\n`;
         code += `    end\n`;
+        
+        if (schema.configuration.component.enforceSequenceLengthLimit)
+        {
+            code += `    -- Enforce a maximum length\n`;
+            code += `    longest = math.min(longest, ${schema.configuration.component.maxSequenceLength})\n`;
+        }
+        
         code += `    for n=1,longest do\n`;
         code += `        local samples = {}\n`;
         code += `        for k,v in pairs(input) do\n`;
@@ -272,15 +280,14 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
         // Now fuse rnn inputs along the time dimension
         const fuseRNNInputTensors = new EBTorchNode(new EBTorchModule("nn.JoinTable", ["1"]), unsqueezeInput, `${moduleName}_fuseRNNInputTensors`);
 
+        // Generate the LSTM stack
+        const rnnStack = EBNeuralNetworkEditorModule.createModuleChain(schema.configuration.component.layers, summaryModule.tensorSchema, {});
+
         // Run through the LSTM itself
-        const lstmInternalSize = 100;
-        const lstmModule = new EBTorchNode(new EBTorchModule("nn.Sequential", [], [
-            new EBTorchModule('nn.SeqBRNN', [summaryModule.tensorSchema.tensorSize, lstmInternalSize]),
-            new EBTorchModule('nn.SeqBRNN', [lstmInternalSize, lstmInternalSize])
-        ]), fuseRNNInputTensors, `${moduleName}_lstmModule`);
+        const rnnStackModule = new EBTorchNode(rnnStack.module, fuseRNNInputTensors, `${moduleName}_rnnStackModule`);
 
         // Break apart the output tensors along time dimension
-        const splitNode = new EBTorchNode(new EBTorchModule("nn.SplitTable", ["1"]), lstmModule, `${moduleName}_splitNode`);
+        const splitNode = new EBTorchNode(new EBTorchModule("nn.SplitTable", ["1"]), rnnStackModule, `${moduleName}_splitNode`);
 
         // Output node - combines a length node with the sequence node
         const outputNode = new EBTorchNode(new EBTorchModule("nn.Identity", []), [lengthNode, splitNode], `${moduleName}_outputNode`);
@@ -290,7 +297,7 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
             outputTensorSchema: new EBTensorSchema({
                 "type": "array",
                 "variableName": `${moduleName}_lstmOutput`,
-                "items": EBTensorSchema.generateDataTensorSchema(lstmInternalSize, `${moduleName}_lstmOutput_items`)
+                "items": EBTensorSchema.generateDataTensorSchema(rnnStack.outputTensorSchema.tensorSize, `${moduleName}_lstmOutput_items`)
             }),
             additionalModules: [subModule].concat(itemInputStack.additionalModules)
         };
@@ -375,14 +382,30 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
         ]);
     }
 
+
     /**
-     * Returns a JSON-Schema schema for this architectures
+     * Returns a JSON-Schema schema for this neural network component
      *
-     * @returns {object} The JSON-Schema that can be used for validating this architectures in its raw form
+     * @returns {object} The JSON-Schema that can be used for validating the configuration for this neural network component.
      */
-    static schema()
+    static configurationSchema()
     {
-        throw new Error('Unimplemented');
+        return {
+            "id": "EBNeuralNetworkSequenceComponent.configurationSchema",
+            "type": "object",
+            "properties": {
+                "layers": {
+                    "type": "array",
+                    "items": EBNeuralNetworkEditorModule.schema()
+                },
+                "enforceSequenceLengthLimit": {
+                    "type": "boolean"
+                },
+                "maxSequenceLength": {
+                    "type": "number"
+                },
+            }
+        };
     }
 }
 

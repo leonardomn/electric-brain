@@ -33,7 +33,8 @@ angular.module('eb').directive('ebSchemaFieldNeuralNetworkConfiguration', functi
         controller,
         restrict: "E",
         scope: {
-            field: '='
+            field: '=',
+            mode: '@'
         }
     };
 });

@@ -19,10 +19,13 @@
 "use strict";
 
 const
+    natural = require('natural'),
     EBConfusionMatrix = require("../../../shared/models/EBConfusionMatrix"),
     EBFieldAnalysisAccumulatorBase = require('./../../../server/components/datasource/EBFieldAnalysisAccumulatorBase'),
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
+    EBNeuralNetworkEditorModule = require("../../../shared/models/EBNeuralNetworkEditorModule"),
+    EBNeuralNetworkTemplateGenerator = require("../../../shared/models/EBNeuralNetworkTemplateGenerator"),
     EBNumberHistogram = require('../../../shared/models/EBNumberHistogram'),
     EBSchema = require("../../../shared/models/EBSchema"),
     EBValueHistogram = require('../../../shared/models/EBValueHistogram'),
@@ -42,6 +45,7 @@ class EBStringInterpretation extends EBInterpretationBase
     {
         super('string');
         this.interpretationRegistry = interpretationRegistry;
+        this.wordTokenizer = new natural.TreebankWordTokenizer();
     }
 
 
@@ -130,10 +134,14 @@ class EBStringInterpretation extends EBInterpretationBase
      */
     transformSchemaForNeuralNetwork(schema)
     {
-        // Decide whether to represent this string as an enum or a sequence
-        const representAsEnum = schema.configuration.interpretation.mode === 'classification';
-        if (representAsEnum)
+        // Output a different schema depending on the mode for the string
+        if (schema.configuration.interpretation.mode === 'classification')
         {
+            // Ensure the schema has a component configuration
+            schema.configuration.component = {
+                layers: schema.configuration.interpretation.stack.fixedLayers
+            };
+
             schema.type = ['number'];
             schema.enum = [null];
             schema.metadata.statistics.valueHistogram.values.forEach((number, index) =>
@@ -142,7 +150,7 @@ class EBStringInterpretation extends EBInterpretationBase
             });
             return schema;
         }
-        else
+        else if (schema.configuration.interpretation.mode === 'sequence')
         {
             // Vanilla ascii sequence representation
             const asciiLength = 128;
@@ -157,13 +165,62 @@ class EBStringInterpretation extends EBInterpretationBase
                             title: `${schema.title}.[].character`,
                             type: "number",
                             enum: underscore.range(0, asciiLength),
-                            configuration: {included: true}
+                            configuration: {
+                                included: true,
+                                component: {}
+                            }
                         }
                     },
-                    configuration: {included: true}
+                    configuration: {
+                        included: true,
+                        // Ensure the schema has a component configuration
+                        component: {}
+                    }
                 },
-                configuration: {included: true}
+                configuration: {
+                    included: true,
+                    // Ensure the schema has a component configuration
+                    component: {
+                        layers: schema.configuration.interpretation.stack.sequenceLayers,
+                        enforceSequenceLengthLimit: schema.configuration.interpretation.enforceSequenceLengthLimit,
+                        maxSequenceLength: schema.configuration.interpretation.maxSequenceLength
+                    }
+                }
             });
+        }
+        else if (schema.configuration.interpretation.mode === 'english_word')
+        {
+            // Ensure that the schema has a component configuration
+            schema.configuration.component = {};
+            
+            return schema;
+        }
+        else if (schema.configuration.interpretation.mode === 'english_text')
+        {
+            return new EBSchema({
+                title: schema.title,
+                type: "array",
+                items: {
+                    title: `${schema.title}.[]`,
+                    type: "string",
+                    configuration: {
+                        included: true,
+                        component: {}
+                    }
+                },
+                configuration: {
+                    included: true,
+                    component: {
+                        layers: schema.configuration.interpretation.stack.sequenceLayers,
+                        enforceSequenceLengthLimit: schema.configuration.interpretation.enforceSequenceLengthLimit,
+                        maxSequenceLength: schema.configuration.interpretation.maxSequenceLength
+                    }
+                }
+            });
+        }
+        else
+        {
+            throw new Error(`Unrecognized interpretation mode: ${schema.configuration.interpretation.mode }`);
         }
     }
 
@@ -177,9 +234,8 @@ class EBStringInterpretation extends EBInterpretationBase
      */
     transformValueForNeuralNetwork(value, schema)
     {
-        // Decide whether to represent this string as an enum or a sequence
-        const representAsEnum = schema.configuration.interpretation.mode === 'classification';
-        if (representAsEnum)
+        // Output a different value depending on the mode for the string
+        if (schema.configuration.interpretation.mode === 'classification')
         {
             const values = underscore.map(schema.metadata.statistics.valueHistogram.values, (value) => value.value);
             const index = values.indexOf(value);
@@ -193,7 +249,7 @@ class EBStringInterpretation extends EBInterpretationBase
                 return index + 1;
             }
         }
-        else
+        else if (schema.configuration.interpretation.mode === 'sequence')
         {
             const output = [];
             const asciiLength = 128;
@@ -209,6 +265,18 @@ class EBStringInterpretation extends EBInterpretationBase
             }
             return output;
         }
+        else if(schema.configuration.interpretation.mode === 'english_word')
+        {
+            return value.toString().toLowerCase();
+        }
+        else if(schema.configuration.interpretation.mode === 'english_text')
+        {
+            return this.wordTokenizer.tokenize(value.toString().toLowerCase());
+        }
+        else
+        {
+            throw new Error(`Unrecognized interpretation mode: ${schema.configuration.interpretation.mode }`)
+        }
     }
 
 
@@ -222,8 +290,7 @@ class EBStringInterpretation extends EBInterpretationBase
     transformValueBackFromNeuralNetwork(value, schema)
     {
         // Decide whether to represent this string as an enum or a sequence
-        const representAsEnum = schema.configuration.interpretation.mode === 'classification';
-        if (representAsEnum)
+        if (schema.configuration.interpretation.mode === 'classification')
         {
             if (value === 0)
             {
@@ -235,7 +302,7 @@ class EBStringInterpretation extends EBInterpretationBase
                 return values[value - 1];
             }
         }
-        else
+        else if (schema.configuration.interpretation.mode === 'sequence')
         {
             let output = "";
             value.forEach((character) =>
@@ -243,6 +310,18 @@ class EBStringInterpretation extends EBInterpretationBase
                 output += String.fromCharCode(character.character);
             });
             return output;
+        }
+        else if (schema.configuration.interpretation.mode === 'english_word')
+        {
+            return value;
+        }
+        else if (schema.configuration.interpretation.mode === 'english_text')
+        {
+            return value.join(' ');
+        }
+        else
+        {
+            throw new Error(`Unrecognized interpretation mode: ${schema.configuration.interpretation.mode }`);
         }
     }
 
@@ -255,14 +334,27 @@ class EBStringInterpretation extends EBInterpretationBase
      */
     generateDefaultConfiguration(schema)
     {
+        let configuration = {};
         if (schema.metadata.statistics.valueHistogram.cardinality > 0.6)
         {
-            return {mode: "sequence"};
+            configuration.mode = "sequence";
         }
         else
         {
-            return {mode: "classification"};
+            configuration.mode = "classification";
         }
+
+        configuration.classificationValues = underscore.sortBy(schema.metadata.statistics.valueHistogram.values.map((value) => (value.value)), (value) => value);
+
+        configuration.stack = {
+            sequenceLayers: EBNeuralNetworkTemplateGenerator.generateMultiLayerLSTMTemplate('medium'),
+            fixedLayers: EBNeuralNetworkTemplateGenerator.generateMultiLayerPerceptronTemplate('medium')
+        };
+        
+        configuration.enforceSequenceLengthLimit = false;
+        configuration.maxSequenceLength = 2500;
+
+        return configuration;
     }
 
 
@@ -395,7 +487,34 @@ class EBStringInterpretation extends EBInterpretationBase
             "properties": {
                 mode: {
                     "type": "string",
-                    "enum": ["classification", "sequence"]
+                    "enum": ["classification", "sequence", "english_word", "english_text"]
+                },
+                classificationValues: {
+                    "type": "array",
+                    "items": {"type": "string"}
+                },
+                
+                enforceSequenceLengthLimit: {
+                    "type": "boolean"
+                },
+                
+                maxSequenceLength: {
+                    "type": "number"
+                },
+                
+                
+                stack: {
+                    "type": ["object"],
+                    "properties": {
+                        "sequenceLayers": {
+                            "type": "array",
+                            "items": EBNeuralNetworkEditorModule.schema()
+                        },
+                        "fixedLayers": {
+                            "type": "array",
+                            "items": EBNeuralNetworkEditorModule.schema()
+                        }
+                    }
                 }
             }
         };

@@ -21,7 +21,7 @@
 const
     beaver = require('beaver'),
     bodyParser = require('body-parser'),
-    config = require("./config/config"),
+    convict = require("convict"),
     express = require("express"),
     EBDataSourcePluginDispatch = require("./components/datasource/EBDataSourcePluginDispatch"),
     EBNeuralNetworkComponentDispatch = require("../shared/components/architecture/EBNeuralNetworkComponentDispatch"),
@@ -46,6 +46,8 @@ class EBApplication
      */
     constructor()
     {
+        this.config = convict(this.configuration());
+
         // Initialize each of the modules that we find in pages
         const polyfills = fs.readdirSync(`${__dirname}/../shared/polyfill`);
         polyfills.forEach((polyfillFilename) =>
@@ -79,6 +81,58 @@ class EBApplication
             });
         });
 
+
+        // Create our task registry. All taskRegistry should have explicit timeouts set.
+        this.taskRegistry = new beaver.Registry({});
+
+        this.taskRegistry.registerHook("stderr", function(message, callback)
+        {
+            console.log("task-stderr: ", message);
+            return callback();
+        });
+
+        this.taskRegistry.registerHook("log", function(task, level, message, callback)
+        {
+            console.log("task-log: ", message);
+            return callback();
+        });
+
+        this.taskRegistry.registerHook("percentageComplete", function(task, percent, callback)
+        {
+            console.log("task-percentageComplete: ", percent);
+            return callback();
+        });
+
+        this.taskRegistry.registerHook("result", function(task, result, callback)
+        {
+            console.log("task-result: ", result);
+            return callback();
+        });
+
+        this.taskRegistry.registerHook("start", function(task, callback)
+        {
+            console.log("task-start: ");
+            return callback();
+        });
+
+        this.taskRegistry.registerHook("finish", function(task, callback)
+        {
+            console.log("task-finish: ");
+            return callback();
+        });
+
+        this.taskRegistry.registerHook("error", function(task, error, callback)
+        {
+            console.log("task-error: ");
+            return callback();
+        });
+
+        this.taskQueue = new beaver.AMQPQueue(this.taskRegistry, {
+            url: this.config.get('amqp'),
+            prefix: "electricbrain"
+        });
+
+
         // Setup the global tasks with a reference to this application object
         tasks.setupTasks(this);
         
@@ -104,6 +158,53 @@ class EBApplication
     }
 
     /**
+     * Exposes configuration values
+     *
+     * @returns {object} The convict-configuration variables
+     */
+    configuration()
+    {
+        return {
+            env: {
+                doc: "The application environment.",
+                format: ["production", "development", "test"],
+                default: "development",
+                env: "NODE_ENV"
+            },
+            prefix: {
+                doc: "The API prefix",
+                format: String,
+                default: "app",
+                env: "API_PREFIX"
+            },
+            port: {
+                doc: "The port to bind.",
+                format: "port",
+                default: 3891,
+                env: "PORT"
+            },
+            amqp: {
+                doc: "The RabbitMQ address to connect to.",
+                format: "url",
+                default: 'amqp://localhost',
+                env: "AMQP"
+            },
+            mongo: {
+                doc: "The Mongo database URL to connect to",
+                format: "url",
+                default: 'mongodb://localhost/electric_brain',
+                env: "Mongo"
+            },
+            overrideModelFolder: {
+                doc: "This method overrides the default temporary folder where model code is stored.",
+                format: String,
+                default: '',
+                env: "MODEL_FOLDER"
+            },
+        };
+    }
+
+    /**
      * Initializes the connection with the database
      *
      * @param {function(err)} done Callback after the database connection is ready
@@ -111,7 +212,7 @@ class EBApplication
     initializeDatabase(done)
     {
         const self = this;
-        mongodb.MongoClient.connect(config.mongo.uri, (err, db) =>
+        mongodb.MongoClient.connect(self.config.get('mongo'), (err, db) =>
         {
             if (err)
             {
@@ -142,7 +243,7 @@ class EBApplication
      */
     initializeBackgroundTask(done)
     {
-        tasks.queue.initialize(function(err)
+        this.taskQueue.initialize(function(err)
         {
             if (err)
             {
@@ -179,7 +280,7 @@ class EBApplication
             });
 
             // Set up realtime to using RabbitMQ for publish-subscribe
-            self.socketio.adapter(socketioAMQP(config.amqp.url, {prefix: 'electricbrain-'}));
+            self.socketio.adapter(socketioAMQP(self.config.get('amqp'), {prefix: 'electricbrain-'}));
 
             return callback();
         }
@@ -214,7 +315,7 @@ class EBApplication
 
         expressApplication.use(bodyParser.json({
             inflate: true,
-            limit: '1mb'
+            limit: '10mb'
         }));
 
         expressApplication.use(flattener);
@@ -236,7 +337,7 @@ class EBApplication
                 return done(err);
             }
 
-            server.listen(config.api.port, function(err)
+            server.listen(self.config.get('port'), function(err)
             {
                 return done(err);
             });
@@ -260,23 +361,15 @@ class EBApplication
                 return callback(err);
             }
 
-            require('./tasks/task_registry').initializeRealtimeTaskObservation(self, function(err)
+            const worker = new beaver.Worker(self.taskQueue, {});
+            self.taskQueue.registerWorker(worker, function(err)
             {
                 if (err)
                 {
                     return callback(err);
                 }
 
-                const worker = new beaver.Worker(tasks.queue, {});
-                tasks.queue.registerWorker(worker, function(err)
-                {
-                    if (err)
-                    {
-                        return callback(err);
-                    }
-
-                    return callback();
-                });
+                return callback();
             });
         });
     }
@@ -291,7 +384,7 @@ class EBApplication
     runScheduler(callback)
     {
         // Create the scheduler and start it
-        const scheduler = new beaver.Scheduler(tasks.queue, {});
+        const scheduler = new beaver.Scheduler(this.taskQueue, {});
         scheduler.start();
 
         return callback();
