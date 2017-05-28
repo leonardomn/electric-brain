@@ -1,0 +1,3 @@
+[submodule "setup/vm/ubuntu"]
+	path = setup/vm/ubuntu
+	url = https://github.com/electricbrainio/boxcutter-ubuntu-vm.git

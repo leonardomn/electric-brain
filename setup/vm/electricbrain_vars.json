@@ -1,0 +1,18 @@
+{
+  "cpus": "4",
+  "disk_size": "65536",
+  "install_vagrant_key": "false",
+  "iso_checksum": "f529548fa7468f2d8413b8427d8e383b830df5f6",
+  "iso_checksum_type": "sha1",
+  "iso_name": "ubuntu-16.04.2-server-amd64.iso",
+  "iso_path": "/home/bradley/Downloads",
+  "iso_url": "http://releases.ubuntu.com/16.04/ubuntu-16.04.2-server-amd64.iso",
+  "locale": "en_US",
+  "memory": "4096",
+  "hostname": "electricbrain",
+  "ssh_fullname": "electricbrain",
+  "ssh_password": "vagrant",
+  "ssh_username": "electricbrain",
+  "version": "0.1.0",
+  "vm_name": "electricbrain"
+}
