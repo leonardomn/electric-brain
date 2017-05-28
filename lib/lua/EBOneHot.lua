@@ -17,7 +17,7 @@ function EBOneHot:updateOutput(input)
     if self:type() == 'torch.CudaTensor' then
         self.outputTensor = self.outputTensor or torch.zeros(batchSize, self.outputSize):cuda()
     else
-        self.outputTensor = self.outputTensor or torch.zeros(batchSize, self.outputSize):long()
+        self.outputTensor = self.outputTensor or torch.zeros(batchSize, self.outputSize):double()
     end
 
     -- Zero the output

@@ -46,7 +46,14 @@ end
 function EBWordEmbedder:updateOutput(input)
     -- The input must be a table of words. We look up each word in the database
     local vectors = {}
-    local outputTensor = torch.zeros(#input, 300)
+
+    -- Create an output tensor
+    local outputTensor
+    if self:type() == 'torch.CudaTensor' then
+        outputTensor = torch.zeros(#input, 300):cuda()
+    else
+        outputTensor = torch.zeros(#input, 300):double()
+    end
 
     local lookupTensor = torch.LongTensor(1)
     for n=1,#input do
