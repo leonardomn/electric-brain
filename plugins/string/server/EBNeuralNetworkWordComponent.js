@@ -22,6 +22,7 @@ const EBNeuralNetworkComponentBase = require('../../../shared/components/archite
     EBTorchModule = require('../../../shared/models/EBTorchModule'),
     EBTorchNode = require('../../../shared/models/EBTorchNode'),
     EBTensorSchema = require('../../../shared/models/EBTensorSchema'),
+    path = require('path'),
     underscore = require('underscore');
 
 /**
@@ -139,7 +140,7 @@ class EBNeuralNetworkWordComponent extends EBNeuralNetworkComponentBase
     generateInputStack(schema, inputNode)
     {
         return {
-            outputNode: new EBTorchNode(new EBTorchModule("nn.EBWordEmbedder", [10000]), inputNode, `${schema.machineVariableName}_inputStack`),
+            outputNode: new EBTorchNode(new EBTorchModule("nn.EBWordEmbedder", [10000, `"${path.join(__dirname, '..', '..', '..', 'data', 'english_word_vectors.sqlite3')}"`]), inputNode, `${schema.machineVariableName}_inputStack`),
             outputTensorSchema: this.getTensorSchema(schema),
             additionalModules: []
         };
