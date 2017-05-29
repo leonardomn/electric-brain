@@ -22,7 +22,7 @@
 /**
  * The neural stack editor allows you to customize the neural network
  */
-angular.module('eb').directive('ebNeuralStackEditor', function ebNeuralStackEditor($timeout, EBImageNetworkLayerTypes)
+angular.module('eb').directive('ebNeuralStackEditor', function ebNeuralStackEditor($timeout)
 {
     const controller = function($scope)
     {
