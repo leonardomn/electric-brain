@@ -24,7 +24,6 @@
  */
 angular.module('eb').controller('EBNewModelController', function EBNewModelControlle($scope, $stateParams, $state, EBModelService, EBNavigationBarService, EBSocketService)
 {
-    $scope.workingDatabaseURI = "mongodb://localhost:27017/electric_brain_testing";
     $scope.model = new shared.models.EBModel({"name": ""});
 
     $scope.onArchitectureClicked = function onArchitectureClicked()

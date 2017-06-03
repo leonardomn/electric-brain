@@ -119,24 +119,18 @@ angular.module('eb').config(function config($stateProvider, $urlRouterProvider, 
         params: {refreshSchema: null}
     });
 
+    $stateProvider.state('new_architecture', {
+        url: "/architecture/new",
+        templateUrl: "views/architectures/pages/new_architecture.html",
+        data: {pageTitle: 'Edit Architecture'},
+        controller: "EBNewArchitectureController"
+    });
+
     $stateProvider.state('edit_architecture', {
         url: "/architecture/:id",
         templateUrl: "views/architectures/pages/edit_architecture.html",
         data: {pageTitle: 'Edit Architecture'},
         controller: "EBEditArchitectureController"
-    });
-
-    $stateProvider.state('edit_architecture.select_data_source', {
-        templateUrl: "views/architectures/pages/edit_architecture/select_data_source.html",
-        controller: "EBArchitectureSelectDataSourceController"
-    });
-    $stateProvider.state('edit_architecture.select_fields', {
-        templateUrl: "views/architectures/pages/edit_architecture/select_fields.html",
-        controller: "EBArchitectureSelectFieldsController"
-    });
-    $stateProvider.state('edit_architecture.design_architecture', {
-        templateUrl: "views/architectures/pages/edit_architecture/design_architecture.html",
-        controller: "EBArchitectureDesignArchitectureController"
     });
 
     $stateProvider.state('list_architectures', {

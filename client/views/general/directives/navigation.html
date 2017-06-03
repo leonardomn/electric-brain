@@ -58,7 +58,7 @@
                 <li uib-dropdown>
                     <a href uib-dropdown-toggle> Architectures <span class="caret"></span></a>
                     <ul role="menu" uib-dropdown-menu>
-                        <li ui-sref-active="active"><a ui-sref="edit_architecture({id: 'new'})">New</a></li>
+                        <li ui-sref-active="active"><a ui-sref="new_architecture({id: 'new'})">New</a></li>
                         <li role="separator" class="divider"></li>
                         <li class="navigation-menu-group-header"><span>Architectures</span></li>
                         <li ng-repeat="architecture in architectures" ui-sref-active="active"><a ui-sref="edit_architecture.select_fields({id: architecture._id})">{{architecture.name}}</a></li>

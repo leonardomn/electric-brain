@@ -23,7 +23,7 @@
  */
 
 
-angular.module('eb').controller('EBArchitectureSelectFieldsController', function EBArchitectureSelectFieldsController($scope, $timeout, $state, $stateParams, EBDataSourceService, config, EBArchitectureService, EBLoaderService)
+angular.module('eb').controller('EBTransformArchitectureSelectFieldsController', function EBTransformArchitectureSelectFieldsController($scope, $timeout, $state, $stateParams, EBDataSourceService, config, EBArchitectureService, EBLoaderService)
 {
     $scope.$watch('architecture', function(newValue, oldValue)
     {

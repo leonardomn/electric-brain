@@ -619,6 +619,7 @@ class EBArchitecture
             "properties": {
                 "_id": {},
                 "name": {"type": "string"},
+                "type": {"type": "string"},
                 "dataSource": EBDataSource.schema(),
                 "inputTransformations": {
                     "type": "array",

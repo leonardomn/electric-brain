@@ -23,7 +23,7 @@
  */
 
 
-angular.module('eb').controller('EBArchitectureDesignArchitectureController', function EBArchitectureDesignArchitectureController($scope, $timeout, $state, $stateParams, EBArchitectureService, EBLoaderService)
+angular.module('eb').controller('EBTransformArchitectureDesignArchitectureController', function EBTransformArchitectureDesignArchitectureController($scope, $timeout, $state, $stateParams, EBArchitectureService, EBLoaderService)
 {
     $scope.currentDiagram = 0;
     function reloadDiagrams()

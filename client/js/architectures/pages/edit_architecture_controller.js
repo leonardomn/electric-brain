@@ -39,8 +39,6 @@ angular.module('eb').controller('EBEditArchitectureController', function EBEditA
     {
         if ($scope.isNew)
         {
-            $scope.workingDatabaseURI = "mongodb://localhost:27017/electric_brain_testing";
-
             $scope.architecture = new shared.models.EBArchitecture({
                 name: "",
                 dataSource: null,
@@ -57,34 +55,6 @@ angular.module('eb').controller('EBEditArchitectureController', function EBEditA
             EBLoaderService.showLoaderWith('page', promise);
         }
     };
-    
-    $scope.$watch('architecture', function(newValue)
-    {
-        if (newValue)
-        {
-            // If the user has been directed to the root state, then decide which
-            // tab to load based on the state of the architecture object
-            if ($state.current.name === 'edit_architecture')
-            {
-                if (!$scope.architecture.dataSource)
-                {
-                    $state.go('edit_architecture.select_data_source', $stateParams);
-                }
-                
-                // Check to see if we have a valid set of fields. If so, go to
-                // straight to the design architecture screen. Otherwise, go
-                // to the select_fields screen.
-                else if ($scope.architecture.validInputOutputSchemas())
-                {
-                    $state.go('edit_architecture.design_architecture', $stateParams);
-                }
-                else
-                {
-                    $state.go('edit_architecture.select_fields', $stateParams);
-                }
-            }
-        }
-    });
     
     $scope.setSchemaNeedsRefreshed = function setSchemaNeedsRefreshed(value)
     {

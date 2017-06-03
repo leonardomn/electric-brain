@@ -21,11 +21,20 @@
     edit-architectures
 */
 
-.edit-architecture > .steps
+.edit-architecture
+{
+    position: relative;
+}
+
+
+
+.edit-architecture  .steps
 {
     position: relative;
     display: block;
     width: 100%;
+    margin-bottom: 20px;
+    text-align: center;
 }
 
 .edit-architecture.vertical > .steps
@@ -35,24 +44,35 @@
     width: 30%;
 }
 
-.edit-architecture > .steps ul
+.edit-architecture  .steps ul
 {
     list-style-type: none;
     padding-left: 0px;
 }
 
-.edit-architecture > .steps .number
+.edit-architecture  .steps .number
 {
     font-size: 1.429em;
 }
 
-.edit-architecture > .steps > ul > li
+.edit-architecture  .steps > ul > li
 {
     width: 33%;
 }
 
-.edit-architecture > .steps > ul > li,
-.edit-architecture > .actions > ul > li
+.edit-architecture  .steps > ul > li i
+{
+    color: #0086d1;
+    font-size: 16px;
+}
+
+.edit-architecture  .steps > ul > li.current i
+{
+    display: none;
+}
+
+.edit-architecture  .steps > ul > li,
+.edit-architecture  .actions > ul > li
 {
     float: left;
 }
@@ -63,54 +83,80 @@
     width: 100%;
 }
 
-.edit-architecture > .steps a,
-.edit-architecture > .steps a:hover,
-.edit-architecture > .steps a:active
+.edit-architecture  .steps a,
+.edit-architecture  .steps a:hover,
+.edit-architecture  .steps a:active
 {
     display: block;
     width: auto;
-    margin: 0 0.5em 0.5em;
-    padding: 1em 1em;
+    padding: 1em 0.5em;
     text-decoration: none;
-
-    -webkit-border-radius: 5px;
-    -moz-border-radius: 5px;
-    border-radius: 5px;
 }
 
-.edit-architecture > .steps .disabled a,
-.edit-architecture > .steps .disabled a:hover,
-.edit-architecture > .steps .disabled a:active
+
+
+.edit-architecture  .steps li:first-child a,
+.edit-architecture  .steps li:first-child a:hover,
+.edit-architecture  .steps li:first-child a:active
+{
+    -webkit-border-bottom-left-radius: 5px;
+    -moz-border-radius-bottomleft: 5px;
+    border-bottom-left-radius: 5px;
+
+    -webkit-border-top-left-radius: 5px;
+    -moz-border-radius-topleft: 5px;
+    border-top-left-radius: 5px;
+}
+
+
+
+.edit-architecture  .steps li:last-child a,
+.edit-architecture  .steps li:last-child a:hover,
+.edit-architecture  .steps li:last-child a:active
+{
+    -webkit-border-bottom-right-radius: 5px;
+    -moz-border-radius-bottomright: 5px;
+    border-bottom-right-radius: 5px;
+
+    -webkit-border-top-right-radius: 5px;
+    -moz-border-radius-topright: 5px;
+    border-top-right-radius: 5px;
+}
+
+.edit-architecture  .steps .disabled a,
+.edit-architecture  .steps .disabled a:hover,
+.edit-architecture  .steps .disabled a:active
 {
     background: #eee;
     color: #aaa;
     cursor: default;
 }
 
-.edit-architecture > .steps .current a,
-.edit-architecture > .steps .current a:hover,
-.edit-architecture > .steps .current a:active
+.edit-architecture  .steps .current a,
+.edit-architecture  .steps .current a:hover,
+.edit-architecture  .steps .current a:active
 {
     background: #2184be;
     color: #fff;
     cursor: default;
 }
 
-.edit-architecture > .steps .done a,
-.edit-architecture > .steps .done a:hover,
-.edit-architecture > .steps .done a:active
+.edit-architecture  .steps .done a,
+.edit-architecture  .steps .done a:hover,
+.edit-architecture  .steps .done a:active
 {
     background: #9dc8e2;
     color: #fff;
 }
 
-.edit-architecture > .steps .error a,
-.edit-architecture > .steps .error a:hover,
-.edit-architecture > .steps .error a:active
+.edit-architecture  .steps .error a,
+.edit-architecture  .steps .error a:hover,
+.edit-architecture  .steps .error a:active
 {
     background: #ff3111;
     color: #fff;
 }
+
 
 
 .architecture-input-configuration .panel-heading
