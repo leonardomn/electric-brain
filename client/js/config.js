@@ -184,6 +184,13 @@ angular.module('eb').run(function($rootScope, $state)
             $state.go(to.redirectTo, params, {location: 'replace'});
         }
     });
+
+    $("body").mousemove(function(e) {
+        $rootScope.$broadcast('mouse', {
+            x: e.originalEvent.pageX,
+            y: e.originalEvent.pageY
+        });
+    });
 });
 
 

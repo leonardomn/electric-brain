@@ -34,11 +34,18 @@ angular.module('eb').controller('EBNewArchitectureController', function EBNewArc
 
     $scope.selectArchitectureType = function selectArchitectureType(type)
     {
-        $scope.architecture = new shared.models.EBArchitecture({
-            type: type,
-            name: "",
-            inputTransformation: null
-        });
+        if (type === 'matching')
+        {
+            $scope.architecture = new shared.plugins.EBMatchingArchitecture({
+                name: ""
+            });
+        }
+        else if (type === 'transform')
+        {
+            $scope.architecture = new shared.plugins.EBTransformArchitecture({
+                name: ""
+            });
+        }
 
         return EBArchitectureService.createArchitecture($scope.architecture).then(function success(body)
         {

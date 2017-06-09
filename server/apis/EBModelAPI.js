@@ -22,7 +22,6 @@ const Ajv = require('ajv'),
     async = require('async'),
     EBAPIRoot = require('./EBAPIRoot'),
     EBModelBundler = require('../components/model/EBNodeBundler'),
-    EBTorchProcess = require("../components/architecture/EBTorchProcess"),
     fs = require('fs'),
     idUtilities = require("../utilities/id"),
     models = require('../../shared/models/models'),
@@ -278,7 +277,17 @@ class EBModelAPI extends EBAPIRoot
             }
             else
             {
-                this.application.taskQueue.queueTask("train_model", {_id: Number(req.params.id)}, function(err, task)
+                let taskName = "";
+                if (modelObjects[0].architecture.classType === 'EBTransformArchitecture')
+                {
+                    taskName = "train_transform_model";
+                }
+                else if (modelObjects[0].architecture.classType === 'EBMatchingArchitecture')
+                {
+                    taskName = "train_matching_model";
+                }
+
+                this.application.taskQueue.queueTask(taskName, {_id: Number(req.params.id)}, function(err, task)
                 {
                     if (err)
                     {

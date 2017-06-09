@@ -11,6 +11,7 @@
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  GNU Affero General Public License for more details.
+ GNU Affero General Public License for more details.
 
  You should have received a copy of the GNU Affero General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
@@ -20,15 +21,18 @@
 
 const
     async = require('async'),
-    EBCustomTransformationProcess = require('../components/architecture/EBCustomTransformationProcess'),
-    EBPerformanceData = require('../../shared/models/EBPerformanceData'),
-    EBPerformanceTrace = require('../../shared/models/EBPerformanceTrace'),
-    EBRollingAverage = require("../../shared/models/EBRollingAverage"),
-    EBStdioJSONStreamProcess = require("../components/EBStdioJSONStreamProcess"),
-    EBTorchProcess = require('../components/architecture/EBTorchProcess'),
+    EBCustomTransformationProcess = require('../../../server/components/architecture/EBCustomTransformationProcess'),
+    EBPerformanceData = require('../../../shared/models/EBPerformanceData'),
+    EBPerformanceTrace = require('../../../shared/components/EBPerformanceTrace'),
+    EBRollingAverage = require("../../../shared/models/EBRollingAverage"),
+    EBStdioJSONStreamProcess = require("../../../server/components/EBStdioJSONStreamProcess"),
+    EBTrainModelTaskBase = require("../../../server/tasks/EBTrainModelTaskBase"),
+    EBMatchingTorchProcess = require('./EBMatchingTorchProcess'),
+    EBTrainingSet = require("../../../server/components/model/EBTrainingSet"),
+    EBVectorMatcher = require("./EBVectorMatcher"),
     fs = require('fs'),
     math = require('mathjs'),
-    models = require("../../shared/models/models"),
+    models = require("../../../shared/models/models"),
     mongodb = require('mongodb'),
     path = require('path'),
     Promise = require('bluebird'),
@@ -36,9 +40,10 @@ const
     underscore = require('underscore');
 
 /**
- *  This task will train a model on your local system.
+ *  This task will train a matching model
  */
-class EBTrainModelTask {
+class EBTrainMatchingModelTask extends EBTrainModelTaskBase
+{
     /**
      * The constructor for the task object.
      *
@@ -46,6 +51,7 @@ class EBTrainModelTask {
      */
     constructor(application)
     {
+        super(application);
         this.application = application;
         this.socketio = application.socketio;
         this.models = application.db.collection("EBModel");
@@ -57,30 +63,21 @@ class EBTrainModelTask {
         this.rollingAverageAccuracy = EBRollingAverage.createWithPeriod(100);
         this.rollingAverageTrainingaccuracy = EBRollingAverage.createWithPeriod(100);
         this.rollingAverageTimeToLoad100Entries = EBRollingAverage.createWithPeriod(100);
-        this.lastFrontendUpdateTime = null;
-        this.lastDatabaseUpdateTime = null;
-        this.isFrontendUpdateScheduled = null;
-        this.isDatabaseUpdateScheduled = null;
-        this.needAnotherDatabaseUpdate = false;
-        this.frontendUpdateInterval = 2500;
-        this.databaseUpdateInterval = 5000;
+        
         this.numberOfObjectsToSample = 1000000;
         this.model = null;
-
-        this.trainingSetEntries = [];
-        this.testingSetEntries = [];
-        this.testingSetPosition = 0;
-        this.trainingSetPosition = 0;
 
         const numWorkers = 4;
         this.workers = [];
         for (let workerIndex = 0; workerIndex < numWorkers; workerIndex += 1)
         {
-            const scriptPath = path.join(__dirname, '..', 'train_model_worker.js');
+            const scriptPath = path.join(__dirname, '..', 'bin', 'train_matching_model_worker.js');
             this.workers.push(EBStdioJSONStreamProcess.spawn(scriptPath, [], {}));
         }
         this.currentWorker = 0;
         this.batchNumber = 0;
+
+        this.vectorMatcher = new EBVectorMatcher();
     }
 
     /**
@@ -114,7 +111,13 @@ class EBTrainModelTask {
             else
             {
                 self.model = new models.EBModel(objects[0]);
-                self.trainingProcess = new EBTorchProcess(self.model.architecture, self.application.config.get('overrideModelFolder'));
+
+                self.architecturePlugin = self.application.architectureRegistry.getPluginForArchitecture(self.model.architecture);
+
+                self.primaryTrainingSet = new EBTrainingSet(self.application, self.model.architecture.primaryDataSource, 0.3);
+                self.secondaryTrainingSet = new EBTrainingSet(self.application, self.model.architecture.secondaryDataSource, 0.3);
+
+                self.trainingProcess = new EBMatchingTorchProcess(self.model.architecture, self.architecturePlugin, self.application.config.get('overrideModelFolder'));
                 return Promise.resolve();
             }
         }).then(()=>
@@ -194,88 +197,6 @@ class EBTrainModelTask {
     }
 
     /**
-     * This function updates the current results for a given step
-     *
-     * @param {string} stepName The name of the step being updated. Should be the same as the the field names in EBModel
-     * @param {object} result An object with the results
-     * @return {Promise} Resolves a promise after the process is started and ready to receive commands
-     */
-    updateStepResult(stepName, result)
-    {
-        const self = this;
-
-        // First, set the value on the model object
-        self.model[stepName] = result;
-
-        return Promise.fromCallback((callback) =>
-        {
-            // Scheduling to send updates to the frontend
-            if (!self.isFrontendUpdateScheduled)
-            {
-                self.isFrontendUpdateScheduled = true;
-                let frontendUpdateDelay = 0;
-                if (self.lastFrontendUpdateTime)
-                {
-                    frontendUpdateDelay = Math.max(0, self.frontendUpdateInterval - (Date.now() - self.lastFrontendUpdateTime.getTime()));
-                }
-
-                const updateFrontend = function updateFrontend()
-                {
-                    self.isFrontendUpdateScheduled = false;
-                    self.lastFrontendUpdateTime = new Date();
-
-                    self.socketio.to('general').emit(`model-${self.model._id.toString()}`, {
-                        event: 'update',
-                        model: self.model
-                    });
-                };
-
-                setTimeout(updateFrontend, frontendUpdateDelay);
-            }
-
-            // Scheduling to send updates to the database
-            if (!self.isDatabaseUpdateScheduled)
-            {
-                self.isDatabaseUpdateScheduled = true;
-
-                const updateDatabase = function updateDatabase()
-                {
-                    self.isDatabaseUpdateScheduled = true;
-                    self.lastDatabaseUpdateTime = new Date();
-
-                    self.models.updateOne({_id: self.model._id}, self.model, (err) =>
-                    {
-                        if (err)
-                        {
-                            console.error(err);
-                        }
-
-                        self.isDatabaseUpdateScheduled = false;
-                        if (self.needAnotherDatabaseUpdate)
-                        {
-                            self.needAnotherDatabaseUpdate = false;
-                            updateDatabase();
-                        }
-                    });
-                };
-
-                let databaseUpdateDelay = 0;
-                if (self.lastDatabaseUpdateTime)
-                {
-                    databaseUpdateDelay = Math.max(0, self.databaseUpdateInterval - (Date.now() - self.lastDatabaseUpdateTime.getTime()));
-                }
-                setTimeout(updateDatabase, databaseUpdateDelay);
-            }
-            else
-            {
-                self.needAnotherDatabaseUpdate = true;
-            }
-
-            return callback();
-        });
-    }
-
-    /**
      * This method loads an object into the lua process.
      *
      * @param {string} id The ID of the object to be stored
@@ -288,77 +209,7 @@ class EBTrainModelTask {
         const self = this;
         return self.trainingProcess.loadObject(id, input, output);
     }
-
-
-    /**
-     * This method goes fetches an object. This method uses a bucketing mechanism, allowing you to make lots
-     * of separate, asynchronous calls and they will be batched together.
-     *
-     * @param {string} id The id of the object to be fetched
-     * @returns {Promise} A promise that will resolve to the object,
-     */
-    fetchObject(id)
-    {
-        // Setup the fetch queue, if needed.
-        if (!this.fetchQueue)
-        {
-            const maxObjectsToLoadAtOnce = 100;
-
-            const customTransformationStream = EBCustomTransformationProcess.createCustomTransformationStream(this.model.architecture);
-            const objectTransformationStream = this.model.architecture.getObjectTransformationStream(this.application.interpretationRegistry);
-            objectTransformationStream.on('error', (err) =>
-            {
-                console.log(err);
-            });
-            customTransformationStream.on('error', (err) =>
-            {
-                console.log(err);
-            });
-
-            this.fetchQueue = async.cargo((items, next) =>
-            {
-                const ids = items.map((item) => item.id);
-                const resolverMap = {};
-                items.forEach((item) =>
-                {
-                    resolverMap[item.id.toString()] = item.resolve;
-                });
-
-                this.application.dataSourcePluginDispatch.fetch(this.model.architecture.dataSource, {id: {$in: ids}}).then((objects) =>
-                {
-                    async.eachSeries(objects, (object, next) =>
-                    {
-                        // TODO: Need to handle the errors here
-                        customTransformationStream.once('data', (data) =>
-                        {
-                            customTransformationStream.pause();
-                            objectTransformationStream.write(data, null, () =>
-                            {
-                                customTransformationStream.resume();
-                            });
-                        });
-                        objectTransformationStream.once('data', (data) =>
-                        {
-                            resolverMap[data.original.id](data);
-                            return next();
-                        });
-
-                        customTransformationStream.write(object);
-                    }, next);
-                }, (error) => next(error));
-            }, maxObjectsToLoadAtOnce);
-        }
-
-        return new Promise((resolve, reject) =>
-        {
-            this.fetchQueue.push({
-                id,
-                resolve,
-                reject
-            });
-        });
-    }
-
+    
 
     /**
      * This method goes through all of the data in the sample, registering it as being either in the training set or the testing set.
@@ -380,46 +231,28 @@ class EBTrainModelTask {
         const objectsBetweenUpdate = 1000;
 
         let lastUpdateTime = new Date();
+        
+        let primaryObjects = 0;
+        let secondaryObjects = 0;
 
         const promise = self.updateStepResult('dataScanning', dataScanningResults);
         return promise.then(() =>
         {
-            return self.application.dataSourcePluginDispatch.count(self.model.architecture.dataSource).then((count) =>
+            return self.application.dataSourcePluginDispatch.count(self.model.architecture.primaryDataSource).then((primaryCount) =>
             {
-                return dataScanningResults.totalObjects = Math.min(self.numberOfObjectsToSample, count);
+                primaryObjects = Math.min(self.numberOfObjectsToSample, primaryCount);
+                return self.application.dataSourcePluginDispatch.count(self.model.architecture.secondaryDataSource).then((secondaryCount) =>
+                {
+                    secondaryObjects = Math.min(self.numberOfObjectsToSample, secondaryCount);
+                    dataScanningResults.totalObjects = primaryObjects + secondaryObjects;
+                });
             });
         }).then(() =>
         {
-            const trainingSetEntries = [];
-            const testingSetEntries = [];
-
-            // Get a random sample of data from the data source.
-            const dataSource = self.model.architecture.dataSource;
-            return self.application.dataSourcePluginDispatch.sample(count, dataSource, (object) =>
+            let baseCompleted = 0;
+            function updateFunction(completed)
             {
-                // Decide whether to put this entry into the training set
-                // or the testing set.
-                // First see how many entries we expect in each set
-                const total = trainingSetEntries.length + testingSetEntries.length;
-                const expectedTestingSetEntries = Math.ceil(self.testingSetPortion * total);
-                const expectedTrainingSetEntries = Math.floor((1.0 - self.testingSetPortion) * total);
-
-                // Compute the difference between the actual size and the expected size
-                const testingDifference = expectedTestingSetEntries - testingSetEntries.length;
-                const trainingDifference = expectedTrainingSetEntries - trainingSetEntries.length;
-
-                // Which ever one is larger, we put the item in that group
-                if (testingDifference < trainingDifference)
-                {
-                    trainingSetEntries.push(object.id);
-                }
-                else
-                {
-                    testingSetEntries.push(object.id);
-                }
-
-                dataScanningResults.scannedObjects += 1;
-
+                dataScanningResults.scannedObjects = baseCompleted + completed;
                 if ((dataScanningResults.scannedObjects % 100) === 0)
                 {
                     const timeTaken = Date.now() - lastUpdateTime.getTime();
@@ -440,16 +273,18 @@ class EBTrainModelTask {
                 {
                     return Promise.resolve(null);
                 }
-            }).then(() =>
+            }
+            
+            return this.primaryTrainingSet.scanData(count, updateFunction).then(() =>
             {
-                // Shuffle the list of IDs so that they are in a random order
-                this.trainingSetEntries = underscore.shuffle(trainingSetEntries);
-                this.testingSetEntries = underscore.shuffle(testingSetEntries);
+                baseCompleted += primaryObjects;
+                return this.secondaryTrainingSet.scanData(count, updateFunction).then(() =>
+                {
+                    dataScanningResults.status = 'complete';
+                    dataScanningResults.percentageComplete = 100;
 
-                dataScanningResults.status = 'complete';
-                dataScanningResults.percentageComplete = 100;
-
-                return self.updateStepResult('dataScanning', dataScanningResults);
+                    return self.updateStepResult('dataScanning', dataScanningResults);
+                });
             });
         });
     }
@@ -457,11 +292,11 @@ class EBTrainModelTask {
     /**
      * This method creates a batch from the given set of object ids.
      *
-     * @param {string} ids The list of ids to make a batch from
+     * @param {string} primaryIds The list of primary object ids to grab to create a batch from
+     * 
      * @returns {Promise} A promise that will resolve to an object with two properties:
      *      {
-     *          inputFileName: String // The name of the file that contains the batch
-     *          outputFileName: String // The name of the file that contains the batch
+     *          inputFileName: String // The name of the file that will contain the batch
      *          objects: [object] // The data for the objects objects within the batch
      *      }
      */
@@ -475,22 +310,20 @@ class EBTrainModelTask {
 
         return workerPromise.then((worker) =>
         {
-            const inputFileName = temp.path({suffix: '.t7'});
-            const outputFileName = temp.path({suffix: '.t7'});
+            const batchFileName = temp.path({suffix: '.t7'});
+
             return worker.writeAndWaitForMatchingOutput({
                 "type": "prepareBatch",
                 "batchNumber": batchNumber,
                 "ids": ids,
-                "inputFileName": inputFileName,
-                "outputFileName": outputFileName
+                "fileName": batchFileName
             }, {
                 "type": "batchPrepared",
                 "batchNumber": batchNumber
             }).then((output) =>
             {
                 return {
-                    inputFileName: inputFileName,
-                    outputFileName: outputFileName,
+                    fileName: batchFileName,
                     objects: output.objects
                 };
             });
@@ -516,9 +349,7 @@ class EBTrainModelTask {
             const ids = [];
             for (let sampleN = 0; sampleN < this.model.parameters.batchSize; sampleN += 1)
             {
-                const id = this.trainingSetEntries[this.trainingSetPosition];
-                ids.push(id);
-                this.trainingSetPosition = (this.trainingSetPosition + 1) % this.trainingSetEntries.length;
+                ids.push(this.primaryTrainingSet.nextTrainingID());
             }
 
             this.trainingBatchQueue.push(this.prepareBatch(ids));
@@ -546,9 +377,7 @@ class EBTrainModelTask {
             const ids = [];
             for (let sampleN = 0; sampleN < this.model.parameters.testingBatchSize; sampleN += 1)
             {
-                const id = this.testingSetEntries[this.testingSetPosition];
-                ids.push(id);
-                this.testingSetPosition = (this.testingSetPosition + 1) % this.testingSetEntries.length;
+                ids.push(this.primaryTrainingSet.nextTestingID());
             }
 
             this.testingBatchQueue.push(this.prepareBatch(ids));
@@ -602,7 +431,7 @@ class EBTrainModelTask {
                         {
                             performanceTrace.addTrace('prepare-batch');
                             // console.log('executing', batch);
-                            return self.trainingProcess.executeTrainingIteration(batch.inputFileName, batch.outputFileName).then((result) =>
+                            return self.trainingProcess.executeTrainingIteration(batch.fileName).then((result) =>
                             {
                                 performanceTrace.addTrace('training-iteration');
 
@@ -614,13 +443,16 @@ class EBTrainModelTask {
                                 // Update the time per iteration
                                 trainingResult.currentTimePerIteration = trainingResult.performance.total();
 
-                                // Zip together original objects with the actual outputs from the network, and compute accuracies
-                                return Promise.mapSeries(underscore.zip(batch.objects, result.objects), (zipped) =>
+                                // Store all of the secondary vectors
+                                for (let key of Object.keys(result.secondary))
                                 {
-                                    return self.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, zipped[1]).then((actual) =>
-                                    {
-                                        return self.getAccuracyFromOutput(zipped[0].original, actual, false);
-                                    });
+                                    this.vectorMatcher.recordSecondaryVector(key, result.secondary[key]);
+                                }
+
+                                // Compute the accuracies
+                                return Promise.mapSeries(Object.keys(result.primary), (primaryKey) =>
+                                {
+                                    return self.getAccuracyFromPrimaryVector(primaryKey, result.primary[primaryKey], false);
                                 }).then((accuracies) =>
                                 {
                                     return {
@@ -633,23 +465,15 @@ class EBTrainModelTask {
                                 // Unlink the batch file
                                 return Promise.fromCallback((next) =>
                                 {
-                                    fs.unlink(batch.inputFileName, (err) =>
+                                    fs.unlink(batch.fileName, (err) =>
                                     {
                                         if (err)
                                         {
                                             return next(err);
                                         }
-                                        
-                                        fs.unlink(batch.outputFileName, (err) =>
-                                        {
-                                            if (err)
-                                            {
-                                                return next(err);
-                                            }
 
-                                            performanceTrace.addTrace('delete-batch');
-                                            return next(null, trainingIterationResult);
-                                        });
+                                        performanceTrace.addTrace('delete-batch');
+                                        return next(null, trainingIterationResult);
                                     });
                                 });
                             }).then((trainingIterationResult) =>
@@ -717,29 +541,17 @@ class EBTrainModelTask {
         const self = this;
         return this.prepareTestingBatch().then((batch) =>
         {
-            return self.trainingProcess.processBatch(batch.inputFileName).then((outputs) =>
+            return self.trainingProcess.processBatch(batch.fileName).then((outputs) =>
             {
-                // Zip together original objects with the actual outputs from the network, and compute accuracies
-                return Promise.mapSeries(underscore.zip(batch.objects, outputs), (zipped) =>
+                return Promise.mapSeries(Object.keys(outputs.primary), (primaryKey) =>
                 {
-                    return self.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, zipped[1]).then((actual) =>
-                    {
-                        return self.getAccuracyFromOutput(zipped[0].original, actual, true);
-                    });
+                    return self.getAccuracyFromPrimaryVector(primaryKey, outputs.primary[primaryKey], false);
                 });
             }).then((accuracies) =>
             {
                 return Promise.fromCallback((next) =>
                 {
-                    fs.unlink(batch.inputFileName, function(err)
-                    {
-                        if (err)
-                        {
-                            return next(err);
-                        }
-
-                        fs.unlink(batch.outputFileName, next);
-                    });
+                    fs.unlink(batch.fileName, next);
                 }).then(() =>
                 {
                     const accuracy = math.mean(accuracies);
@@ -750,34 +562,52 @@ class EBTrainModelTask {
     }
 
     /**
-     * This method can be used to compare two objects and determine an accuracy score
+     * This method takes a primary vector and computes its accuracy
      *
-     * @param {object} expected The expected output object
-     * @param {object} actual The actual output object produced by machine learning
+     * @param {string} id The ID of the primary object which the vector was computed on
+     * @param {[number]} vector The vector itself
      * @param {boolean} accumulateResult Whether to accumulate the result of this comparison into the schema for display on the frontend
      * @return {Promise} A promise that will resolve to the accuracy
      */
-    getAccuracyFromOutput(expected, actual, accumulateResult)
+    getAccuracyFromPrimaryVector(id, vector, accumulateResult)
     {
-        return Promise.fromCallback((next) =>
+        // Use the vector matcher to return the closest matching secondary object
+        const secondaryKey = this.vectorMatcher.findMatchingSecondary(vector);
+
+        // Fetch the primary object
+        return this.application.dataSourcePluginDispatch.fetch(this.model.architecture.primaryDataSource, {id: id}).then((primaryObjects) =>
         {
-            const accuracies = [];
-            this.model.architecture.outputSchema.walkObjectsAsync([expected, actual], (fieldName, values, fieldSchema, parents, parentSchema, next) =>
+            // Fetch the secondary object
+            return this.application.dataSourcePluginDispatch.fetch(this.model.architecture.secondaryDataSource, {id: secondaryKey}).then((secondaryObjects) =>
             {
-                if (fieldSchema.isField && fieldSchema.configuration.included)
-                {
-                    accuracies.push(this.application.interpretationRegistry.getInterpretation(fieldSchema.metadata.mainInterpretation).compareNetworkOutputs(values[0], values[1], fieldSchema, accumulateResult));
-                }
+                const query = {};
 
-                return next();
-            }, (err) =>
-            {
-                if (err)
+                // Find out if there was a link between this object and the secondary
+                const primaryObject = primaryObjects[0];
+                this.model.architecture.primaryLinkFields.forEach((link) =>
                 {
-                    return next(err);
-                }
+                    query[link.rightField.substr(1)] = primaryObject[link.leftField.substr(1)];
+                });
 
-                return next(null, math.mean(accuracies));
+                const secondaryObject = secondaryObjects[0];
+                this.model.architecture.secondaryLinkFields.forEach((link) =>
+                {
+                    query[link.rightField.substr(1)] = secondaryObject[link.leftField.substr(1)];
+                });
+
+                // Fetch associated linkages
+                return this.application.dataSourcePluginDispatch.fetch(this.model.architecture.linkagesDataSource, query).then((linkages) =>
+                {
+                    // If there is a linkage, then the accuracy is 1, otherwise accuracy is 0;
+                    if (linkages.length > 0)
+                    {
+                        return Promise.resolve(1);
+                    }
+                    else
+                    {
+                        return Promise.resolve(0);
+                    }
+                });
             });
         });
     }
@@ -820,7 +650,7 @@ class EBTrainModelTask {
                     {
                         this.prepareTestingBatch().then((batch) =>
                         {
-                            return this.trainingProcess.processBatch(batch.inputFileName).then((outputs) =>
+                            return this.trainingProcess.processBatch(batch.fileName).then((outputs) =>
                             {
                                 processedObjects += batch.objects.length;
 
@@ -908,4 +738,4 @@ class EBTrainModelTask {
     }
 }
 
-module.exports = EBTrainModelTask;
+module.exports = EBTrainMatchingModelTask;

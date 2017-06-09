@@ -18,7 +18,8 @@
 
 "use strict";
 
-const EBTorchModule = require('./EBTorchModule'),
+const EBClassFactory = require("../components/EBClassFactory"),
+    EBTorchModule = require('./../components/architecture/EBTorchModule'),
     EBTensorSchema = require("./EBTensorSchema");
 
 /**
@@ -34,6 +35,7 @@ class EBNeuralNetworkEditorModule
     constructor(rawModule)
     {
         this.name = rawModule.name;
+        this.classType = 'EBNeuralNetworkEditorModule';
 
         for (let parameter of this.parameters)
         {
@@ -505,9 +507,10 @@ EBNeuralNetworkEditorModule.knownLayers = {
         {
             return EBTensorSchema.generateDataTensorSchema(substitutionValues[this.outputSize] ? substitutionValues[this.outputSize] : this.outputSize, "output");
         }
-    },
+    }
 };
 
+EBClassFactory.registerClass('EBNeuralNetworkEditorModule', EBNeuralNetworkEditorModule, EBNeuralNetworkEditorModule.schema());
 
 module.exports = EBNeuralNetworkEditorModule;
 

@@ -22,7 +22,7 @@ const
     async = require('async'),
     childProcess = require('child_process'),
     EBModelBundler = require('./EBModelBundler'),
-    EBTorchProcess = require('../architecture/EBTorchProcess'),
+    EBTorchProcess = require('../architecture/EBTorchProcessBase'),
     fs = require('fs'),
     models = require('../../../shared/models/models'),
     mongodb = require('mongodb'),

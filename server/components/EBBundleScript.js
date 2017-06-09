@@ -21,7 +21,7 @@
 const
     async = require('async'),
     EBModel = require('../../shared/models/EBModel'),
-    EBTorchProcess = require('./architecture/EBTorchProcess'),
+    EBTorchProcess = require('./architecture/EBTorchProcessBase'),
     fs = require('fs'),
     path = require('path'),
     Promise = require('bluebird'),

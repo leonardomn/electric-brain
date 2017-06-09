@@ -18,7 +18,8 @@
 
 const beaver = require('beaver');
 
-const EBTrainModelTask = require("./EBTrainModelTask");
+const EBTrainMatchingModelTask = require("../../plugins/matching_architecture/server/EBTrainMatchingModelTask");
+const EBTrainTransformModelTask = require("../../plugins/transform_architecture/server/EBTrainTransformModelTask");
 const EBSampleDataSourceTask = require("./EBSampleDataSourceTask");
 
 /**
@@ -42,11 +43,20 @@ function setupTasks(application)
     }
 
     application.taskRegistry.registerTask({
-        name: "train_model",
+        name: "train_transform_model",
         timeout: null, // no timeout. This can take forever.
         concurrencyPerWorker: 1,
         maximumAttempts: 2,
-        func: wrapTaskClass(EBTrainModelTask)
+        func: wrapTaskClass(EBTrainTransformModelTask)
+    });
+
+
+    application.taskRegistry.registerTask({
+        name: "train_matching_model",
+        timeout: null, // no timeout. This can take forever.
+        concurrencyPerWorker: 1,
+        maximumAttempts: 2,
+        func: wrapTaskClass(EBTrainMatchingModelTask)
     });
 
 

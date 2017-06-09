@@ -25,35 +25,27 @@
 
 angular.module('eb').controller('EBEditArchitectureController', function EBEditArchitectureController($scope, $stateParams, EBArchitectureService, $state, EBNavigationBarService, EBLoaderService)
 {
-    if (!$stateParams.id)
-    {
-        $stateParams.id = 'new';
-    }
-
     $scope.$stateParams = $stateParams;
 
-    $scope.isNew = $stateParams.id === 'new';
     $scope.schemaNeedsRefreshed = false;
 
     $scope.getArchitecture = function getArchitecture()
     {
-        if ($scope.isNew)
+        const promise = EBArchitectureService.getArchitecture($stateParams.id).success(function(architecture)
         {
-            $scope.architecture = new shared.models.EBArchitecture({
-                name: "",
-                dataSource: null,
-                inputTransformation: null
-            });
-        }
-        else
-        {
-            const promise = EBArchitectureService.getArchitecture($stateParams.id).success(function(architecture)
+            $scope.architecture = architecture;
+
+            if ($scope.architecture.classType === 'EBMatchingArchitecture')
             {
-                $scope.architecture = architecture;
-            });
-            
-            EBLoaderService.showLoaderWith('page', promise);
-        }
+                $scope.architectureType = "matching";
+            }
+            else if ($scope.architecture.classType === 'EBTransformArchitecture')
+            {
+                $scope.architectureType = "transform";
+            }
+        });
+
+        EBLoaderService.showLoaderWith('page', promise);
     };
     
     $scope.setSchemaNeedsRefreshed = function setSchemaNeedsRefreshed(value)
@@ -69,40 +61,9 @@ angular.module('eb').controller('EBEditArchitectureController', function EBEditA
 
     $scope.onSaveClicked = function onSaveClicked()
     {
-        if ($stateParams.id === 'new')
-        {
-            return EBArchitectureService.createArchitecture($scope.architecture).then(function success(body)
-            {
-                EBNavigationBarService.refreshNavigationBar();
-                $state.go('edit_architecture.select_data_source', {id: body.data._id});
-            });
-        }
-        else
-        {
-            return EBArchitectureService.saveArchitecture($scope.architecture);
-        }
+        return EBArchitectureService.saveArchitecture($scope.architecture);
     };
-
-    $scope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams)
-    {
-        if (toState.name.indexOf('edit_architecture.') !== -1 && toState.name !== 'edit_architecture.select_data_source' && toParams.id === 'new')
-        {
-            // If its a new architecture, make sure we save it
-            event.preventDefault();
-
-            EBArchitectureService.createArchitecture($scope.architecture).then(function success(body)
-            {
-                EBNavigationBarService.refreshNavigationBar();
-                $scope.architecture.id = body.data._id;
-                toParams.id = body.data._id;
-                $state.go(toState, toParams);
-            });
-        }
-        else
-        {
-            EBArchitectureService.saveArchitecture($scope.architecture);
-        }
-    });
+    
 
     $scope.onDeleteClicked = function onDeleteClicked()
     {

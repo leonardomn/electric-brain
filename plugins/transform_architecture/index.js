@@ -16,16 +16,19 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+const EBTransformArchitecturePlugin = require("./server/EBTransformArchitecturePlugin");
 
 /*
  * Plugins must provides a list of the various support plugins for each type.
  */
-
 module.exports = {
     "name": "transform_architecture",
     "folder": __dirname,
     "dataSources": {},
     "interpretations": {},
-    "neuralNetworkComponents": {}
+    "neuralNetworkComponents": {},
+    "architecturePlugins": {
+        "EBTransformArchitecturePlugin": EBTransformArchitecturePlugin
+    }
 };
 

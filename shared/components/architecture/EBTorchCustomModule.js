@@ -19,7 +19,7 @@
 "use strict";
 
 const
-    customModuleTemplate = require("../../build/torch/custom_module"),
+    customModuleTemplate = require("../../../build/torch/custom_module"),
     underscore = require('underscore');
 
 /**

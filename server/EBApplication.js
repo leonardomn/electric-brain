@@ -26,6 +26,7 @@ const
     EBDataSourcePluginDispatch = require("./components/datasource/EBDataSourcePluginDispatch"),
     EBNeuralNetworkComponentDispatch = require("../shared/components/architecture/EBNeuralNetworkComponentDispatch"),
     EBInterpretationRegistry = require("./components/datasource/EBInterpretationRegistry"),
+    EBArchitecturePluginRegistry = require("./components/architecture/EBArchitecturePluginRegistry"),
     flattener = require('./middleware/flattener'),
     fs = require("fs"),
     http = require('http'),
@@ -140,6 +141,7 @@ class EBApplication
         this.dataSourcePluginDispatch = new EBDataSourcePluginDispatch();
         this.neuralNetworkComponentDispatch = new EBNeuralNetworkComponentDispatch();
         this.interpretationRegistry = new EBInterpretationRegistry();
+        this.architectureRegistry = new EBArchitecturePluginRegistry();
 
         this.plugins.forEach((plugin) =>
         {
@@ -148,11 +150,17 @@ class EBApplication
             {
                 this.interpretationRegistry.addInterpretation(new plugin.interpretations[name](this.interpretationRegistry));
             });
-            
+
             const neuralNetworkComponentNames = Object.keys(plugin.neuralNetworkComponents || {});
             neuralNetworkComponentNames.forEach((name) =>
             {
                 this.neuralNetworkComponentDispatch.registerPlugin(name, new plugin.neuralNetworkComponents[name](this.neuralNetworkComponentDispatch))
+            });
+
+            const architecturePluginNames = Object.keys(plugin.architecturePlugins || {});
+            architecturePluginNames.forEach((name) =>
+            {
+                this.architectureRegistry.registerPlugin(name, new plugin.architecturePlugins[name](this.interpretationRegistry, this.neuralNetworkComponentDispatch));
             });
         });
     }

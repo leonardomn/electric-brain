@@ -20,13 +20,13 @@
 
 const
     async = require('async'),
-    EBCustomTransformationProcess = require('../components/architecture/EBCustomTransformationProcess'),
-    EBStdioScript = require("../../server/components/EBStdioScript"),
-    EBTorchProcess = require('../components/architecture/EBTorchProcess'),
-    models = require("../../shared/models/models"),
+    EBCustomTransformationProcess = require('../../../server/components/architecture/EBCustomTransformationProcess'),
+    EBNeuralTransformer = require('../../../shared/components/architecture/EBNeuralTransformer'),
+    EBStdioScript = require("../../../server/components/EBStdioScript"),
+    models = require("../../../shared/models/models"),
     Promise = require('bluebird');
 
-class EBTrainModelWorker extends EBStdioScript
+class EBTrainTransformModelWorker extends EBStdioScript
 {
     constructor(application)
     {
@@ -34,8 +34,6 @@ class EBTrainModelWorker extends EBStdioScript
         this.application = application;
         this.socketio = application.socketio;
         this.models = application.db.collection("EBModel");
-
-
     }
 
     /**
@@ -58,7 +56,8 @@ class EBTrainModelWorker extends EBStdioScript
                 else
                 {
                     this.model = new models.EBModel(objects[0]);
-                    this.trainingProcess = new EBTorchProcess(this.model.architecture, this.application.config.get('overrideModelFolder'));
+                    this.architecturePlugin = this.application.architectureRegistry.getPluginForArchitecture(this.model.architecture);
+                    this.trainingProcess = this.architecturePlugin.getTorchProcess(this.model.architecture, this.application.config.get('overrideModelFolder'));
                     this.trainingProcess.generateCode(this.application.interpretationRegistry, this.application.neuralNetworkComponentDispatch).then(() =>
                     {
                         return this.trainingProcess.startProcess();
@@ -107,14 +106,18 @@ class EBTrainModelWorker extends EBStdioScript
         if (!this.fetchQueue)
         {
             const maxObjectsToLoadAtOnce = 100;
-
-            const customTransformationStream = EBCustomTransformationProcess.createCustomTransformationStream(this.model.architecture);
-            const objectTransformationStream = this.model.architecture.getObjectTransformationStream(this.application.interpretationRegistry);
-            objectTransformationStream.on('error', (err) =>
+            
+            const inputTransformer = new EBNeuralTransformer(this.model.architecture.inputSchema);
+            const outputTransformer = new EBNeuralTransformer(this.model.architecture.outputSchema);
+            
+            const inputTransformationStream = inputTransformer.createTransformationStream(this.application.interpretationRegistry);
+            const outputTransformationStream = outputTransformer.createTransformationStream(this.application.interpretationRegistry);
+            inputTransformationStream.on('error', (err) =>
             {
                 console.error(err);
             });
-            customTransformationStream.on('error', (err) =>
+
+            outputTransformationStream.on('error', (err) =>
             {
                 console.error(err);
             });
@@ -132,22 +135,24 @@ class EBTrainModelWorker extends EBStdioScript
                 {
                     async.eachSeries(objects, (object, next) =>
                     {
-                        // TODO: Need to handle the errors here
-                        customTransformationStream.once('data', (data) =>
+                        inputTransformationStream.once('data', (transformedInput) =>
                         {
-                            customTransformationStream.pause();
-                            objectTransformationStream.write(data, null, () =>
+                            outputTransformationStream.once('data', (transformedOutput) =>
                             {
-                                customTransformationStream.resume();
+                                const combined = {
+                                    input: transformedInput,
+                                    output: transformedOutput,
+                                    original: object
+                                };
+                                
+                                resolverMap[object.id](combined);
+                                next();
                             });
+                            
+                            outputTransformationStream.write(object);
                         });
-                        objectTransformationStream.once('data', (data) =>
-                        {
-                            resolverMap[data.original.id](data);
-                            return next();
-                        });
-
-                        customTransformationStream.write(object);
+                        
+                        inputTransformationStream.write(object);
                     }, next);
                 }, (error) => next(error));
             }, maxObjectsToLoadAtOnce);
@@ -170,4 +175,4 @@ class EBTrainModelWorker extends EBStdioScript
 };
 
 
-module.exports = EBTrainModelWorker;
+module.exports = EBTrainTransformModelWorker;

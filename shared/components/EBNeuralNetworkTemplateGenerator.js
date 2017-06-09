@@ -18,8 +18,9 @@
 
 "use strict";
 
-const EBTorchModule = require('./EBTorchModule');
-const EBNeuralNetworkEditorModule = require("./EBNeuralNetworkEditorModule");
+const EBClassFactory = require("./EBClassFactory"),
+    EBTorchModule = require('./architecture/EBTorchModule'),
+    EBNeuralNetworkEditorModule = require("../models/EBNeuralNetworkEditorModule");
 
 /**
  * This static class contains functionality which generates neural networks templates. Not totally sure what to do with this

@@ -18,7 +18,11 @@
 
 "use strict";
 
-const EBArchitecture = require("./EBArchitecture"),
+const
+    EBArchitecture = require("./EBArchitecture"),
+    EBTransformArchitecture = require("../../plugins/transform_architecture/shared/models/EBTransformArchitecture"),
+    EBMatchingArchitecture = require("../../plugins/matching_architecture/shared/models/EBMatchingArchitecture"),
+    EBClassFactory = require("../components/EBClassFactory"),
     EBPerformanceData = require("./EBPerformanceData");
 
 /**
@@ -34,11 +38,12 @@ class EBModel
     constructor(rawModel)
     {
         const self = this;
+        self.type = 'EBModel';
         Object.keys(rawModel).forEach(function(key)
         {
             if (key === 'architecture')
             {
-                self[key] = new EBArchitecture(rawModel[key]);
+                self[key] = EBClassFactory.createObject(rawModel[key]);
             }
             else
             {
@@ -126,7 +131,12 @@ class EBModel
                 "_id": {},
                 "name": {type: "string"},
                 "running": {type: "boolean"},
-                "architecture": EBArchitecture.schema(),
+                "architecture": {
+                    "anyOf": [
+                        EBTransformArchitecture.schema(),
+                        EBMatchingArchitecture.schema()
+                    ]
+                },
 
                 "parameters": {
                     type: "object",
@@ -213,5 +223,7 @@ class EBModel
         };
     }
 }
+
+EBClassFactory.registerClass('EBModel', EBModel, EBModel.schema());
 
 module.exports = EBModel;

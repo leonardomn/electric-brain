@@ -18,21 +18,10 @@
 
 "use strict";
 
-
-/**
- * This is an abstract base class representing the different types of neural network architectures that are supported by Electric Brain.
+/*
+ * This file just bundles up all of the shared code from plugins
  */
-class EBArchitecturePluginBase
-{
-    /**
-     * Returns a JSON-Schema schema for this architectures
-     *
-     * @returns {object} The JSON-Schema that can be used for validating this architectures in its raw form
-     */
-    static schema()
-    {
-        throw new Error("Unimplemented.");
-    }
-}
-
-module.exports = EBArchitecturePluginBase;
+module.exports = {
+    EBMatchingArchitecture: require("./matching_architecture/shared/models/EBMatchingArchitecture"),
+    EBTransformArchitecture: require("./transform_architecture/shared/models/EBTransformArchitecture")
+};

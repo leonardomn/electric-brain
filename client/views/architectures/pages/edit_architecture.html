@@ -19,9 +19,9 @@
 
 
 <div class="wrapper wrapper-content">
-    <eb-dynamic-directive directive-name="eb-edit-{{architecture.type}}-architecture" architecture="architecture"></eb-dynamic-directive>
+    <eb-dynamic-directive directive-name="eb-edit-{{architectureType}}-architecture" architecture="architecture"></eb-dynamic-directive>
 
-    <div class="row" ng-if="architecture.dataSource">
+    <div class="row">
         <div class="col-xs-12">
             <eb-loader-button on-click="onSaveClicked()" title="Save"></eb-loader-button>
             <eb-loader-button ng-if="$stateParams.id != 'new'" on-click="onDeleteClicked()" title="Delete"></eb-loader-button>

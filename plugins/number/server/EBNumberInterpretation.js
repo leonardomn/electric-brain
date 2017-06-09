@@ -25,7 +25,7 @@ const
     EBFieldMetadata = require('../../../shared/models/EBFieldMetadata'),
     EBInterpretationBase = require('./../../../server/components/datasource/EBInterpretationBase'),
     EBNeuralNetworkEditorModule = require('../../../shared/models/EBNeuralNetworkEditorModule'),
-    EBNeuralNetworkTemplateGenerator = require("../../../shared/models/EBNeuralNetworkTemplateGenerator"),
+    EBNeuralNetworkTemplateGenerator = require("../../../shared/components/EBNeuralNetworkTemplateGenerator"),
     EBNumberHistogram = require('../../../shared/models/EBNumberHistogram'),
     EBSchema = require("../../../shared/models/EBSchema"),
     underscore = require('underscore');

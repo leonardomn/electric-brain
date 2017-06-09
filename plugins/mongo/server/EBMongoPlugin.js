@@ -23,7 +23,7 @@ const
     EBDataSourcePlugin = require("../../../server/components/datasource/EBDataSourcePlugin"),
     EBSchemaDetector = require("../../../server/components/datasource/EBSchemaDetector"),
     EBPerformanceData = require('../../../shared/models/EBPerformanceData'),
-    EBPerformanceTrace = require('../../../shared/models/EBPerformanceTrace'),
+    EBPerformanceTrace = require('../../../shared/components/EBPerformanceTrace'),
     mongodb = require('mongodb'),
     Promise = require('bluebird'),
     queryUtilities = require("../../../shared/utilities/query"),

@@ -30,20 +30,22 @@ const
     underscore = require('underscore');
 
 /**
- * This class is used to manage the Torch sub-process for a given architecture
+ * This is a base class for various architecture-specific torch process classes.
  */
-class EBTorchProcess
+class EBTorchProcessBase
 {
     /**
      * Creates the process object for the given EBArchitecture object.
      *
-     * @param {EBArchitecture} architecture The architecture object that we are creating the torch process for.
+     * @param {EBArchitecture} architecture The architecture object that we are creating the torch process for
+     * @param {EBArchitecturePluginBase} architecturePlugin The plugin for the architecture object
      * @param {string} [scriptFolder] Optional directory where the script files should be written
      */
-    constructor(architecture, scriptFolder)
+    constructor(architecture, architecturePlugin, scriptFolder)
     {
         const self = this;
         self.architecture = architecture;
+        self.architecturePlugin = architecturePlugin;
         self.scriptFolder = scriptFolder || null;
         self.scriptFile = null;
         self.processes = [];
@@ -51,13 +53,10 @@ class EBTorchProcess
         self.testingSet = {};
         self.numProcesses = 1;
     }
-
-
+    
     /**
      * This function will generate the code and write the code to disk.
      *
-     * @param {EBInterpretationRegistry} registry The registry for the interpretations
-     * @param {EBNeuralNetworkComponentDispatch} neuralNetworkComponentDispatch A reference the the globally initialized componentDispatch method
      * @param {function(err, totalFiles)} callback Callback after the code has been written to disk, ready for the process to start
      */
     generateCode(registry, neuralNetworkComponentDispatch)
@@ -101,7 +100,11 @@ class EBTorchProcess
                             try
                             {
                                 // Create a list of files that need to be written
-                                const files = self.architecture.generateFiles(registry, neuralNetworkComponentDispatch);
+                                if (!self.architecturePlugin.generateFiles)
+                                {
+                                    console.error(self.architecturePlugin);
+                                }
+                                const files = self.architecturePlugin.generateFiles(self.architecture);
 
                                 // Write out each of the files
                                 const writeFilePromise = Promise.each(files,(file) =>
@@ -296,102 +299,7 @@ class EBTorchProcess
             }, (err) => callback (err));
         });
     }
-
-
-    /**
-     * This method loads an object into the lua process.
-     *
-     * @param {string} id The ID of the object to be stored
-     * @param {object} input The input data for the object
-     * @param {object} output The output data for the object
-     * @param {function(err)} callback The callback after the object has been successfully stored
-     */
-    loadObject(id, input, output)
-    {
-        console.log(id);
-        console.log(input);
-        console.log(output);
-
-
-        const self = this;
-        const message = {
-            type: "store",
-            id: id,
-            input: input,
-            output: output
-        };
-        const writeAndWaitPromise = Promise.each(self.processes,(process) =>
-        {
-            return process.writeAndWaitForMatchingOutput(message, {type: "stored"});
-        });
-        writeAndWaitPromise.then(() =>
-        {
-            self.allLoadedEntries.push(id);
-        });
-        return writeAndWaitPromise;
-    }
-
-
-    /**
-     * This method runs a set of objects through the network and returns their processed versions
-     *
-     * @param {objects} objects The objects that need to be processed
-     * @param {function(err, accuracy, output)} callback The callback function which will receive the accuracy of the test, along with the output object
-     */
-    processObjects(objects)
-    {
-        const message = {
-            type: "evaluate",
-            samples: objects,
-            ids: objects.map((object, index) => (index + 1).toString())
-        };
-
-        return this.processes[0].writeAndWaitForMatchingOutput(message, {type: "evaluationCompleted"});
-    }
-
-
-    /**
-     * This method runs a prepared batch through the network
-     *
-     * @param {string} inputBatchFilename The filename of the batch
-     * @param {function(err, accuracy, output)} callback The callback function which will receive the accuracy of the test, along with the output object
-     */
-    processBatch(inputBatchFilename)
-    {
-        // Choose a bunch of random samples from the set that we have
-        const message = {
-            type: "evaluateBatch",
-            batchFilename: inputBatchFilename
-        };
-
-        // TODO: Make this work with multiple sub-processes!
-        return this.processes[0].writeAndWaitForMatchingOutput(message, {type: "evaluationCompleted"}).then((result) =>
-        {
-            return result.objects;
-        });
-    }
-
-
-    /**
-     * This method will execute a single training iteration with the given batch.
-     *
-     * @param {[string]} inputBatchFilename The filename that contains this input batch
-     * @param {[string]} outputBatchFilename The filename that contains this output batch
-     * @param {Promise} A Promise that will resolve when batch is complete
-     */
-    executeTrainingIteration(inputBatchFilename, outputBatchFilename)
-    {
-        // Choose a bunch of random samples from the set that we have
-        const message = {
-            type: "iteration",
-            inputBatchFilename: inputBatchFilename,
-            outputBatchFilename: outputBatchFilename
-        };
-
-        // TODO: Make this work with multiple sub-processes!
-        return this.processes[0].writeAndWaitForMatchingOutput(message, {type: "iterationCompleted"});
-    }
-
+    
     /**
      * This function retrieves the diagrams that are generated by torch.
      *
@@ -492,41 +400,6 @@ class EBTorchProcess
         });
         return writeAndWaitPromise;
     }
-
-
-    /**
-     * This method tells the process to create an input-batch file
-     *
-     * @param {string} ids This the ids for each of the objects being saved
-     * @param {objects} objects This contains of objects that are being saved
-     * @param {string} fileName The filename to write the result too
-     *
-     * @return {Promise} A promise that will resolve when the batch has been saved
-     */
-    prepareInputBatch(ids, objects, fileName)
-    {
-        const self = this;
-
-        const message = {type: "prepareInputBatch", ids: ids, samples: objects, fileName: fileName};
-        return self.processes[0].writeAndWaitForMatchingOutput(message, {type: "batchInputPrepared"});
-    }
-
-
-    /**
-     * This method tells the process to create a batch and save it to a file
-     *
-     * @param {string} ids This the ids for each of the objects being saved
-     * @param {objects} objects This contains of objects that are being saved
-     * @param {string} fileName The filename to write the result too
-     *
-     * @return {Promise} A promise that will resolve when the batch has been saved
-     */
-    prepareOutputBatch(ids, objects, fileName)
-    {
-        const self = this;
-        const message = {type: "prepareOutputBatch", ids: ids, samples: objects, fileName: fileName};
-        return self.processes[0].writeAndWaitForMatchingOutput(message, {type: "batchOutputPrepared"});
-    }
 }
 
-module.exports = EBTorchProcess;
+module.exports = EBTorchProcessBase;

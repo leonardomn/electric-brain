@@ -96,6 +96,14 @@ module.exports = function(grunt)
             torch: {
                 src  : ['shared/file_templates/torch'],
                 dest : 'build/torch'
+            },
+            matchingPlugin: {
+                src  : ['plugins/matching_architecture/shared/file_templates'],
+                dest : 'build/torch'
+            },
+            transformPlugin: {
+                src  : ['plugins/transform_architecture/shared/file_templates'],
+                dest : 'build/torch'
             }
         },
         watch: {
@@ -153,6 +161,6 @@ module.exports = function(grunt)
     grunt.loadNpmTasks('grunt-zip');
 
     // Default task(s).
-    grunt.registerTask('default', ['mkdir:dev', 'dot:torch', 'dot:frontend', 'browserify:dev', 'webpack:bundle', 'uglify:dev', 'copy:dev', 'unzip']);
-    grunt.registerTask('worker', ['dot:torch']);
+    grunt.registerTask('default', ['mkdir:dev', 'dot:torch', 'dot:matchingPlugin', 'dot:transformPlugin', 'dot:frontend', 'browserify:dev', 'webpack:bundle', 'uglify:dev', 'copy:dev', 'unzip']);
+    grunt.registerTask('worker', ['dot:torch', 'dot:matchingPlugin', 'dot:transformPlugin']);
 };

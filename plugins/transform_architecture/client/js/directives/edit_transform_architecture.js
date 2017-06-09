@@ -63,6 +63,14 @@ angular.module('eb').directive('ebEditTransformArchitecture', function EBEditTra
                 }
             });
 
+            $scope.$watch('currentTab', function(newValue, oldValue)
+            {
+                if (newValue && oldValue && newValue !== oldValue)
+                {
+                    EBArchitectureService.saveArchitecture($scope.architecture);
+                }
+            });
+
             $scope.setSchemaNeedsRefreshed = function setSchemaNeedsRefreshed(value)
             {
                 if (!value)

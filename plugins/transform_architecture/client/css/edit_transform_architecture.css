@@ -18,17 +18,17 @@
 
 
 /*
-    edit-architectures
+    edit-transform-architectures
 */
 
-.edit-architecture
+.edit-transform-architecture
 {
     position: relative;
 }
 
 
 
-.edit-architecture  .steps
+.edit-transform-architecture  .steps
 {
     position: relative;
     display: block;
@@ -37,55 +37,55 @@
     text-align: center;
 }
 
-.edit-architecture.vertical > .steps
+.edit-transform-architecture.vertical > .steps
 {
     display: inline;
     float: left;
     width: 30%;
 }
 
-.edit-architecture  .steps ul
+.edit-transform-architecture  .steps ul
 {
     list-style-type: none;
     padding-left: 0px;
 }
 
-.edit-architecture  .steps .number
+.edit-transform-architecture  .steps .number
 {
     font-size: 1.429em;
 }
 
-.edit-architecture  .steps > ul > li
+.edit-transform-architecture  .steps > ul > li
 {
     width: 33%;
 }
 
-.edit-architecture  .steps > ul > li i
+.edit-transform-architecture  .steps > ul > li i
 {
     color: #0086d1;
     font-size: 16px;
 }
 
-.edit-architecture  .steps > ul > li.current i
+.edit-transform-architecture  .steps > ul > li.current i
 {
     display: none;
 }
 
-.edit-architecture  .steps > ul > li,
-.edit-architecture  .actions > ul > li
+.edit-transform-architecture  .steps > ul > li,
+.edit-transform-architecture  .actions > ul > li
 {
     float: left;
 }
 
-.edit-architecture.vertical > .steps > ul > li
+.edit-transform-architecture.vertical > .steps > ul > li
 {
     float: none;
     width: 100%;
 }
 
-.edit-architecture  .steps a,
-.edit-architecture  .steps a:hover,
-.edit-architecture  .steps a:active
+.edit-transform-architecture  .steps a,
+.edit-transform-architecture  .steps a:hover,
+.edit-transform-architecture  .steps a:active
 {
     display: block;
     width: auto;
@@ -95,9 +95,9 @@
 
 
 
-.edit-architecture  .steps li:first-child a,
-.edit-architecture  .steps li:first-child a:hover,
-.edit-architecture  .steps li:first-child a:active
+.edit-transform-architecture  .steps li:first-child a,
+.edit-transform-architecture  .steps li:first-child a:hover,
+.edit-transform-architecture  .steps li:first-child a:active
 {
     -webkit-border-bottom-left-radius: 5px;
     -moz-border-radius-bottomleft: 5px;
@@ -110,9 +110,9 @@
 
 
 
-.edit-architecture  .steps li:last-child a,
-.edit-architecture  .steps li:last-child a:hover,
-.edit-architecture  .steps li:last-child a:active
+.edit-transform-architecture  .steps li:last-child a,
+.edit-transform-architecture  .steps li:last-child a:hover,
+.edit-transform-architecture  .steps li:last-child a:active
 {
     -webkit-border-bottom-right-radius: 5px;
     -moz-border-radius-bottomright: 5px;
@@ -123,35 +123,35 @@
     border-top-right-radius: 5px;
 }
 
-.edit-architecture  .steps .disabled a,
-.edit-architecture  .steps .disabled a:hover,
-.edit-architecture  .steps .disabled a:active
+.edit-transform-architecture  .steps .disabled a,
+.edit-transform-architecture  .steps .disabled a:hover,
+.edit-transform-architecture  .steps .disabled a:active
 {
     background: #eee;
     color: #aaa;
     cursor: default;
 }
 
-.edit-architecture  .steps .current a,
-.edit-architecture  .steps .current a:hover,
-.edit-architecture  .steps .current a:active
+.edit-transform-architecture  .steps .current a,
+.edit-transform-architecture  .steps .current a:hover,
+.edit-transform-architecture  .steps .current a:active
 {
     background: #2184be;
     color: #fff;
     cursor: default;
 }
 
-.edit-architecture  .steps .done a,
-.edit-architecture  .steps .done a:hover,
-.edit-architecture  .steps .done a:active
+.edit-transform-architecture  .steps .done a,
+.edit-transform-architecture  .steps .done a:hover,
+.edit-transform-architecture  .steps .done a:active
 {
     background: #9dc8e2;
     color: #fff;
 }
 
-.edit-architecture  .steps .error a,
-.edit-architecture  .steps .error a:hover,
-.edit-architecture  .steps .error a:active
+.edit-transform-architecture  .steps .error a,
+.edit-transform-architecture  .steps .error a:hover,
+.edit-transform-architecture  .steps .error a:active
 {
     background: #ff3111;
     color: #fff;
