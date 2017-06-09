@@ -16,6 +16,8 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+"use strict";
+
 const EBArchitecturePluginBase = require("../../../server/components/architecture/EBArchitecturePluginBase"),
     EBCustomTransformation = require("../../../shared/components/architecture/EBCustomTransformation"),
     EBDataSource = require("../../../shared/models/EBDataSource"),

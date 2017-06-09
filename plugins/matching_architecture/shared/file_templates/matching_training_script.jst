@@ -364,7 +364,7 @@ function MatchingTrainingScript:enterTrainingLoop()
 
                 torch.save(command.fileName, batch)
 
-                self:sendResponse({type="batchPrepared"})
+                self:sendResponse({type="batchPrepared", fileName=command.fileName})
             elseif command.type == "stats" then
                 -- The 'stats' command is used to provide statistics up to the surrounding manager
                 -- code

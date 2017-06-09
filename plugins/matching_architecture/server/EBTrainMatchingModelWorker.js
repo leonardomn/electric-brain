@@ -24,6 +24,7 @@ const
     EBNeuralTransformer = require('../../../shared/components/architecture/EBNeuralTransformer'),
     EBMatchingTorchProcess = require("./EBMatchingTorchProcess"),
     EBStdioScript = require("../../../server/components/EBStdioScript"),
+    fs = require('fs'),
     models = require("../../../shared/models/models"),
     Promise = require('bluebird'),
     underscore = require('underscore');

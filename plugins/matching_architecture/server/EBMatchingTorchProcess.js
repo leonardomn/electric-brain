@@ -172,7 +172,7 @@ class EBMatchingTorchProcess extends EBTorchProcessBase
             valences: valences,
             fileName: fileName
         };
-        return self.processes[0].writeAndWaitForMatchingOutput(message, {type: "batchPrepared"});
+        return self.processes[0].writeAndWaitForMatchingOutput(message, {type: "batchPrepared", fileName: fileName});
     }
 }
 

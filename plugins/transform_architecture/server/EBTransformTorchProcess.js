@@ -160,7 +160,7 @@ class EBTransformTorchProcess extends EBTorchProcessBase
         const self = this;
 
         const message = {type: "prepareInputBatch", ids: ids, samples: objects, fileName: fileName};
-        return self.processes[0].writeAndWaitForMatchingOutput(message, {type: "batchInputPrepared"});
+        return self.processes[0].writeAndWaitForMatchingOutput(message, {type: "batchInputPrepared", fileName: fileName});
     }
 
 
@@ -177,7 +177,7 @@ class EBTransformTorchProcess extends EBTorchProcessBase
     {
         const self = this;
         const message = {type: "prepareOutputBatch", ids: ids, samples: objects, fileName: fileName};
-        return self.processes[0].writeAndWaitForMatchingOutput(message, {type: "batchOutputPrepared"});
+        return self.processes[0].writeAndWaitForMatchingOutput(message, {type: "batchOutputPrepared", fileName: fileName});
     }
 }
 
