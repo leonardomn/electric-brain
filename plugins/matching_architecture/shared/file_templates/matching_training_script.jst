@@ -81,7 +81,7 @@ function MatchingTrainingScript:createModules()
         :add(self.secondaryModule)
 
     -- Create the main criterion for training
-    self.criterion = nn.L1HingeEmbeddingCriterion()
+    self.criterion = nn.L1HingeEmbeddingCriterion(200)
     if self.gpuEnabled then
         self.criterion:cuda()
     end
