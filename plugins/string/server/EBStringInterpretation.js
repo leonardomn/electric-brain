@@ -143,11 +143,7 @@ class EBStringInterpretation extends EBInterpretationBase
             };
 
             schema.type = ['number'];
-            schema.enum = [null];
-            schema.metadata.statistics.valueHistogram.values.forEach((number, index) =>
-            {
-                schema.enum.push(index);
-            });
+            schema.enum = [null].concat(schema.configuration.interpretation.classificationValues);
             return schema;
         }
         else if (schema.configuration.interpretation.mode === 'sequence')
@@ -237,8 +233,7 @@ class EBStringInterpretation extends EBInterpretationBase
         // Output a different value depending on the mode for the string
         if (schema.configuration.interpretation.mode === 'classification')
         {
-            const values = underscore.map(schema.metadata.statistics.valueHistogram.values, (value) => value.value);
-            const index = values.indexOf(value);
+            const index = schema.configuration.interpretation.classificationValues.indexOf(value);
             if (index === -1)
             {
                 console.error('enum value not found: ', value);
@@ -298,8 +293,7 @@ class EBStringInterpretation extends EBInterpretationBase
             }
             else
             {
-                const values = underscore.map(schema.metadata.statistics.valueHistogram.values, (value) => value.value);
-                return values[value - 1];
+                return schema.configuration.interpretation.classificationValues[value - 1];
             }
         }
         else if (schema.configuration.interpretation.mode === 'sequence')
