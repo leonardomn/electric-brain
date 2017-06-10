@@ -71,17 +71,21 @@ function MatchingTrainingScript:createModules()
         self.secondaryModule:cuda()
     end
 
-    -- Create a copy of the main neural network module that will be used for saving
-    self.primaryModuleSaveCopy = nn.{{=it.primaryModuleName}}(self)
-    self.secondaryModuleSaveCopy = nn.{{=it.secondaryModuleName}}(self)
-
     -- Create a super-network, which combines the two subnetworks together, to be used for training
     self.module = nn.ParallelTable()
         :add(self.primaryModule)
         :add(self.secondaryModule)
 
+    -- Create a copy of the main neural network module that will be used for saving
+    self.primaryModuleSaveCopy = nn.{{=it.primaryModuleName}}(self)
+    self.secondaryModuleSaveCopy = nn.{{=it.secondaryModuleName}}(self)
+    self.moduleSaveCopy = nn.ParallelTable()
+        :add(self.primaryModuleSaveCopy)
+        :add(self.secondaryModuleSaveCopy)
+
     -- Create the main criterion for training
-    self.criterion = nn.ModuleCriterion(nn.HingeEmbeddingCriterion(200), nn.PairwiseDistance(2))
+    self.criterion = nn.ModuleCriterion(nn.HingeEmbeddingCriterion(1), nn.PairwiseDistance(1))
+
     if self.gpuEnabled then
         self.criterion:cuda()
     end
@@ -103,19 +107,10 @@ function MatchingTrainingScript:localize(obj)
 end
 
 
-function MatchingTrainingScript:getCriterion(index)
-   local criterion = self.criterionClones[index]
-   if not criterion then
-      criterion = self.criterion:clone()
-      self.criterionClones[index] = criterion
-   end
-   return criterion
-end
-
 function MatchingTrainingScript:evaluateTrainingIteration(primaryBatch, secondaryBatch, valences)
     local batchOutputs
     local outputs
-    local batchSize = primaryBatch[1][1]:size(1)
+    local batchSize = #valences
 
     {{= it.generateLocalizeFunction(it.primarySchema, "localizePrimaryRoot").replace(/\n/g, "\n    ") }}
     {{= it.generateLocalizeFunction(it.secondarySchema, "localizeSecondaryRoot").replace(/\n/g, "\n    ") }}
@@ -438,8 +433,8 @@ function MatchingTrainingScript:enterTrainingLoop()
                 end
 
                 -- The save command causes the process to save the trained model out to disk
-                self.primaryModuleSaveCopy:getParameters():copy(self.primaryModule:getParameters())
-                self.secondaryModuleSaveCopy:getParameters():copy(self.secondaryModule:getParameters())
+                self.moduleSaveCopy:getParameters():copy(self.params)
+
                 torch.save("model.t7", {
                     primaryModule = self.primaryModuleSaveCopy,
                     secondaryModule = self.secondaryModuleSaveCopy
