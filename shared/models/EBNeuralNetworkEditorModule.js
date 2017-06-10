@@ -189,7 +189,7 @@ class EBNeuralNetworkEditorModule
         });
 
 
-        return data;
+        return new EBNeuralNetworkEditorModule(data);
     }
 
 
