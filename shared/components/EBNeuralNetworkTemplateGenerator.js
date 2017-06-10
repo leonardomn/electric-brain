@@ -39,12 +39,17 @@ class EBNeuralNetworkTemplateGenerator
         {
             return [
                 new EBNeuralNetworkEditorModule({
+                    name: 'Dropout',
+                    locked: false,
+                    p: 0.4
+                }),
+                new EBNeuralNetworkEditorModule({
                     name: 'Linear',
                     locked: false,
                     outputSize: 150
                 }),
                 new EBNeuralNetworkEditorModule({
-                    name: 'ReLU',
+                    name: 'PReLU',
                     locked: false
                 }),
                 new EBNeuralNetworkEditorModule({
@@ -58,12 +63,17 @@ class EBNeuralNetworkTemplateGenerator
         {
             return [
                 new EBNeuralNetworkEditorModule({
+                    name: 'Dropout',
+                    locked: false,
+                    p: 0.4
+                }),
+                new EBNeuralNetworkEditorModule({
                     name: 'Linear',
                     locked: false,
                     outputSize: 250
                 }),
                 new EBNeuralNetworkEditorModule({
-                    name: 'ReLU',
+                    name: 'PReLU',
                     locked: false
                 }),
                 new EBNeuralNetworkEditorModule({
@@ -72,7 +82,7 @@ class EBNeuralNetworkTemplateGenerator
                     outputSize: 250
                 }),
                 new EBNeuralNetworkEditorModule({
-                    name: 'ReLU',
+                    name: 'PReLU',
                     locked: false
                 }),
                 new EBNeuralNetworkEditorModule({
@@ -86,12 +96,17 @@ class EBNeuralNetworkTemplateGenerator
         {
             return [
                 new EBNeuralNetworkEditorModule({
+                    name: 'Dropout',
+                    locked: false,
+                    p: 0.4
+                }),
+                new EBNeuralNetworkEditorModule({
                     name: 'Linear',
                     locked: false,
                     outputSize: 500
                 }),
                 new EBNeuralNetworkEditorModule({
-                    name: 'ReLU',
+                    name: 'PReLU',
                     locked: false
                 }),
                 new EBNeuralNetworkEditorModule({
@@ -100,7 +115,7 @@ class EBNeuralNetworkTemplateGenerator
                     outputSize: 500
                 }),
                 new EBNeuralNetworkEditorModule({
-                    name: 'ReLU',
+                    name: 'PReLU',
                     locked: false
                 }),
                 new EBNeuralNetworkEditorModule({

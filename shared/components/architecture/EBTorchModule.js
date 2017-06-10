@@ -43,7 +43,7 @@ class EBTorchModule
         if (parameters)
         {
             self.parameters = parameters;
-            underscore.each(parameters, assert);
+            underscore.each(parameters, (param) => assert(param !== null && param !== undefined));
         }
         else
         {

@@ -95,13 +95,13 @@ class EBNeuralNetworkEditorModule
 
             return new EBTorchModule(`${this.namespace}.${this.name}`, this.parameters.map((param) =>
             {
-                if (substitutionValues && substitutionValues[param.value])
+                if (substitutionValues && substitutionValues[param.value] !== undefined)
                 {
                     return substitutionValues[param.value];
                 }
                 else
                 {
-                    return param.value;
+                    return param.value || param.defaultValue;
                 }
             }));
         }
@@ -188,7 +188,8 @@ class EBNeuralNetworkEditorModule
             data[param.name] = param.defaultValue;
         });
 
-        return layerInfo;
+
+        return data;
     }
 
 
@@ -447,6 +448,18 @@ EBNeuralNetworkEditorModule.knownLayers = {
         {
             return EBTensorSchema.generateDataTensorSchema(substitutionValues[this.outputSize] ? substitutionValues[this.outputSize] : this.outputSize, "output");
         }
+    },
+    Dropout: {
+        name: 'Dropout',
+        moduleNamespace: 'nn',
+        fixed: true,
+        sequence: false,
+        parameters: [
+            {
+                name: 'p',
+                defaultValue: 0.4
+            }
+        ]
     },
     SeqBRNN: {
         name: 'SeqBRNN',

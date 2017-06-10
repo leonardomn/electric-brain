@@ -81,7 +81,7 @@ function MatchingTrainingScript:createModules()
         :add(self.secondaryModule)
 
     -- Create the main criterion for training
-    self.criterion = nn.L1HingeEmbeddingCriterion()
+    self.criterion = nn.ModuleCriterion(nn.HingeEmbeddingCriterion(200), nn.PairwiseDistance(1))
     if self.gpuEnabled then
         self.criterion:cuda()
     end
@@ -149,7 +149,9 @@ function MatchingTrainingScript:evaluateTrainingIteration(primaryBatch, secondar
             local secondaryItem = batchOutputs[2]:narrow(1, n, 1)
             local valence = valences[n]
 
-            loss = loss + self.criterion:forward({primaryItem, secondaryItem}, valence)
+            local currentLoss = self.criterion:forward({primaryItem, secondaryItem}, valence)
+
+            loss = loss + currentLoss
             local criterionDerivatives = self.criterion:backward({primaryItem, secondaryItem}, valence)
 
             primaryDerivatives:narrow(1, n, 1):copy(criterionDerivatives[1])
@@ -170,7 +172,7 @@ function MatchingTrainingScript:evaluateTrainingIteration(primaryBatch, secondar
         -- Gather the grads from all nodes
         self.allReduceSGD.sumAndNormalizeGradients({self.gradParams})
 
-        return loss, self.gradParams
+        return loss / batchSize, self.gradParams
     end
 
     local _ignore, loss
