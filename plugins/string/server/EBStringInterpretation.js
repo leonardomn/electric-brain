@@ -45,7 +45,7 @@ class EBStringInterpretation extends EBInterpretationBase
     {
         super('string');
         this.interpretationRegistry = interpretationRegistry;
-        this.wordTokenizer = new natural.TreebankWordTokenizer();
+        this.wordTokenizer = new natural.WordPunctTokenizer();
     }
 
 
@@ -271,7 +271,7 @@ class EBStringInterpretation extends EBInterpretationBase
         }
         else if(schema.configuration.interpretation.mode === 'english_text')
         {
-            return this.wordTokenizer.tokenize(value.toString().toLowerCase());
+            return underscore.filter(this.wordTokenizer.tokenize(value.toString().toLowerCase()).map((word) => word.trim()), (word) => word);
         }
         else
         {
