@@ -479,7 +479,7 @@ class EBArchitectureAPI extends EBAPIRoot
                     // Reset params, forces the network to be generated
                     function resetParams(next)
                     {
-                        const promise = process.reset();
+                        const promise = process.reset(-0.08, 0.08, "adamax", {});
                         promise.then(() => next(), (err) => next(err));
                     }
                 ], function(err)
