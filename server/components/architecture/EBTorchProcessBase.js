@@ -257,15 +257,26 @@ class EBTorchProcessBase
     /**
      * This method resets the parameters of the neural network model and the training process in general
      *
+     * @param {Number} initializationRangeBottom The lower bound of random values the network is initialized with
+     * @param {Number} initializationRangeTop The upper bound of random values the network is initialized with
+     * @param {string} optimizationAlgorithm The optimization algorithm that should be used
+     * @param {object} optimizationParameters The parameters for the optimization algorithm
+     * 
      * @param {function(err)} callback The callback after the process has been reset
      */
-    reset()
+    reset(initializationRangeBottom, initializationRangeTop, optimizationAlgorithm, optimizationParameters)
     {
         const self = this;
 
         const writeAndWaitPromise = Promise.each(self.processes, (process) =>
             {
-                return process.writeAndWaitForMatchingOutput({type: "reset"}, {type: "resetCompleted"});
+                return process.writeAndWaitForMatchingOutput({
+                    type: "reset",
+                    initializationRangeBottom: initializationRangeBottom,
+                    initializationRangeTop: initializationRangeTop,
+                    optimizationAlgorithm: optimizationAlgorithm,
+                    optimizationParameters: optimizationParameters
+                }, {type: "resetCompleted"});
             });
         return writeAndWaitPromise;
     }

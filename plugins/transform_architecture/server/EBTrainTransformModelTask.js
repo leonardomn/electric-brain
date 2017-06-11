@@ -388,8 +388,8 @@ class EBTrainTransformModelTask extends EBTrainModelTaskBase
         const promise = self.updateStepResult('training', trainingResult);
         return promise.then(() =>
         {
-            // Reset the model with random parameters
-            return self.trainingProcess.reset();
+            // Reset the model and sets the optimization parameters
+            return self.trainingProcess.reset(self.model.parameters.initializationRangeBottom, self.model.parameters.initializationRangeTop, self.model.parameters.optimizationAlgorithm, self.model.parameters.optimizationParameters);
         }).then(() =>
         {
             return Promise.fromCallback((next) =>

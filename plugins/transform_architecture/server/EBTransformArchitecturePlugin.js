@@ -128,7 +128,6 @@ class EBTransformArchitecture extends EBArchitecturePluginBase
                 },
                 rootModuleName: rootModuleName,
                 rootCriterionName: rootCriterionName,
-                optimizationAlgorithm: "adamax",
                 wordVectorDBPath: path.join(__dirname, '..', '..', '..', 'data', 'english_word_vectors.sqlite3'),
                 inputSchema,
                 outputSchema

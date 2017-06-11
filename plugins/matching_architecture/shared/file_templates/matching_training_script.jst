@@ -52,6 +52,7 @@ function MatchingTrainingScript.new()
     --local olddefault = coroutine.cstacksize({{=(1024 * 1024 * 256)}})
 
     -- Initialization optimization state
+    self.optimizationAlgorithm = 'adamax'
     self.optimState = {}
 
     -- Are the modules initialized
@@ -173,7 +174,11 @@ function MatchingTrainingScript:evaluateTrainingIteration(primaryBatch, secondar
     end
 
     local _ignore, loss
-    _ignore, loss = optim.{{=it.optimizationAlgorithm}}(iteration, self.params, self.optimState)
+
+    print(self.optimizationAlgorithm)
+    print(self.optimState)
+
+    _ignore, loss = optim[self.optimizationAlgorithm](iteration, self.params, self.optimState)
 
     -- Collect gabarge at the end of each iteration - prevents build up of useless memory
     collectgarbage()
@@ -344,8 +349,13 @@ function MatchingTrainingScript:enterTrainingLoop()
                 end
 
                 -- Resets the model with randomly generated parameters
-                self.params:uniform(-0.08, 0.08)
+                self.params:uniform(command.initializationRangeBottom, command.initializationRangeTop)
                 self.gradParams:zero()
+
+                -- Set the optimization parameters
+                self.optimizationAlgorithm = command.optimizationAlgorithm
+                self.optimState = command.optimizationParameters
+
                 self:sendResponse({type = "resetCompleted"})
             elseif command.type == "iteration" then
                 -- Initialize the model

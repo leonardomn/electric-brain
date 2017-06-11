@@ -133,7 +133,6 @@ class EBMatchingArchitecturePlugin extends EBArchitecturePluginBase
                 secondarySchema: secondarySchema,
                 primaryModuleName: primaryModuleName,
                 secondaryModuleName: secondaryModuleName,
-                optimizationAlgorithm: "adamax",
                 wordVectorDBPath: path.join(__dirname, '..', '..', '..', 'data', 'english_word_vectors.sqlite3'),
                 convertDataIn: this.neuralNetworkComponentDispatch.generateTensorInputCode.bind(this.neuralNetworkComponentDispatch),
                 convertDataOut: this.neuralNetworkComponentDispatch.generateTensorOutputCode.bind(this.neuralNetworkComponentDispatch),
