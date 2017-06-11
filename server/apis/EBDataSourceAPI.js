@@ -553,7 +553,7 @@ class EBDataSourceAPI extends EBAPIRoot
             {
                 return next(err);
             }
-            else if (!result.value)
+            else if (!result)
             {
                 return next(new Error("Datasource not found!"));
             }
