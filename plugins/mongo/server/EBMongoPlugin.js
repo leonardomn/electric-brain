@@ -363,22 +363,16 @@ class EBMongoPlugin extends EBDataSourcePlugin
      * This method returns the mongo db connection to a data source
      *
      * @param {EBDataSource} This should be an EBDataSource object that we need a connection for
-     * @returns {Promise} A promise thata will resolve with the connection object
+     * @returns {Promise} A promise that will resolve with the database object
      */
     getConnection(dataSource)
     {
-        if (this.connections[dataSource.database.uri])
+        if (!this.connections[dataSource.database.uri])
         {
-            return Promise.resolve(this.connections[dataSource.database.uri]);
+            this.connections[dataSource.database.uri] = mongodb.MongoClient.connect(dataSource.database.uri, {promiseLibrary: Promise});
         }
-        else
-        {
-            return mongodb.MongoClient.connect(dataSource.database.uri, {promiseLibrary: Promise}).then((db) =>
-            {
-                this.connections[dataSource.database.uri] = db;
-                return db;
-            });
-        }
+
+        return this.connections[dataSource.database.uri];
     }
 
 

@@ -450,7 +450,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
                                 }
 
                                 // Compute the accuracies
-                                return Promise.mapSeries(Object.keys(result.primary), (primaryKey) =>
+                                return Promise.map(Object.keys(result.primary), (primaryKey) =>
                                 {
                                     return self.getAccuracyFromPrimaryVector(primaryKey, result.primary[primaryKey], false);
                                 }).then((accuracies) =>
@@ -543,7 +543,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
         {
             return self.trainingProcess.processBatch(batch.fileName).then((outputs) =>
             {
-                return Promise.mapSeries(Object.keys(outputs.primary), (primaryKey) =>
+                return Promise.map(Object.keys(outputs.primary), (primaryKey) =>
                 {
                     return self.getAccuracyFromPrimaryVector(primaryKey, outputs.primary[primaryKey], false);
                 });
@@ -654,27 +654,16 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
                             {
                                 processedObjects += batch.objects.length;
 
-                                // Zip together original objects with the actual outputs from the network, and compute accuracies
-                                return Promise.mapSeries(underscore.zip(batch.objects, outputs), (zipped) =>
+                                return Promise.map(Object.keys(outputs.primary), (primaryKey) =>
                                 {
-                                    return this.model.architecture.convertNetworkOutputObject(this.application.interpretationRegistry, zipped[1]).then((actual) =>
-                                    {
-                                        return this.getAccuracyFromOutput(zipped[0].original, actual, true);
-                                    });
+                                    return this.getAccuracyFromPrimaryVector(primaryKey, outputs.primary[primaryKey], false);
                                 });
+
                             }).then((batchAccuracies) =>
                             {
                                 return Promise.fromCallback((next) =>
                                 {
-                                    fs.unlink(batch.inputFileName, function(err)
-                                    {
-                                        if (err)
-                                        {
-                                            return next(err);
-                                        }
-
-                                        fs.unlink(batch.outputFileName, next);
-                                    });
+                                    fs.unlink(batch.fileName, next);
                                 }).then(() =>
                                 {
                                     return batchAccuracies;

@@ -78,7 +78,7 @@ class EBTrainMatchingModelWorker extends EBStdioScript
         else if (message.type === 'prepareBatch')
         {
             // All the ids that need to be fetched
-            return Promise.mapSeries(message.ids, (id) => this.fetchPair(id)).then((pairs) =>
+            return Promise.map(message.ids, (id) => this.fetchPair(id)).then((pairs) =>
             {
                 const primaryObjects = [];
                 const primaryIds = [];
