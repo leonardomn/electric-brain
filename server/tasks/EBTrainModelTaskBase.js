@@ -31,7 +31,8 @@ const
     path = require('path'),
     Promise = require('bluebird'),
     temp = require('temp'),
-    underscore = require('underscore');
+    underscore = require('underscore'),
+    socketioClient = require('socket.io-client');
 
 /**
  *  A base class for various classes which train models
@@ -63,6 +64,23 @@ class EBTrainModelTaskBase
         this.databaseUpdateInterval = 5000;
     }
 
+    /**
+     * This function sets up the cancellation handler with the given model
+     *
+     * @param {EBModel} model The model object being processed by this task. This is needed in order to ensure that we don't respond to cancellation events for other models
+     * @param {function()} cancelCallback The function that should be called if the task needs to be cancelled
+     */
+    setupCancellationCallback(model, cancelCallback)
+    {
+        this.socketClient = socketioClient.connect('http://localhost:3891/', {reconnect: true});
+        this.socketClient.on(`command-model-${model._id}`, (data) =>
+        {
+            if (data.command === 'kill')
+            {
+                cancelCallback();
+            }
+        });
+    }
 
     /**
      * This function updates the current results for a given step

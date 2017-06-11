@@ -78,6 +78,8 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
         this.batchNumber = 0;
 
         this.vectorMatcher = new EBVectorMatcher();
+        
+        this.shouldExit = false;
     }
 
     /**
@@ -118,6 +120,12 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
                 self.secondaryTrainingSet = new EBTrainingSet(self.application, self.model.architecture.secondaryDataSource, 0.3);
 
                 self.trainingProcess = new EBMatchingTorchProcess(self.model.architecture, self.architecturePlugin, self.application.config.get('overrideModelFolder'));
+                
+                this.setupCancellationCallback(self.model, () =>
+                {
+                    self.shouldExit = true;
+                });
+                
                 return Promise.resolve();
             }
         }).then(()=>
@@ -422,7 +430,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
                 async.whilst(
                     () =>
                     {
-                        return trainingResult.completedIterations < trainingIterations;
+                        return trainingResult.completedIterations < trainingIterations && !this.shouldExit;
                     },
                     (next) =>
                     {
@@ -623,7 +631,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
         const testingResult = {
             status: 'in_progress',
             percentageComplete: 0,
-            totalObjects: this.testingSetEntries.length,
+            totalObjects: this.primaryTrainingSet.testingSetEntries.length,
             completedObjects: 0,
             accuracies: []
         };
@@ -644,7 +652,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
                 async.whilst(
                     () =>
                     {
-                        return processedObjects < this.testingSetEntries.length;
+                        return processedObjects < this.primaryTrainingSet.testingSetEntries.length && !this.shouldExit;
                     },
                     (next) =>
                     {

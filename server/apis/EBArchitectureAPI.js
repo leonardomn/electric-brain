@@ -205,6 +205,7 @@ class EBArchitectureAPI extends EBAPIRoot
 
             const newArchitecture = req.body;
             newArchitecture._id = id;
+            newArchitecture.createdAt = new Date();
             self.architectures.insert(newArchitecture, function(err, info)
             {
                 if (err)
@@ -237,7 +238,7 @@ class EBArchitectureAPI extends EBAPIRoot
 
         const options = {
             sort: {
-                lastViewedAt: -1,
+                createdAt: -1,
                 _id: -1
             },
             limit: limit
@@ -273,7 +274,7 @@ class EBArchitectureAPI extends EBAPIRoot
      */
     getArchitecture(req, res, next)
     {
-        this.architectures.findOneAndUpdate({_id: Number(req.params.id)}, {$set: {lastViewedAt: new Date()}}, function(err, result)
+        this.architectures.findOne({_id: Number(req.params.id)}, function(err, result)
         {
             if (err)
             {
@@ -285,7 +286,7 @@ class EBArchitectureAPI extends EBAPIRoot
             }
             else
             {
-                return next(null, result.value);
+                return next(null, result);
             }
         });
     }

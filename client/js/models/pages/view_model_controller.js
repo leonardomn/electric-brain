@@ -217,4 +217,9 @@ angular.module('eb').controller('EBViewModelController', function EBViewModelCon
             $scope.testResult = response.data;
         });
     };
+
+    $scope.stopModel = function ()
+    {
+        EBSocketService.socket.emit(`command-model`, {command: 'kill', id: $stateParams.id});
+    };
 });

@@ -242,6 +242,7 @@ class EBModelAPI extends EBAPIRoot
 
             const newModel = req.body;
             newModel._id = id;
+            newModel.createdAt = new Date();
             self.models.insert(newModel, function(err, info)
             {
                 if (err)
@@ -319,7 +320,7 @@ class EBModelAPI extends EBAPIRoot
 
         const options = {
             sort: {
-                lastViewedAt: -1,
+                createdAt: -1,
                 _id: -1
             },
             limit: limit
@@ -358,7 +359,7 @@ class EBModelAPI extends EBAPIRoot
      */
     getModel(req, res, next)
     {
-        this.models.findOneAndUpdate({_id: Number(req.params.id)}, {$set: {lastViewedAt: new Date()}}, function(err, result)
+        this.models.findOne({_id: Number(req.params.id)}, function(err, result)
         {
             if (err)
             {
@@ -370,7 +371,7 @@ class EBModelAPI extends EBAPIRoot
             }
             else
             {
-                return next(null, result.value);
+                return next(null, result);
             }
         });
     }

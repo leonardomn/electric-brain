@@ -283,9 +283,13 @@ class EBApplication
             self.socketio = socketio(server);
             self.socketio.on('connection', function(socket)
             {
-                console.log('a user connected');
                 socket.join('general');
+                socket.on('command-model', function(data)
+                {
+                    self.socketio.to('general').emit(`command-model-${data.id}`, data);
+                });
             });
+
 
             // Set up realtime to using RabbitMQ for publish-subscribe
             self.socketio.adapter(socketioAMQP(self.config.get('amqp'), {prefix: 'electricbrain-'}));

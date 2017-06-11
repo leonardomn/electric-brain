@@ -76,6 +76,7 @@ class EBTrainTransformModelTask extends EBTrainModelTaskBase
         }
         this.currentWorker = 0;
         this.batchNumber = 0;
+        this.shouldExit = true;
     }
 
     /**
@@ -114,6 +115,12 @@ class EBTrainTransformModelTask extends EBTrainModelTaskBase
                 self.inputTransformer = new EBNeuralTransformer(self.model.architecture.inputSchema);
                 self.outputTransformer = new EBNeuralTransformer(self.model.architecture.outputSchema);
                 self.trainingProcess = new EBTransformTorchProcess(self.model.architecture, self.architecturePlugin, self.application.config.get('overrideModelFolder'));
+
+                this.setupCancellationCallback(self.model, () =>
+                {
+                    self.shouldExit = true;
+                });
+
                 return Promise.resolve();
             }
         }).then(()=>
@@ -391,7 +398,7 @@ class EBTrainTransformModelTask extends EBTrainModelTaskBase
                 async.whilst(
                     () =>
                     {
-                        return trainingResult.completedIterations < trainingIterations;
+                        return trainingResult.completedIterations < trainingIterations && !this.shouldExit;
                     },
                     (next) =>
                     {
@@ -612,7 +619,7 @@ class EBTrainTransformModelTask extends EBTrainModelTaskBase
                 async.whilst(
                     () =>
                     {
-                        return processedObjects < this.trainingSet.testingSetEntries.length;
+                        return processedObjects < this.trainingSet.testingSetEntries.length && !this.shouldExit;
                     },
                     (next) =>
                     {
