@@ -28,7 +28,8 @@ const EBArchitecturePluginBase = require("../../../server/components/architectur
     EBNeuralNetworkComponentBase = require("../../../shared/components/architecture/EBNeuralNetworkComponentBase"),
     EBTorchModule = require("../../../shared/components/architecture/EBTorchModule"),
     EBTorchNode = require("../../../shared/components/architecture/EBTorchNode"),
-    matchingTrainingScriptTemplate = require("../../../build/torch/matching_training_script");
+    matchingTrainingScriptTemplate = require("../../../build/torch/matching_training_script"),
+    path = require('path');
 
 /**
  * This is the main plugin entry point for the matching network plugin.
@@ -133,6 +134,7 @@ class EBMatchingArchitecturePlugin extends EBArchitecturePluginBase
                 primaryModuleName: primaryModuleName,
                 secondaryModuleName: secondaryModuleName,
                 optimizationAlgorithm: "adamax",
+                wordVectorDBPath: path.join(__dirname, '..', '..', '..', 'data', 'english_word_vectors.sqlite3'),
                 convertDataIn: this.neuralNetworkComponentDispatch.generateTensorInputCode.bind(this.neuralNetworkComponentDispatch),
                 convertDataOut: this.neuralNetworkComponentDispatch.generateTensorOutputCode.bind(this.neuralNetworkComponentDispatch),
                 prepareBatch: this.neuralNetworkComponentDispatch.generatePrepareBatchCode.bind(this.neuralNetworkComponentDispatch),

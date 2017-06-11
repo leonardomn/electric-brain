@@ -83,6 +83,7 @@ class EBVectorMatcher
                 closestKey = key;
             }
         }
+
         return closestKey;
     }
 

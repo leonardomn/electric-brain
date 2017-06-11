@@ -163,7 +163,7 @@ class EBTrainMatchingModelWorker extends EBStdioScript
                     // Request an object that doesn't fit any of the linkages
                     linkages.forEach((linkage) =>
                     {
-                        if (linkage.weight > 0)
+                        if (!linkage.weight || linkage.weight > 0)
                         {
                             this.model.architecture.secondaryLinkFields.forEach((link) =>
                             {
@@ -194,6 +194,7 @@ class EBTrainMatchingModelWorker extends EBStdioScript
                 {
                     // Choose a secondary object at random
                     const secondaryObject = secondaryObjects[Math.floor(secondaryObjects.length * Math.random())];
+
 
                     return this.primaryTransformer.convertObjectIn(this.application.interpretationRegistry, primaryObject).then((convertedPrimary) =>
                     {
