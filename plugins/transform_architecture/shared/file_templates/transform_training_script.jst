@@ -13,6 +13,7 @@ require('./EBWrapDebug')
 require('./EBWrapTable')
 require('{{=it.rootModuleName}}')
 require('{{=it.rootCriterionName}}')
+local sqlite3 = require("lsqlite3")
 
 -- Define our object, TransformTrainingScript.
 -- Do not change the name of this class!
@@ -240,6 +241,29 @@ end
 function TransformTrainingScript:convertOutputOut(data1)
     {{= it.convertDataOut(it.outputSchema, "convert").replace(/\n/g, "\n    ") }}
     return convert(data1)
+end
+
+
+-- Return the word vector for a given string
+function MatchingTrainingScript:getWordVector(word)
+    if self.wordVectorDB == nil then
+        self.wordVectorDB = assert(sqlite3.open("{{=it.wordVectorDBPath}}"))
+        self.wordVectorRequest = assert(self.wordVectorDB:prepare("SELECT tensor FROM word_vectors WHERE word = ?"))
+    end
+
+    local outputTensor = torch.zeros(1, 300):double()
+    self.wordVectorRequest:bind_values(word)
+    local count = 0
+    for row in self.wordVectorRequest:nrows() do
+        count = count + 1
+        outputTensor[1]:copy(torch.deserialize(self.wordVectorRequest:get_value(0)))
+    end
+    self.wordVectorRequest:reset()
+
+    if count == 0 then
+        return nil
+    end
+    return outputTensor
 end
 
 

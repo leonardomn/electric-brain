@@ -61,6 +61,10 @@ class EBNeuralNetworkWordComponent extends EBNeuralNetworkComponentBase
     {
         let code = '';
         code += `local ${name} = function (input)\n`;
+        code += `    local wordVector = self:getWordVector(input)\n`;
+        code += `    if wordVector ~= nil then\n`;
+        code += `       return wordVector\n`;
+        code += `    end\n`;
         code += `    local tensor = torch.DoubleTensor(#input)\n`;
         code += `    for n=1,#input do\n`;
         code += `       tensor[n] = string.byte(input, n)\n`;
@@ -141,7 +145,7 @@ class EBNeuralNetworkWordComponent extends EBNeuralNetworkComponentBase
     generateInputStack(schema, inputNode, rootName)
     {
         return {
-            outputNode: new EBTorchNode(new EBTorchModule("nn.EBWordEmbedder", [10000, `"${path.join(__dirname, '..', '..', '..', 'data', 'english_word_vectors.sqlite3')}"`]), inputNode, `${rootName}_${schema.machineVariableName}_inputStack`),
+            outputNode: new EBTorchNode(new EBTorchModule("nn.EBWordEmbedder", [10000]), inputNode, `${rootName}_${schema.machineVariableName}_inputStack`),
             outputTensorSchema: this.getTensorSchema(schema),
             additionalModules: []
         };
