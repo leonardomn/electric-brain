@@ -43,7 +43,9 @@ class EBMongoPlugin extends EBDataSourcePlugin
 
         this.application = application;
         this.performanceData = new EBPerformanceData();
+        this.connections = {};
     }
+
 
     /**
      * This method returns the machine name for the data source
@@ -85,7 +87,7 @@ class EBMongoPlugin extends EBDataSourcePlugin
                 }
                 else
                 {
-                    return done();
+                    return db.close();
                 }
             });
         });
@@ -325,7 +327,7 @@ class EBMongoPlugin extends EBDataSourcePlugin
      */
     fetch(dataSource, query, limit)
     {
-        return mongodb.MongoClient.connect(dataSource.database.uri, {promiseLibrary: Promise}).then((db) =>
+        return this.getConnection(dataSource).then((db) =>
         {
             // Get the desired collection
             const collection = db.collection(dataSource.database.collection);
@@ -346,18 +348,39 @@ class EBMongoPlugin extends EBDataSourcePlugin
 
             return queryObject.toArray().then((rows) =>
             {
-                return db.close().then(() =>
+                return rows.map((row) =>
                 {
-                    return rows.map((row) =>
-                    {
-                        const newRow = EBMongoPlugin.convertMongoObjectToJSON(underscore.omit(row, "_id"));
-                        newRow.id = row._id;
-                        return newRow;
-                    });
+                    const newRow = EBMongoPlugin.convertMongoObjectToJSON(underscore.omit(row, "_id"));
+                    newRow.id = row._id;
+                    return newRow;
                 });
             });
         });
     }
+
+
+    /**
+     * This method returns the mongo db connection to a data source
+     *
+     * @param {EBDataSource} This should be an EBDataSource object that we need a connection for
+     * @returns {Promise} A promise thata will resolve with the connection object
+     */
+    getConnection(dataSource)
+    {
+        if (this.connections[dataSource.database.uri])
+        {
+            return Promise.resolve(this.connections[dataSource.database.uri]);
+        }
+        else
+        {
+            return mongodb.MongoClient.connect(dataSource.database.uri, {promiseLibrary: Promise}).then((db) =>
+            {
+                this.connections[dataSource.database.uri] = db;
+                return db;
+            });
+        }
+    }
+
 
     /**
      * This static function is used to convert objects that come out of Mongo into pure JSON

@@ -71,7 +71,7 @@ class EBTrainTransformModelWorker extends EBStdioScript
         else if (message.type === 'prepareBatch')
         {
             // All the ids that need to be fetched
-            return Promise.map(message.ids, (id) => this.fetchObject(id)).then((objects) =>
+            return Promise.mapSeries(message.ids, (id) => this.fetchObject(id)).then((objects) =>
             {
                 return this.trainingProcess.prepareInputBatch(message.ids, objects.map((object) => object.input), message.inputFileName).then(() =>
                 {
