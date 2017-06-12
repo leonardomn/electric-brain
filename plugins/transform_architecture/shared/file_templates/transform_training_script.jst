@@ -246,7 +246,7 @@ end
 
 
 -- Return the word vector for a given string
-function MatchingTrainingScript:getWordVector(word)
+function TransformTrainingScript:getWordVector(word)
     if self.wordVectorDB == nil then
         self.wordVectorDB = assert(sqlite3.open("{{=it.wordVectorDBPath}}"))
         self.wordVectorRequest = assert(self.wordVectorDB:prepare("SELECT tensor FROM word_vectors WHERE word = ?"))

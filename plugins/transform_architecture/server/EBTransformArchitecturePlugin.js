@@ -30,6 +30,7 @@ const
     EBTorchModule = require("../../../shared/components/architecture/EBTorchModule"),
     EBTorchNode = require("../../../shared/components/architecture/EBTorchNode"),
     EBTransformTorchProcess = require('./EBTransformTorchProcess'),
+    path = require('path'),
     Promise = require('bluebird'),
     stream = require('stream'),
     transformTrainingScriptTemplate = require("../../../build/torch/transform_training_script"),

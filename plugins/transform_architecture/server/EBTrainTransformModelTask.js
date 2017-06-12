@@ -76,7 +76,7 @@ class EBTrainTransformModelTask extends EBTrainModelTaskBase
         }
         this.currentWorker = 0;
         this.batchNumber = 0;
-        this.shouldExit = true;
+        this.shouldExit = false;
     }
 
     /**
