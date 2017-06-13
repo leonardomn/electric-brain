@@ -42,6 +42,7 @@
     "bower": "^1.8.0",
     "bson": "^0.5.5",
     "chunking-streams": "0.0.8",
+    "compute-cosine-similarity": "^1.0.0",
     "compute-quantile": "^1.0.1",
     "convict": "^3.0.0",
     "date.js": "^0.3.1",

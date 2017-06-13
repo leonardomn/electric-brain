@@ -18,6 +18,7 @@
 
 "use strict";
 
+const cosineSimilarity = require( 'compute-cosine-similarity' );
 
 /**
  * This class is used for matching primary to secondary objects in production
@@ -70,13 +71,8 @@ class EBVectorMatcher
         for (const key of Object.keys(this.secondaryVectors))
         {
             const secondaryVector = this.secondaryVectors[key];
-            let distance = 0;
-            for (let vectorIndex = 0; vectorIndex < primaryVector.length; vectorIndex += 1)
-            {
-                let diff = primaryVector[vectorIndex] - secondaryVector[vectorIndex];
-                distance += diff * diff;
-            }
-            
+            let distance = (1.0 - cosineSimilarity(primaryVector, secondaryVector));
+
             if (distance < closestDistance)
             {
                 closestDistance = distance;
