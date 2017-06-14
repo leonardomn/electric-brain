@@ -152,6 +152,13 @@
                             <pre ng-show="testResult">{{testResult | json}}</pre>
                         </div>
                     </uib-tab>
+                    <uib-tab index="6" heading="Parameters">
+                        <div ng-if="activeTab === 6">
+                            <h1>Model Parameters</h1>
+                            <br/>
+                            <pre>{{model.parameters | json}}</pre>
+                        </div>
+                    </uib-tab>
                 </uib-tabset>
             </div>
             <div class="row" ng-if="model.training.status =='in_progress' && model.running">
