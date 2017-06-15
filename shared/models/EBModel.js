@@ -18,7 +18,11 @@
 
 "use strict";
 
-const EBArchitecture = require("./EBArchitecture"),
+const
+    EBArchitecture = require("./EBArchitecture"),
+    EBTransformArchitecture = require("../../plugins/transform_architecture/shared/models/EBTransformArchitecture"),
+    EBMatchingArchitecture = require("../../plugins/matching_architecture/shared/models/EBMatchingArchitecture"),
+    EBClassFactory = require("../components/EBClassFactory"),
     EBPerformanceData = require("./EBPerformanceData");
 
 /**
@@ -34,11 +38,12 @@ class EBModel
     constructor(rawModel)
     {
         const self = this;
+        self.type = 'EBModel';
         Object.keys(rawModel).forEach(function(key)
         {
             if (key === 'architecture')
             {
-                self[key] = new EBArchitecture(rawModel[key]);
+                self[key] = EBClassFactory.createObject(rawModel[key]);
             }
             else
             {
@@ -56,7 +61,17 @@ class EBModel
             self.parameters = {
                 batchSize: 16,
                 testingBatchSize: 4,
-                iterations: 50000
+                iterations: 50000,
+                initializationRangeBottom: -0.08,
+                initializationRangeTop: 0.08,
+                optimizationAlgorithm: 'adamax',
+                optimizationParameters: {
+                    learningRate: 2e-3,
+                    beta: 0.9,
+                    beta2: 0.999,
+                    epsilon: 1e-38,
+                    weightDecay: 0
+                }
             };
         }
 
@@ -126,7 +141,12 @@ class EBModel
                 "_id": {},
                 "name": {type: "string"},
                 "running": {type: "boolean"},
-                "architecture": EBArchitecture.schema(),
+                "architecture": {
+                    "anyOf": [
+                        EBTransformArchitecture.schema(),
+                        EBMatchingArchitecture.schema()
+                    ]
+                },
 
                 "parameters": {
                     type: "object",
@@ -139,6 +159,19 @@ class EBModel
                         },
                         "iterations": {
                             type: "number"
+                        },
+                        "initializationRangeBottom": {
+                            type: "number"
+                        },
+                        "initializationRangeTop": {
+                            type: "number"
+                        },
+                        "optimizationAlgorithm": {
+                            type: "string"
+                        },
+                        "optimizationParameters": {
+                            type: "object",
+                            additionalProperties: {"type": "number"}
                         }
                     }
                 },
@@ -213,5 +246,7 @@ class EBModel
         };
     }
 }
+
+EBClassFactory.registerClass('EBModel', EBModel, EBModel.schema());
 
 module.exports = EBModel;

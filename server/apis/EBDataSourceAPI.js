@@ -476,6 +476,7 @@ class EBDataSourceAPI extends EBAPIRoot
 
             const newDataSource = req.body;
             newDataSource._id = id;
+            newDataSource.createdAt = new Date();
             self.dataSources.insert(newDataSource, function(err, info)
             {
                 if (err)
@@ -507,7 +508,7 @@ class EBDataSourceAPI extends EBAPIRoot
         
         const options = {
             sort: {
-                lastViewedAt: -1,
+                createdAt: -1,
                 _id: -1
             },
             limit: limit
@@ -546,7 +547,7 @@ class EBDataSourceAPI extends EBAPIRoot
      */
     getDataSource(req, res, next)
     {
-        this.dataSources.findOneAndUpdate({_id: Number(req.params.id)}, {$set: {lastViewedAt: new Date()}}, function(err, result)
+        this.dataSources.findOne({_id: Number(req.params.id)}, function(err, result)
         {
             if (err)
             {
@@ -558,7 +559,7 @@ class EBDataSourceAPI extends EBAPIRoot
             }
             else
             {
-                return next(null, result.value);
+                return next(null, result);
             }
         });
     }

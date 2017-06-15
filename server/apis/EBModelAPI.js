@@ -22,7 +22,6 @@ const Ajv = require('ajv'),
     async = require('async'),
     EBAPIRoot = require('./EBAPIRoot'),
     EBModelBundler = require('../components/model/EBNodeBundler'),
-    EBTorchProcess = require("../components/architecture/EBTorchProcess"),
     fs = require('fs'),
     idUtilities = require("../utilities/id"),
     models = require('../../shared/models/models'),
@@ -47,6 +46,7 @@ class EBModelAPI extends EBAPIRoot
         super(application);
         this.application = application;
         this.models = application.db.collection("EBModel");
+        this.modelResults = application.db.collection("EBModel_results");
         this.bundler = new EBModelBundler(application);
     }
 
@@ -222,6 +222,16 @@ class EBModelAPI extends EBAPIRoot
             "outputSchema": {},
             "handler": this.processDataWithModel.bind(this)
         });
+
+
+        this.registerEndpoint(expressApplication, {
+            "name": "GetModelResults",
+            "uri": "/models/:id/results",
+            "method": "GET",
+            "inputSchema": {},
+            "outputSchema": {},
+            "handler": this.getModelResults.bind(this)
+        });
     }
 
     /**
@@ -243,6 +253,7 @@ class EBModelAPI extends EBAPIRoot
 
             const newModel = req.body;
             newModel._id = id;
+            newModel.createdAt = new Date();
             self.models.insert(newModel, function(err, info)
             {
                 if (err)
@@ -278,7 +289,17 @@ class EBModelAPI extends EBAPIRoot
             }
             else
             {
-                this.application.taskQueue.queueTask("train_model", {_id: Number(req.params.id)}, function(err, task)
+                let taskName = "";
+                if (modelObjects[0].architecture.classType === 'EBTransformArchitecture')
+                {
+                    taskName = "train_transform_model";
+                }
+                else if (modelObjects[0].architecture.classType === 'EBMatchingArchitecture')
+                {
+                    taskName = "train_matching_model";
+                }
+
+                this.application.taskQueue.queueTask(taskName, {_id: Number(req.params.id)}, function(err, task)
                 {
                     if (err)
                     {
@@ -310,7 +331,7 @@ class EBModelAPI extends EBAPIRoot
 
         const options = {
             sort: {
-                lastViewedAt: -1,
+                createdAt: -1,
                 _id: -1
             },
             limit: limit
@@ -349,7 +370,7 @@ class EBModelAPI extends EBAPIRoot
      */
     getModel(req, res, next)
     {
-        this.models.findOneAndUpdate({_id: Number(req.params.id)}, {$set: {lastViewedAt: new Date()}}, function(err, result)
+        this.models.findOne({_id: Number(req.params.id)}, function(err, result)
         {
             if (err)
             {
@@ -361,7 +382,7 @@ class EBModelAPI extends EBAPIRoot
             }
             else
             {
-                return next(null, result.value);
+                return next(null, result);
             }
         });
     }
@@ -603,6 +624,29 @@ class EBModelAPI extends EBAPIRoot
 
                     return next(null, resultObject);
                 });
+            }
+        });
+    }
+
+
+    /**
+     * This endpoint is used
+     *
+     * @param {object} req express request object
+     * @param {object} res express response object
+     * @param {function} next express callback
+     */
+    getModelResults(req, res, next)
+    {
+        this.modelResults.find({model: Number(req.params.id)}).toArray((err, results) =>
+        {
+            if (err)
+            {
+                return next(err);
+            }
+            else
+            {
+                return next(null, results);
             }
         });
     }
