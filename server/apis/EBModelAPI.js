@@ -646,7 +646,6 @@ class EBModelAPI extends EBAPIRoot
             }
             else
             {
-                console.log(results);
                 return next(null, results);
             }
         });
