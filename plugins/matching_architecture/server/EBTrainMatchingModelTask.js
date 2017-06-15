@@ -453,7 +453,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
                                 trainingResult.currentTimePerIteration = trainingResult.performance.total();
 
                                 // Store all of the secondary vectors
-                                for (let key of Object.keys(result.secondary))
+                                for (const key of Object.keys(result.secondary))
                                 {
                                     this.vectorMatcher.recordSecondaryVector(key, result.secondary[key]);
                                 }
