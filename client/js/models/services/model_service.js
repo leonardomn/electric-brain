@@ -64,6 +64,17 @@ angular.module('eb').service('EBModelService', function EBModelService($rootScop
         });
     };
 
+    service.getModelResults = function getModelResults(id)
+    {
+        const headers = {};
+        return $http({
+            method: 'GET',
+            url: `/api/models/${id}/results`,
+            headers,
+            json: true
+        });
+    };
+
     service.saveModel = function saveModel(model)
     {
         const headers = {};

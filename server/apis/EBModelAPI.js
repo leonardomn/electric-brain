@@ -46,6 +46,7 @@ class EBModelAPI extends EBAPIRoot
         super(application);
         this.application = application;
         this.models = application.db.collection("EBModel");
+        this.modelResults = application.db.collection("EBModel_results");
         this.bundler = new EBModelBundler(application);
     }
 
@@ -220,6 +221,16 @@ class EBModelAPI extends EBAPIRoot
             },
             "outputSchema": {},
             "handler": this.processDataWithModel.bind(this)
+        });
+
+
+        this.registerEndpoint(expressApplication, {
+            "name": "GetModelResults",
+            "uri": "/models/:id/results",
+            "method": "GET",
+            "inputSchema": {},
+            "outputSchema": {},
+            "handler": this.getModelResults.bind(this)
         });
     }
 
@@ -613,6 +624,30 @@ class EBModelAPI extends EBAPIRoot
 
                     return next(null, resultObject);
                 });
+            }
+        });
+    }
+
+
+    /**
+     * This endpoint is used
+     *
+     * @param {object} req express request object
+     * @param {object} res express response object
+     * @param {function} next express callback
+     */
+    getModelResults(req, res, next)
+    {
+        this.modelResults.find({model: Number(req.params.id)}).toArray((err, results) =>
+        {
+            if (err)
+            {
+                return next(err);
+            }
+            else
+            {
+                console.log(results);
+                return next(null, results);
             }
         });
     }

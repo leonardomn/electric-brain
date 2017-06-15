@@ -55,6 +55,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
         this.application = application;
         this.socketio = application.socketio;
         this.models = application.db.collection("EBModel");
+        this.modelResults = application.db.collection("EBModel_results");
         this.gridFS = new mongodb.GridFSBucket(application.db, {
             chunkSizeBytes: 1024,
             bucketName: 'EBModel.torch'
@@ -553,10 +554,11 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
             {
                 return Promise.map(Object.keys(outputs.primary), (primaryKey) =>
                 {
-                    return self.getAccuracyFromPrimaryVector(primaryKey, outputs.primary[primaryKey], false);
+                    return self.getAccuracyFromPrimaryVector(primaryKey, outputs.primary[primaryKey], true);
                 });
             }).then((accuracies) =>
             {
+                console.log(accuracies);
                 return Promise.fromCallback((next) =>
                 {
                     fs.unlink(batch.fileName, next);
@@ -569,6 +571,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
         });
     }
 
+
     /**
      * This method takes a primary vector and computes its accuracy
      *
@@ -580,43 +583,87 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
     getAccuracyFromPrimaryVector(id, vector, accumulateResult)
     {
         // Use the vector matcher to return the closest matching secondary object
-        const secondaryKey = this.vectorMatcher.findMatchingSecondary(vector);
+        const maxMatches = 5;
+        const secondaries = this.vectorMatcher.findMatchingSecondary(vector, maxMatches);
+
+        const secondaryID = secondaries[0].id;
 
         // Fetch the primary object
         return this.application.dataSourcePluginDispatch.fetch(this.model.architecture.primaryDataSource, {id: id}).then((primaryObjects) =>
         {
-            // Fetch the secondary object
-            return this.application.dataSourcePluginDispatch.fetch(this.model.architecture.secondaryDataSource, {id: secondaryKey}).then((secondaryObjects) =>
+            let secondaryQuery = {id: secondaries[0].id};
+            if (accumulateResult)
             {
-                const query = {};
+                secondaryQuery = {id: {$in: secondaries.map((secondary) => secondary.id)}};
+            }
 
-                // Find out if there was a link between this object and the secondary
-                const primaryObject = primaryObjects[0];
-                this.model.architecture.primaryLinkFields.forEach((link) =>
+            // Fetch the secondary object
+            return this.application.dataSourcePluginDispatch.fetch(this.model.architecture.secondaryDataSource, secondaryQuery).then(
+                (secondaryObjects) =>
                 {
-                    query[link.rightField.substr(1)] = primaryObject[link.leftField.substr(1)];
-                });
+                    // Sort the secondary objects so they are in the same order as the matched vectors
+                    secondaryObjects = underscore.sortBy(secondaryObjects, (secondaryObject) =>
+                        underscore.findIndex(secondaries, (obj) => obj.id.toString() === secondaryObject.id.toString())
+                    );
 
-                const secondaryObject = secondaryObjects[0];
-                this.model.architecture.secondaryLinkFields.forEach((link) =>
-                {
-                    query[link.rightField.substr(1)] = secondaryObject[link.leftField.substr(1)];
-                });
-
-                // Fetch associated linkages
-                return this.application.dataSourcePluginDispatch.fetch(this.model.architecture.linkagesDataSource, query).then((linkages) =>
-                {
-                    // If there is a linkage, then the accuracy is 1, otherwise accuracy is 0;
-                    if (linkages.length > 0)
+                    const fetchLinkage = (secondaryObject) =>
                     {
-                        return Promise.resolve(1);
+                        const linkageQuery = {};
+
+                        // Find out if there was a link between this object and the secondary
+                        const primaryObject = primaryObjects[0];
+                        this.model.architecture.primaryLinkFields.forEach((link) =>
+                        {
+                            linkageQuery[link.rightField.substr(1)] = primaryObject[link.leftField.substr(1)];
+                        });
+                        this.model.architecture.secondaryLinkFields.forEach((link) =>
+                        {
+                            linkageQuery[link.rightField.substr(1)] = secondaryObject[link.leftField.substr(1)];
+                        });
+
+                        // Fetch associated linkages
+                        return this.application.dataSourcePluginDispatch.fetch(this.model.architecture.linkagesDataSource, linkageQuery).then((linkages) =>
+                        {
+                            // If there is a linkage, then the accuracy is 1, otherwise accuracy is 0;
+                            if (linkages.length > 0)
+                            {
+                                return Promise.resolve(1);
+                            }
+                            else
+                            {
+                                return Promise.resolve(0);
+                            }
+                        });
+                    };
+
+                    if (!accumulateResult)
+                    {
+                        return fetchLinkage(secondaryObjects[0]);
                     }
                     else
                     {
-                        return Promise.resolve(0);
+                        // For each secondary object, fetch the linkage
+                        return Promise.map(secondaryObjects, (secondary) => fetchLinkage(secondary)).then((linkageResults) =>
+                        {
+                            return this.modelResults.findOneAndUpdate({primaryID: id}, {
+                                model: this.model._id,
+                                primaryID: id,
+                                primary: primaryObjects[0],
+                                matches: secondaries.map((secondary, index) =>
+                                {
+                                    return {
+                                        distance: secondary.distance,
+                                        linkage: linkageResults[index],
+                                        object: underscore.find(secondaryObjects, (object) => object.id.toString() === secondary.id.toString())
+                                    };
+                                })
+                            }, {upsert: true}).then(() =>
+                            {
+                                return linkageResults[0];
+                            });
+                        });
                     }
                 });
-            });
         });
     }
 
@@ -664,7 +711,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
 
                                 return Promise.map(Object.keys(outputs.primary), (primaryKey) =>
                                 {
-                                    return this.getAccuracyFromPrimaryVector(primaryKey, outputs.primary[primaryKey], false);
+                                    return this.getAccuracyFromPrimaryVector(primaryKey, outputs.primary[primaryKey], true);
                                 });
 
                             }).then((batchAccuracies) =>

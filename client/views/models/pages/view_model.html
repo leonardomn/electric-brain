@@ -111,7 +111,10 @@
                         </div>
                     </uib-tab>
                     <uib-tab index="3" heading="Accuracy Breakdown" ng-if="model.training.status !='waiting'">
-                        <div ng-if="activeTab === 3">
+                        <div ng-if="activeTab === 3 && model.architecture.classType == 'EBMatchingArchitecture'">
+                            <eb-model-results model="model"></eb-model-results>
+                        </div>
+                        <div ng-if="activeTab === 3 && model.architecture.classType == 'EBTransformArchitecture'">
                             <eb-schema-editor
                                     title="Results"
                                     schema="model.architecture.outputSchema"

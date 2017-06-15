@@ -18,7 +18,8 @@
 
 "use strict";
 
-const cosineSimilarity = require( 'compute-cosine-similarity' );
+const cosineSimilarity = require( 'compute-cosine-similarity' ),
+    underscore = require('underscore');
 
 /**
  * This class is used for matching primary to secondary objects in production
@@ -59,57 +60,45 @@ class EBVectorMatcher
     }
 
     /**
-     * This takes a primary vector and returns the closest matching secondary vector
+     * This takes a primary vector and returns the closest N matching secondary vectors
      *
      * @param {[number]} primaryVector An array of numbers representing the vector.
+     * @param {[number]} count The number of secondary vectors to return
+     * @return {[object]} objects containing two variables
      */
-    findMatchingSecondary(primaryVector)
+    findMatchingSecondary(primaryVector, count)
     {
         // Go through all the secondary vectors and find the closest one
-        let closestDistance = Infinity;
-        let closestKey = null;
-        for (const key of Object.keys(this.secondaryVectors))
-        {
-            const secondaryVector = this.secondaryVectors[key];
-            let distance = (1.0 - cosineSimilarity(primaryVector, secondaryVector));
+        const secondaries = Object.keys(this.secondaryVectors).map((id) => {
+            return {
+                id: id,
+                distance: (1.0 - cosineSimilarity(primaryVector, this.secondaryVectors[id]))
+            };
+        });
 
-            if (distance < closestDistance)
-            {
-                closestDistance = distance;
-                closestKey = key;
-            }
-        }
-
-        return closestKey;
+        const sortedSecondaries = underscore.sortBy(secondaries, (secondary) => secondary.distance);
+        return sortedSecondaries.slice(0, count);
     }
 
     /**
      * This takes a primary vector and returns the closest matching primary vector
      *
      * @param {[number]} secondaryVector An array of numbers representing the vector.
+     * @param {[number]} count The number of secondary vectors to return
+     * @return {[object]} objects containing two variables
      */
-    findMatchingPrimary(secondaryVector)
+    findMatchingPrimary(secondaryVector, count)
     {
-        // Go through all the primary vectors and find the closest one
-        let closestDistance = Infinity;
-        let closestKey = null;
-        for (const key of Object.keys(this.primaryVectors))
-        {
-            const primaryVector = this.primaryVectors[key];
-            let distance = 0;
-            for (let vectorIndex = 0; vectorIndex < secondaryVector.length; vectorIndex += 1)
-            {
-                let diff = primaryVector[vectorIndex] - secondaryVector[vectorIndex];
-                distance += diff * diff;
-            }
+        // Go through all the secondary vectors and find the closest one
+        const primaries = Object.keys(this.primaryVectors).map((id) => {
+            return {
+                id: id,
+                distance: (1.0 - cosineSimilarity(secondaryVector, this.primaryVectors[id]))
+            };
+        });
 
-            if (distance < closestDistance)
-            {
-                closestDistance = distance;
-                closestKey = key;
-            }
-        }
-        return closestKey;
+        const sortedPrimaries = underscore.sortBy(primaries, (primary) => primary.distance);
+        return sortedPrimaries.slice(0, count);
     }
 
 }

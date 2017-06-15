@@ -175,9 +175,6 @@ function MatchingTrainingScript:evaluateTrainingIteration(primaryBatch, secondar
 
     local _ignore, loss
 
-    print(self.optimizationAlgorithm)
-    print(self.optimState)
-
     _ignore, loss = optim[self.optimizationAlgorithm](iteration, self.params, self.optimState)
 
     -- Collect gabarge at the end of each iteration - prevents build up of useless memory
