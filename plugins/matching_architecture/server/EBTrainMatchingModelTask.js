@@ -558,7 +558,6 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
                 });
             }).then((accuracies) =>
             {
-                console.log(accuracies);
                 return Promise.fromCallback((next) =>
                 {
                     fs.unlink(batch.fileName, next);
