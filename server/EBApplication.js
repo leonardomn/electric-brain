@@ -204,11 +204,29 @@ class EBApplication
                 env: "Mongo"
             },
             overrideModelFolder: {
-                doc: "This method overrides the default temporary folder where model code is stored.",
+                doc: "This config overrides the default temporary folder where model code is stored.",
                 format: String,
                 default: '',
                 env: "MODEL_FOLDER"
             },
+            companyName: {
+                doc: "This config is used to specify what the company name is on the frontend. Used for white-labelling",
+                format: String,
+                default: 'Electric Brain Software Corporation',
+                env: "COMPANY_NAME"
+            },
+            softwareName: {
+                doc: "This config is used to specify what the software name is on the frontend. Used for white-labelling",
+                format: String,
+                default: 'Electric Brain',
+                env: "SOFTWARE_NAME"
+            },
+            licenseFile: {
+                doc: "This config is used to set the license file that will be displayed on the frontend",
+                format: String,
+                default: path.join(__dirname, '..', 'LICENSE'),
+                env: "LICENSE_FILE"
+            }
         };
     }
 

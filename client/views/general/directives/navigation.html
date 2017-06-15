@@ -77,10 +77,12 @@
                         <li ui-sref-active="active"><a ui-sref="list_models">View all models</a></li>
                     </ul>
                 </li>
-            </ul>
-            <ul class="nav navbar-top-links navbar-right">
-                <li>
-
+                <li uib-dropdown>
+                    <a href uib-dropdown-toggle> Help <span class="caret"></span></a>
+                    <ul role="menu" uib-dropdown-menu>
+                        <li ui-sref-active="active"><a href="https://github.com/electricbrainio/electric-brain/issues">Submit a Bug</a></li>
+                        <li ui-sref-active="active"><a ng-click="showAboutUs()">About Us</a></li>
+                    </ul>
                 </li>
             </ul>
         </div>

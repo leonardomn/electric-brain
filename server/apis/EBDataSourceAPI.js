@@ -20,7 +20,6 @@
 
 const
     async = require('async'),
-    config = require("../config/config"),
     EBAPIRoot = require('./EBAPIRoot'),
     idUtilities = require("../utilities/id"),
     models = require('../../shared/models/models'),
@@ -59,7 +58,7 @@ class EBDataSourceAPI extends EBAPIRoot
         const self = this;
         const uploadServer = new tus.Server();
         uploadServer.datastore = new tus.MongoGridFSStore({
-            uri: config.mongo.uri,
+            uri: this.application.config.get('mongo'),
             bucket: "uploads",
             path: '/api/uploads'
         });
