@@ -60,6 +60,7 @@
     "grunt-contrib-uglify": "^2.0.0",
     "grunt-contrib-watch": "^1.0.0",
     "grunt-curl": "^2.2.1",
+    "grunt-if-missing": "^1.0.1",
     "grunt-mkdir": "^1.0.0",
     "grunt-webpack": "^1.0.18",
     "grunt-zip": "^0.17.1",

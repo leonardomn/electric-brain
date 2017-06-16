@@ -196,6 +196,12 @@ class EBTrainTransformModelTask extends EBTrainModelTaskBase
         }).then(() =>
         {
             return self.model;
+        }, (err) =>
+        {
+            console.error(err);
+            // Here we handle any errors coming from the chain
+            self.model.running = false;
+            return self.models.update({_id: args._id}, self.model);
         });
     }
 
@@ -492,7 +498,7 @@ class EBTrainTransformModelTask extends EBTrainModelTaskBase
                                 {
                                     return Promise.resolve();
                                 }
-                            }).then(() => next());
+                            }).then(() => next(), (err) => next(err));
                         }, (err) => next(err));
                     }, (err) =>
                     {

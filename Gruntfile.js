@@ -160,11 +160,12 @@ module.exports = function(grunt)
     grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-curl');
+    grunt.loadNpmTasks('grunt-if-missing');
     grunt.loadNpmTasks('grunt-mkdir');
     grunt.loadNpmTasks('grunt-webpack');
     grunt.loadNpmTasks('grunt-zip');
 
     // Default task(s).
-    grunt.registerTask('default', ['mkdir:dev', 'dot:torch', 'dot:matchingPlugin', 'dot:transformPlugin', 'dot:frontend', 'browserify:dev', 'webpack:bundle', 'uglify:dev', 'copy:dev', 'unzip', 'curl']);
+    grunt.registerTask('default', ['mkdir:dev', 'dot:torch', 'dot:matchingPlugin', 'dot:transformPlugin', 'dot:frontend', 'browserify:dev', 'webpack:bundle', 'uglify:dev', 'copy:dev', 'unzip', 'if-missing:curl']);
     grunt.registerTask('worker', ['dot:torch', 'dot:matchingPlugin', 'dot:transformPlugin']);
 };

@@ -59,7 +59,7 @@ if (require.main === module)
     {
         if (err)
         {
-            throw err;
+            process.exit(1);
         }
     });
 }
