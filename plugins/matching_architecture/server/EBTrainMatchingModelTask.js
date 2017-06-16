@@ -520,7 +520,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
                                 {
                                     return Promise.resolve();
                                 }
-                            }).then(() => next());
+                            }).then(() => next(), (err) => next(err));
                         }, (err) => next(err));
                     }, (err) =>
                     {
