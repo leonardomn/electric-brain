@@ -382,8 +382,6 @@ function TransformTrainingScript:enterTrainingLoop()
                     ids = command.ids
                 }
 
-                crash:me()
-
                 torch.save(command.fileName, batch)
 
                 self:sendResponse({type="batchOutputPrepared", fileName=command.fileName})
