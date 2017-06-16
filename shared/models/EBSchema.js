@@ -940,7 +940,10 @@ class EBSchema
                 {
                     // Decide whether we are going to keep the given variable
                     let newValue = iterator(variableName, subObject[variableName], schema.properties[variableName], subObject, schema);
-                    newValue = recurse(newValue, schema.properties[variableName]);
+                    if (!underscore.isUndefined(newValue))
+                    {
+                        newValue = recurse(newValue, schema.properties[variableName]);
+                    }
                     if (!underscore.isUndefined(newValue))
                     {
                         newObject[variableName] = newValue;
