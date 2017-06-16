@@ -94,7 +94,8 @@ class EBGeneralAPI extends EBAPIRoot
             start: this.startTime.toISOString(),
             companyName: this.application.config.get('companyName'),
             softwareName: this.application.config.get('softwareName'),
-            license: this.license
+            license: this.license,
+            logo: this.application.config.get('logoFile')
         });
     }
 

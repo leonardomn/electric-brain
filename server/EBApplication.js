@@ -226,6 +226,12 @@ class EBApplication
                 format: String,
                 default: path.join(__dirname, '..', 'LICENSE'),
                 env: "LICENSE_FILE"
+            },
+            logoFile: {
+                doc: "This config is used to set the logo that will be used on the frontend. Used for white-labelling.",
+                format: String,
+                default: "img/logo/logo_menu.svg",
+                env: "LOGO_FILE"
             }
         };
     }
