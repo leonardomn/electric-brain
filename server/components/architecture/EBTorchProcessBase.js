@@ -52,6 +52,7 @@ class EBTorchProcessBase
         self.allLoadedEntries = [];
         self.testingSet = {};
         self.numProcesses = 1;
+        self.running = false;
     }
     
     /**
@@ -177,6 +178,7 @@ class EBTorchProcessBase
     startProcess()
     {
         const self = this;
+        self.running = true;
         return Promise.fromCallback((callback) =>
         {
             async.series([
@@ -204,6 +206,7 @@ class EBTorchProcessBase
                             process.on('close', (exitCode) =>
                             {
                                 self.logError(`luajit closed: ${exitCode}`);
+                                self.running = false;
                             });
 
                             process.on('disconnect', () =>
@@ -219,6 +222,7 @@ class EBTorchProcessBase
                             process.on('exit', () =>
                             {
                                 self.logError(`luajit exited`);
+                                self.running = false;
                             });
 
                             return next();
