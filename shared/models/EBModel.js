@@ -106,6 +106,14 @@ class EBModel
                 percentageComplete: 0
             };
         }
+
+        if (!self.bundle)
+        {
+            self.bundle = {
+                status: "waiting",
+                percentageComplete: 0
+            };
+        }
     }
 
     /**
@@ -240,6 +248,20 @@ class EBModel
                         "percentageComplete": {type: "number"},
                         "accuracies": {type: "number"},
                         "accuracy": {type: "number"}
+                    }
+                },
+                "bundle": {
+                    type: "object",
+                    properties: {
+                        "status": {
+                            type: "string",
+                            enum: ["waiting", "in_progress", "complete"]
+                        },
+                        "step": {
+                            type: "string",
+                            enum: ["downloading_model_parameters", "copying_eb_files", "zipping", "uploading", "cleaning"]
+                        },
+                        "percentageComplete": {type: "number"}
                     }
                 }
             }

@@ -35,7 +35,7 @@ class EBTrainingSet
     /**
      * Constructor for the EBTrainingSet object
      *
-     * @param {EBApplication} application The global application object
+     * @param {EBApplicationBase} application The global application object
      * @param {EBDataSource} dataSource The data source which is being sampled.
      * @param {Number} testingSetPortion The amount of the dataset that goes into the testing set
      */

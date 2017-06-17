@@ -35,7 +35,7 @@ class EBSchemaDetector
     /**
      * Creates a EBSchemaDetector
      * 
-     * @param {EBApplication} application The global application object.
+     * @param {EBApplicationBase} application The global application object.
      */
     constructor(application)
     {

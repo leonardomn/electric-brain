@@ -222,4 +222,12 @@ angular.module('eb').controller('EBViewModelController', function EBViewModelCon
     {
         EBSocketService.socket.emit(`command-model`, {command: 'kill', id: $stateParams.id});
     };
+
+    $scope.assembleBundle = function ()
+    {
+        EBModelService.assembleBundle($scope.model).then(function (response)
+        {
+            // $scope.testResult = response.data;
+        });
+    };
 });

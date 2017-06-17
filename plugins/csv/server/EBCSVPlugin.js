@@ -37,7 +37,7 @@ class EBCSVPlugin extends EBDataSourcePlugin
     /**
      *  The constructor for the EBCSVPlugin
      *
-     * @param {EBApplication} application The global EBApplication object.
+     * @param {EBApplicationBase} application The global EBApplication object.
      */
     constructor(application)
     {

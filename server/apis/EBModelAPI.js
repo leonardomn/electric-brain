@@ -21,7 +21,8 @@
 const Ajv = require('ajv'),
     async = require('async'),
     EBAPIRoot = require('./EBAPIRoot'),
-    EBModelBundler = require('../components/model/EBNodeBundler'),
+    EBClassFactory = require("../../shared/components/EBClassFactory"),
+    EBNeuralTransformer = require("../../shared/components/architecture/EBNeuralTransformer"),
     fs = require('fs'),
     idUtilities = require("../utilities/id"),
     models = require('../../shared/models/models'),
@@ -47,7 +48,11 @@ class EBModelAPI extends EBAPIRoot
         this.application = application;
         this.models = application.db.collection("EBModel");
         this.modelResults = application.db.collection("EBModel_results");
-        this.bundler = new EBModelBundler(application);
+
+        this.modelBundleGridFS = new mongodb.GridFSBucket(this.application.db, {
+            chunkSizeBytes: 1024,
+            bucketName: 'EBModel.bundle'
+        });
     }
 
     /**
@@ -201,7 +206,7 @@ class EBModelAPI extends EBAPIRoot
 
         this.registerEndpoint(expressApplication, {
             "name": "DownloadBundle",
-            "uri": "/models/:id/bundle/:language",
+            "uri": "/models/:id/bundle",
             "method": "GET",
             "inputSchema": {},
             "outputSchema": {},
@@ -231,6 +236,24 @@ class EBModelAPI extends EBAPIRoot
             "inputSchema": {},
             "outputSchema": {},
             "handler": this.getModelResults.bind(this)
+        });
+
+
+        this.registerEndpoint(expressApplication, {
+            "name": "StartAssemblingBundle",
+            "uri": "/models/:id/assemble_bundle",
+            "method": "POST",
+            "inputSchema": {
+                "id": "/StartAssemblingBundle",
+                "type": "object",
+                "properties": { }
+            },
+            "outputSchema": {
+                "id": "/StartAssemblingBundle",
+                "type": "object",
+                "properties": { }
+            },
+            "handler": this.startAssemblingBundle.bind(this)
         });
     }
 
@@ -494,15 +517,22 @@ class EBModelAPI extends EBAPIRoot
             {
                 return next(new Error("EBModel not found!"));
             }
+            else if (model.bundle.status !== 'complete')
+            {
+                return next(new Error("The model bundle has not yet been created. Please trigger a bundling task or wait for the exisiting one to complete."));
+            }
             else
             {
-                const promise = self.bundler.createBundle(model);
-                promise.then((buffer) =>
+                res.type('application/zip');
+                const filename = `model-${model._id}.zip`;
+                res.set(`Content-Disposition`, `attachment; filename=${filename}`);
+                self.modelBundleGridFS.openDownloadStreamByName(filename).pipe(res).on('error', (error) =>
                 {
-                    res.type('application/zip');
-                    res.set('Content-Disposition', 'inline; filename="bundle.zip"');
-                    res.end(buffer);
-                }, (err) => next(err));
+                    return next(error);
+                }).on('finish', () =>
+                {
+                    res.end();
+                });
             }
         });
     }
@@ -538,7 +568,9 @@ class EBModelAPI extends EBAPIRoot
             else
             {
                 const model = new models.EBModel(modelObject);
-                const modelProcess = new EBTorchProcess(new models.EBArchitecture(model.architecture), self.application.config.get('overrideModelFolder'));
+                const architecture = EBClassFactory.createObject(model.architecture);
+                const architecturePlugin = self.application.architectureRegistry.getPluginForArchitecture(architecture);
+                let modelProcess = architecturePlugin.getTorchProcess(architecture, self.application.config.get('overrideModelFolder'));
                 async.series([
                     // Generate the code
                     function generateCode(next)
@@ -588,7 +620,9 @@ class EBModelAPI extends EBAPIRoot
                     function(next)
                     {
                         const object = req.query.data;
-                        const stream = model.architecture.getInputTransformationStream(self.application.interpretationRegistry);
+                        const inputTransformer = new EBNeuralTransformer(model.architecture.inputSchema);
+                        const outputTransformer = new EBNeuralTransformer(model.architecture.outputSchema);
+                        const stream = inputTransformer.createTransformationStream(self.application.interpretationRegistry);
                         stream.on('data', function(data)
                         {
                             // Process the provided object
@@ -596,7 +630,7 @@ class EBModelAPI extends EBAPIRoot
                             promise.then((results) =>
                             {
                                 const result = results.objects[0];
-                                const promise = model.architecture.convertNetworkOutputObject(self.application.interpretationRegistry, result);
+                                const promise = outputTransformer.convertObjectOut(self.application.interpretationRegistry, result);
                                 return promise;
                             }).then((output) =>
                             {
@@ -647,6 +681,41 @@ class EBModelAPI extends EBAPIRoot
             else
             {
                 return next(null, results);
+            }
+        });
+    }
+
+    /**
+     * This endpoint is used to trigger the model to train
+     *
+     * @param {object} req express request object
+     * @param {object} res express response object
+     * @param {function} next express callback
+     */
+    startAssemblingBundle(req, res, next)
+    {
+        this.models.find({_id: Number(req.params.id)}).toArray((err, modelObjects) =>
+        {
+            if (err)
+            {
+                return next(err);
+            }
+            else if (modelObjects.length === 0)
+            {
+                return next(new Error("EBModel not found!"));
+            }
+            else
+            {
+                this.application.taskQueue.queueTask('assemble_bundle', {_id: Number(req.params.id)}, function(err, task)
+                {
+                    if (err)
+                    {
+                        return next(err);
+                    }
+                    // const jobId = task.metadata.jobId;
+                    // return res.send(200, {id: jobId});
+                    return next(null, {});
+                });
             }
         });
     }

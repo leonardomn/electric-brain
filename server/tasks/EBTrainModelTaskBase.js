@@ -42,7 +42,7 @@ class EBTrainModelTaskBase
     /**
      * The constructor for the task object.
      *
-     * @param {EBApplication} application This should be a reference to the root EBApplication object.
+     * @param {EBApplicationBase} application This should be a reference to the root EBApplication object.
      */
     constructor(application)
     {

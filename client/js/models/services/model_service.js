@@ -168,5 +168,16 @@ angular.module('eb').service('EBModelService', function EBModelService($rootScop
         return data;
     };
 
+    service.assembleBundle = function assembleBundle(model)
+    {
+        const headers = {};
+        return $http({
+            method: 'POST',
+            url: `/api/models/${model._id}/assemble_bundle`,
+            headers,
+            data: model
+        });
+    };
+
     return service;
 });

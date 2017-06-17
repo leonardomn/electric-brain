@@ -18,15 +18,19 @@
 
 "use strict";
 
+/**
+ * This script file is meant to be used as an micro-server by exported neural network bundles
+ */
+
 module.exports = exports = {
-    EBBundleScript: require("./components/EBBundleScript")
+    EBBundleScript: require("./server/components/EBBundleScript")
 };
 
 
 if (require.main === module)
 {
     console.log(`Initializing the Electric Brain Bundled Model`);
-    console.log(`Use -port to change the port number API server`);
+    console.log(`Use --port to change the port number of this API server`);
     const bundleScript = new module.exports.EBBundleScript(".");
     bundleScript.startModelProcess().then(() =>
     {

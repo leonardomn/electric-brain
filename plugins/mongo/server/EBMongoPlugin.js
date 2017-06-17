@@ -35,7 +35,7 @@ class EBMongoPlugin extends EBDataSourcePlugin
     /**
      *  The constructor for the EBCSVPlugin
      *
-     * @param {EBApplication} The global EBApplication object.
+     * @param {EBApplicationBase} The global EBApplication object.
      */
     constructor(application)
     {

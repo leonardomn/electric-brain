@@ -23,6 +23,7 @@ const
     bodyParser = require('body-parser'),
     convict = require("convict"),
     express = require("express"),
+    EBApplicationBase = require('./EBApplicationBase'),
     EBDataSourcePluginDispatch = require("./components/datasource/EBDataSourcePluginDispatch"),
     EBNeuralNetworkComponentDispatch = require("../shared/components/architecture/EBNeuralNetworkComponentDispatch"),
     EBInterpretationRegistry = require("./components/datasource/EBInterpretationRegistry"),
@@ -40,49 +41,17 @@ const
 /**
  *  This class is the root application object, which represents the EB API server as a whole
  */
-class EBApplication
+class EBApplication extends EBApplicationBase
 {
     /**
      * Constructor for the application
      */
     constructor()
     {
+        super();
+        
         this.config = convict(this.configuration());
-
-        // Initialize each of the modules that we find in pages
-        const polyfills = fs.readdirSync(`${__dirname}/../shared/polyfill`);
-        polyfills.forEach((polyfillFilename) =>
-        {
-            require(`../shared/polyfill/${polyfillFilename}`);
-        });
-
-        // Initialize any mods
-        const mods = fs.readdirSync(`${__dirname}/mods`);
-        mods.forEach((modFilename) =>
-        {
-            require(`./mods/${modFilename}`).apply();
-        });
-
-        // Load any plugins that are found in the various plugin directories
-        const pluginDirectories = [
-            path.join(__dirname, '..', 'plugins'),
-            path.join(__dirname, '..', 'extraplugins')
-        ];
-
-        this.plugins = [];
-        pluginDirectories.forEach((directory) =>
-        {
-            const pluginNames = fs.readdirSync(directory);
-            pluginNames.forEach((pluginFilename) =>
-            {
-                if (fs.statSync(path.join(directory, pluginFilename)).isDirectory())
-                {
-                    this.plugins.push(require(path.join(directory, pluginFilename)));
-                }
-            });
-        });
-
-
+        
         // Create our task registry. All taskRegistry should have explicit timeouts set.
         this.taskRegistry = new beaver.Registry({});
 
@@ -136,33 +105,6 @@ class EBApplication
 
         // Setup the global tasks with a reference to this application object
         tasks.setupTasks(this);
-        
-        // Set up the main data source plugin
-        this.dataSourcePluginDispatch = new EBDataSourcePluginDispatch();
-        this.neuralNetworkComponentDispatch = new EBNeuralNetworkComponentDispatch();
-        this.interpretationRegistry = new EBInterpretationRegistry();
-        this.architectureRegistry = new EBArchitecturePluginRegistry();
-
-        this.plugins.forEach((plugin) =>
-        {
-            const interpretationNames = Object.keys(plugin.interpretations || {});
-            interpretationNames.forEach((name) =>
-            {
-                this.interpretationRegistry.addInterpretation(new plugin.interpretations[name](this.interpretationRegistry));
-            });
-
-            const neuralNetworkComponentNames = Object.keys(plugin.neuralNetworkComponents || {});
-            neuralNetworkComponentNames.forEach((name) =>
-            {
-                this.neuralNetworkComponentDispatch.registerPlugin(name, new plugin.neuralNetworkComponents[name](this.neuralNetworkComponentDispatch))
-            });
-
-            const architecturePluginNames = Object.keys(plugin.architecturePlugins || {});
-            architecturePluginNames.forEach((name) =>
-            {
-                this.architectureRegistry.registerPlugin(name, new plugin.architecturePlugins[name](this.interpretationRegistry, this.neuralNetworkComponentDispatch));
-            });
-        });
     }
 
     /**
