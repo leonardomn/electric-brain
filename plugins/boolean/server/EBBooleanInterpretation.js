@@ -213,7 +213,7 @@ class EBBooleanInterpretation extends EBInterpretationBase
     generateDefaultConfiguration(schema)
     {
         return {
-            mode: "continuous",
+            mode: "continuous_normalized",
             stack: {
                 fixedLayers: EBNeuralNetworkTemplateGenerator.generateMultiLayerPerceptronTemplate('medium')
             }
