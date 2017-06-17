@@ -96,6 +96,10 @@ class EBSchemaDetector
                 {
                     return Promise.resolve(this.interpretationMap['object']);
                 }
+                else if (underscore.isNull(value))
+                {
+                    return Promise.resolve(this.interpretationMap['string']);
+                }
                 else
                 {
                     throw new Error("null interpretation here?");

@@ -89,6 +89,9 @@ class EBDataSource
                 "sampleSize": {
                     "type": "number"
                 },
+                "allowQuotedCSVFiles": {
+                    "type": "boolean"
+                },
                 "file": {"type": "string"},
                 "database": {
                     "type": "object",

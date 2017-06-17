@@ -122,7 +122,7 @@ class EBStringInterpretation extends EBInterpretationBase
      */
     transformValue(value)
     {
-        return Promise.resolve(value.toString());
+        return Promise.resolve(String(value));
     }
 
 
