@@ -21,3 +21,25 @@
 module.exports = exports = {
     EBBundleScript: require("./components/EBBundleScript")
 };
+
+
+if (require.main === module)
+{
+    console.log(`Initializing the Electric Brain Bundled Model`);
+    console.log(`Use -port to change the port number API server`);
+    const bundleScript = new module.exports.EBBundleScript(".");
+    bundleScript.startModelProcess().then(() =>
+    {
+        return bundleScript.startAPIServer();
+    }).then(() =>
+    {
+        // The server is running!
+        console.log(`Electric Brain Model API started on port ${bundleScript.config.get('port')}`);
+        console.log(`To process data with the model, make a GET or POST request to: http://localhost:${bundleScript.config.get('port')}/`);
+    }, (err) =>
+    {
+        console.error("Electric Brain Model Bundle server failed to start!");
+        console.error(err);
+        process.exit(1);
+    });
+}
