@@ -899,8 +899,8 @@ module.exports.generateDateClassificationDataset = function generateDateClassifi
         object.isWeekend = date.day() === 0 || date.day() === 6;
 
         // Which of the week in the month is it
-        const startWeek = moment(date).startOf('month').week();
-        object.weekInMonth = `week_${date.week() - startWeek + 1}`;
+        const startWeek = Math.floor(moment(date).startOf('month').dayOfYear() / 7);
+        object.weekInMonth = `week_${Math.floor(date.dayOfYear() / 7) - startWeek + 1}`;
 
         // Roughly what time of the day is it?
         if (date.hour() < 5)
