@@ -1,7 +1,7 @@
 {
   "name": "electricbrain",
-  "version": "0.3.4",
-  "description": "Electric Brain is an easy to use platform for machine learning.",
+  "version": "0.4.0",
+  "description": "Electric Brain is the AI platform for people with a deadline.",
   "keyworks": [
     "api",
     "deep-learning",
