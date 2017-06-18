@@ -94,9 +94,20 @@ class EBAssembleNodeBundleTask
 
                 const architecture = EBClassFactory.createObject(this.model.architecture);
                 const architecturePlugin = this.application.architectureRegistry.getPluginForArchitecture(architecture);
-                this.trainingProcess = architecturePlugin.getTorchProcess(architecture, this.application.config.get('overrideModelFolder'));
 
-                return Promise.resolve();
+                return Promise.fromCallback((next) =>
+                {
+                    // First, create a temporary folder to put all of the model files in
+                    temp.mkdir('electric-brain-bundle', (err, temporaryFolder) => {
+                        if (err)
+                        {
+                            return next(err);
+                        }
+
+                        this.trainingProcess = architecturePlugin.getTorchProcess(architecture, temporaryFolder);
+                        return next(null, temporaryFolder);
+                    });
+                });
             }
         }).then(() =>
         {
