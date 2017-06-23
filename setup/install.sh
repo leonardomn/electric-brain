@@ -98,7 +98,7 @@ install_torch() {
         sudo /usr/local/bin/luarocks install rnn
         sudo /usr/local/bin/luarocks install underscore
         sudo /usr/local/bin/luarocks install luasocket
-        sudo /usr/local/bin/luarocks install lsqlite3
+        sudo /usr/local/bin/luarocks install lsqlite3 SQLITE_DIR=/usr/local/Cellar/sqlite/`ls /usr/local/Cellar/sqlite/`
     fi
 }
 
