@@ -62,6 +62,8 @@ class EBModel
                 batchSize: 16,
                 testingBatchSize: 4,
                 iterations: 50000,
+                maximumDataSetSize: 10000000,
+                testingSetPortion: 0.3,
                 initializationRangeBottom: -0.08,
                 initializationRangeTop: 0.08,
                 optimizationAlgorithm: 'adamax',
@@ -166,6 +168,12 @@ class EBModel
                             type: "number"
                         },
                         "iterations": {
+                            type: "number"
+                        },
+                        "maximumDataSetSize": {
+                            type: "number"
+                        },
+                        "testingSetPortion": {
                             type: "number"
                         },
                         "initializationRangeBottom": {
