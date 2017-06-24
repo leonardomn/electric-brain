@@ -113,7 +113,7 @@ module.exports = function(grunt)
             }
         },
         curl: {
-            'data/english_word_vectors.sqlite3': 'https://blkstr.ca/9adaf58071dd4e548422bbd3a7239458/Downloads/english_word_vectors.sqlite3'
+            'data/english_word_vectors.sqlite3': 'https://storage.bhs3.cloud.ovh.net/v1/AUTH_6f85527f05c84cb68c882959fc961a42/electric-brain-downloads/english_word_vectors.sqlite3'
         }
     });
 
