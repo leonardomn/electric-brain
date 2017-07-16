@@ -35,7 +35,7 @@ angular.module('eb').directive('ebArchitectureList', function ebArchitectureList
             {
                 EBArchitectureService.getArchitecture(architecture._id).then(function(response)
                 {
-                    $scope.selectedArchitecture = response.data;
+                    $scope.externalSelectedArchitecture = response.data;
                     if ($scope.onArchitectureClicked)
                     {
                         $timeout(function()
@@ -50,7 +50,7 @@ angular.module('eb').directive('ebArchitectureList', function ebArchitectureList
         restrict: "E",
         scope: {
             onArchitectureClicked: "=",
-            selectedArchitecture: "=",
+            externalSelectedArchitecture: "=",
             showRadioSelection: '='
         }
     };
