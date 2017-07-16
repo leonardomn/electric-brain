@@ -50,7 +50,7 @@ angular.module('eb').directive('ebArchitectureList', function ebArchitectureList
         restrict: "E",
         scope: {
             onArchitectureClicked: "=",
-            externalSelectedArchitecture: "=",
+            externalSelectedArchitecture: "=selectedArchitecture",
             showRadioSelection: '='
         }
     };
