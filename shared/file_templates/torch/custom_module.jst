@@ -1,67 +1,12 @@
-require('torch')
-require('nn')
-require('nngraph')
-if not nn.MapTable then
-    require('MapTable')
-end
-require('EBOneHot')
-require('EBMergeSequences')
-require('EBMergeFixedIntoSequence')
-require('EBWordEmbedder')
-require('SeqBGRU')
+#!/usr/bin/env python3
 
-{{~it.dependencies:dependency:dependencyIndex}}
-require('{{=dependency}}')
-{{~}}
+import tensorflow as tf
 
-local {{=it.moduleName}}, parent = torch.class('nn.{{=it.moduleName}}', 'nn.Container')
+function create_{{=it.moduleName}}():
+    {{=it.code}}
 
-function {{=it.moduleName}}:__init()
-    parent.__init(self)
-
-    -- Build up the graph of neural network modules
-{{=it.code}}
-
-    -- Store the module
-    self.module = module;
-
-    -- Output a graph svg file of the module
-    graph.dot(module.fg, '{{=it.moduleName}}', '{{=it.moduleName}}')
-
-    -- so that it can be handled like a Container
-    self:add(self.module)
-
-    -- Create an output table with at least a fixed Tensor
-    self.output = {torch.Tensor()}
-end
+    return module
 
 
-function {{=it.moduleName}}:updateOutput(input)
-    self.output = self.module:updateOutput(input)
-    return self.output
-end
 
-function {{=it.moduleName}}:updateGradInput(input, gradOutput)
-    self.gradInput = self.module:updateGradInput(input, gradOutput)
-    return self.gradInput
-end
 
-function {{=it.moduleName}}:accGradParameters(input, gradOutput, scale)
-    self.module:accGradParameters(input, gradOutput, scale)
-end
-
-function {{=it.moduleName}}:accUpdateGradParameters(input, gradOutput, lr)
-    self.module:accUpdateGradParameters(input, gradOutput, lr)
-end
-
-function {{=it.moduleName}}:sharedAccUpdateGradParameters(input, gradOutput, lr)
-    self.module:sharedAccUpdateGradParameters(input, gradOutput, lr)
-end
-
-function {{=it.moduleName}}:__tostring__()
-    if self.module.__tostring__ then
-        return torch.type(self) .. ' @ ' .. self.module:__tostring__()
-    else
-        return torch.type(self) .. ' @ ' .. torch.type(self.module)
-    end
-end

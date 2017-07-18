@@ -60,7 +60,7 @@ class EBTorchCustomModule
      *
      * @returns {string} The lua code that can be written directly to a module file
      */
-    generateLuaCode()
+    generatePythonCode()
     {
         const self = this;
 
@@ -130,7 +130,7 @@ class EBTorchCustomModule
                 inputString = node.input.name;
             }
 
-            code += `${indent}local ${node.name} = ${node.module.generateLuaCode()}(${inputString})\n`;
+            code += `${indent}local ${node.name} = ${node.module.generatePythonCode()}(${inputString})\n`;
         });
 
         code += "\n";

@@ -99,7 +99,7 @@ class EBTransformArchitecture extends EBArchitecturePluginBase
         {
             const file = {
                 path: module.filename,
-                data: module.generateLuaCode()
+                data: module.generatePythonCode()
             };
 
             files.push(file);

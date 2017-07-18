@@ -77,11 +77,11 @@ class EBNeuralNetworkClassificationComponent extends EBNeuralNetworkComponentBas
     generateTensorInputCode(schema, name)
     {
         let code = '';
-        code += `local ${name} = function (input)\n`;
-        code += `    local result = torch.zeros(1)\n`;
-        code += `    result[1] = input + 1\n`;
-        code += `    return result\n`;
-        code += `end\n`;
+        code += `def ${name}(input):\n`;
+        const size = schema.enum.length;
+        code += `    array = [0] * ${size}\n`;
+        code += `    array[input] = 1\n`;
+        code += `    return array\n`;
         return code;
     }
 
@@ -95,10 +95,8 @@ class EBNeuralNetworkClassificationComponent extends EBNeuralNetworkComponentBas
     generateTensorOutputCode(schema, name)
     {
         let code = '';
-        code += `local ${name} = function (input)\n`;
-        code += `    local probs, index = torch.max(input, 2)\n`;
-        code += `    return index[1][1] - 1\n`;
-        code += `end\n`;
+        code += `def ${name}(input):\n`;
+        code += `    return index_min = min(xrange(len(input)), key=values.__getitem__)\n`;
         return code;
     }
 
@@ -114,26 +112,8 @@ class EBNeuralNetworkClassificationComponent extends EBNeuralNetworkComponentBas
     {
         let code = '';
 
-        code += `local ${name} = function (input)\n`;
-        code += `    local batch\n`;
-        code += `    local expandedFound = false\n`;
-        code += `    for k,v in pairs(input) do\n`;
-        code += `       if input[k]:dim() == 2 then\n`;
-        code += `           expandedFound = true\n`;
-        code += `       end\n`;
-        code += `    end\n`;
-        code += `    if not expandedFound then\n`;
-        code += `       batch = torch.zeros(#input)\n`;
-        code += `    else\n`;
-        code += `       batch = torch.zeros(#input, ${schema.enum.length})\n`;
-        code += `    end\n`;
-        code += `    for k,v in pairs(input) do\n`;
-        code += `        if input[k]:sum() ~= 0 then\n`;
-        code += `           batch:narrow(1, k, 1):copy(input[k])\n`;
-        code += `        end\n`;
-        code += `    end\n`;
-        code += `    return batch\n`;
-        code += `end\n`;
+        code += `def ${name}(input):\n`;
+        code += `    return input\n`;
 
         return code;
     }
@@ -150,13 +130,8 @@ class EBNeuralNetworkClassificationComponent extends EBNeuralNetworkComponentBas
     {
         let code = '';
 
-        code += `local ${name} = function (input)\n`;
-        code += `    local samples = {}\n`;
-        code += `    for k=1,input:size()[1] do\n`;
-        code += `        table.insert(samples, input:narrow(1, k, 1))\n`;
-        code += `    end\n`;
-        code += `    return samples\n`;
-        code += `end\n`;
+        code += `def ${name}(input)\n`;
+        code += `    return input\n`;
 
         return code;
     }
@@ -178,7 +153,7 @@ class EBNeuralNetworkClassificationComponent extends EBNeuralNetworkComponentBas
     generateInputStack(schema, inputNode, rootName)
     {
         return {
-            outputNode: new EBTorchNode(new EBTorchModule("nn.EBOneHot", [schema.enum.length]), inputNode, `${rootName}_${schema.machineVariableName}_inputStack`),
+            outputNode: new EBTorchNode(new EBTorchModule("tf.identity", [schema.enum.length]), inputNode, `${rootName}_${schema.machineVariableName}_inputStack`),
             outputTensorSchema: EBTensorSchema.generateDataTensorSchema(schema.enum.length, schema.variableName),
             additionalModules: []
         };

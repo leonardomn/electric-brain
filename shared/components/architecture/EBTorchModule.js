@@ -99,7 +99,7 @@ class EBTorchModule
 
         let children = underscore.map(self.children, function(child)
         {
-            return `\n${indent}        :add(${child.generateLuaCode(`${indent}    `)})`;
+            return `\n${indent}        :add(${child.generatePythonCode(`${indent}    `)})`;
         }).join('');
 
         if (children)
