@@ -156,7 +156,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
         }).then(() =>
         {
             // Generate the code
-            const promise = self.trainingProcess.generateCode(self.application.interpretationRegistry, self.application.neuralNetworkComponentDispatch);
+            const promise = self.trainingProcess.generateCode(self.application.interpretationRegistry, self.application.neuralNetworkComponentRegistry);
             return promise.then((totalFiles) =>
             {
                 const codeGenerationResult = {
@@ -170,7 +170,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
         }).then(() =>
         {
             // Start up the process
-            return self.trainingProcess.startProcess();
+            return self.trainingProcess.startProcess(self.application.interpretationRegistry);
 
         }).then(() =>
         {

@@ -98,9 +98,9 @@ class EBBundleScript extends EBApplicationBase
         const architecturePlugin = this.architectureRegistry.getPluginForArchitecture(architecture);
         this.modelProcess = architecturePlugin.getTorchProcess(architecture, this.bundleFolder);
 
-        return this.modelProcess.generateCode(this.interpretationRegistry, this.neuralNetworkComponentDispatch).then(() =>
+        return this.modelProcess.generateCode(this.interpretationRegistry, this.neuralNetworkComponentRegistry).then(() =>
         {
-            return this.modelProcess.startProcess();
+            return this.modelProcess.startProcess(this.interpretationRegistry);
         }).then(() =>
         {
             return this.modelProcess.loadModelFile();

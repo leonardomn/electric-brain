@@ -60,7 +60,7 @@ class EBTorchProcessBase
      *
      * @param {function(err, totalFiles)} callback Callback after the code has been written to disk, ready for the process to start
      */
-    generateCode(registry, neuralNetworkComponentDispatch)
+    generateCode(registry, neuralNetworkComponentRegistry)
     {
         const self = this;
         return Promise.fromCallback((callback) =>
@@ -87,10 +87,10 @@ class EBTorchProcessBase
                             }
                             else
                             {
-                                // if (fs.existsSync(self.scriptFolder))
-                                // {
-                                //     childProcess.execSync(`rm -rf ${path.join(self.scriptFolder, "*")}`)
-                                // }
+                                if (fs.existsSync(self.scriptFolder))
+                                {
+                                    childProcess.execSync(`rm -rf ${path.join(self.scriptFolder, "*")}`)
+                                }
 
                                 return next(null, self.scriptFolder);
                             }
@@ -124,29 +124,41 @@ class EBTorchProcessBase
                 },
                 function writeLibraryFiles(next)
                 {
-                    // Write any libraries
-                    const libraryFiles = fs.readdirSync(path.join(__dirname, '..', '..', '..', 'lib', 'lua'));
-                    async.eachSeries(libraryFiles, function(filename, next)
-                    {
-                        fs.readFile(path.join(__dirname, '..', '..', '..', 'lib', 'lua', filename), function(err, buffer)
-                        {
-                            if (err)
-                            {
-                                return next(err);
-                            }
+                    const libraryFolder = path.join(self.scriptFolder, 'electricbrain');
 
-                            totalFiles += 1;
-                            fs.writeFile(path.join(self.scriptFolder, filename), buffer, next);
-                        });
-                    }, next);
+                    // Create a folder to hold the electricbrain module files
+                    fs.mkdir(libraryFolder, (err) => {
+                        if (err)
+                        {
+                            return next(err);
+                        }
+
+                        // Write any libraries
+                        const libraryFiles = fs.readdirSync(path.join(__dirname, '..', '..', '..', 'lib', 'python'));
+                        async.eachSeries(libraryFiles, function(filename, next)
+                        {
+                            fs.readFile(path.join(__dirname, '..', '..', '..', 'lib', 'python', filename), function(err, buffer)
+                            {
+                                if (err)
+                                {
+                                    return next(err);
+                                }
+
+                                totalFiles += 1;
+                                fs.writeFile(path.join(libraryFolder, filename), buffer, next);
+                            });
+                        }, next);
+                    });
+
                 },
-                function writeElectricBrainLibrary(next)
+                function writeNeuralNetworkComponents(next)
                 {
-                    // Write any libraries
-                    const libraryFiles = fs.readdirSync(path.join(__dirname, '..', '..', '..', 'lib', 'lua'));
-                    async.eachSeries(libraryFiles, function(filename, next)
+                    const libraryFolder = path.join(self.scriptFolder, 'electricbrain');
+
+                    // Write any neural network component files
+                    async.eachSeries(neuralNetworkComponentRegistry.getPlugins(), function(filename, next)
                     {
-                        fs.readFile(path.join(__dirname, '..', '..', '..', 'lib', 'lua', filename), function(err, buffer)
+                        fs.readFile(path.join(filename), function(err, buffer)
                         {
                             if (err)
                             {
@@ -154,7 +166,7 @@ class EBTorchProcessBase
                             }
 
                             totalFiles += 1;
-                            fs.writeFile(path.join(self.scriptFolder, filename), buffer, next);
+                            fs.writeFile(path.join(libraryFolder, path.parse(filename).base), buffer, next);
                         });
                     }, next);
                 }
@@ -175,7 +187,7 @@ class EBTorchProcessBase
      *
      * @param {function(err)} callback Callback to be called after the sub-process is started
      */
-    startProcess()
+    startProcess(interpretationRegistry)
     {
         const self = this;
         self.running = true;
@@ -186,7 +198,7 @@ class EBTorchProcessBase
                 {
                     async.times(self.numProcesses, function(n, next)
                     {
-                        const promise = EBStdioJSONStreamProcess.spawn('luajit', ['TrainingScript.lua', n + 1, self.numProcesses], {
+                        const promise = EBStdioJSONStreamProcess.spawn('python3', ['TrainingScript.py', n + 1, self.numProcesses], {
                             cwd: self.scriptFolder,
                             env: underscore.extend({TERM: "xterm"}, process.env)
                         });
@@ -237,9 +249,26 @@ class EBTorchProcessBase
                         return process.writeAndWaitForMatchingOutput({type: "handshake"}, {"type": "handshake"});
                     });
                     writeAndWaitPromise.then(() => next(), (err) => next(err));
+                },
+                function initialize(next)
+                {
+                    self.initialize(interpretationRegistry).then(() => next(), (err) => next(err));
                 }
             ], callback);
         });
+    }
+
+    /**
+     * This method initializes the TensorFlow process.
+     *
+     * Abstract method - should be implemented by derived classes.
+     *
+     * @param {EBInterpretationRegistry} registry The registry for interpretations, used during initialization
+     * @returns {Promise} A promise that will resolve when the model has been initialized
+     */
+    initialize(registry)
+    {
+        throw new Error("EBTorchProcessBase::initialize is unimplemented!")
     }
 
     /**

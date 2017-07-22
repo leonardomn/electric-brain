@@ -33,11 +33,11 @@ class EBNeuralNetworkClassificationComponent extends EBNeuralNetworkComponentBas
     /**
      * Constructor
      */
-    constructor(neuralNetworkComponentDispatch)
+    constructor(neuralNetworkComponentRegistry)
     {
-        super(neuralNetworkComponentDispatch);
+        super(neuralNetworkComponentRegistry);
 
-        this.neuralNetworkComponentDispatch = neuralNetworkComponentDispatch;
+        this.neuralNetworkComponentRegistry = neuralNetworkComponentRegistry;
     }
 
 

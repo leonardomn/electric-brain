@@ -40,13 +40,13 @@ class EBMatchingArchitecturePlugin extends EBArchitecturePluginBase
      * This constructs the plugin
      *
      * @param {EBInterpretationRegistry} registry The registry for the transformation stream
-     * @param {EBNeuralNetworkComponentDispatch} neuralNetworkComponentDispatch A reference the the globally initialized componentDispatch method
+     * @param {EBNeuralNetworkComponentRegistry} neuralNetworkComponentRegistry A reference the the globally initialized componentDispatch method
      */
-    constructor(registry, neuralNetworkComponentDispatch)
+    constructor(registry, neuralNetworkComponentRegistry)
     {
-        super(registry, neuralNetworkComponentDispatch);
+        super(registry, neuralNetworkComponentRegistry);
         this.registry = registry;
-        this.neuralNetworkComponentDispatch = neuralNetworkComponentDispatch;
+        this.neuralNetworkComponentRegistry = neuralNetworkComponentRegistry;
     }
 
 
@@ -89,8 +89,8 @@ class EBMatchingArchitecturePlugin extends EBArchitecturePluginBase
         const primaryInputNode = new EBTorchNode(new EBTorchModule("nn.Identity", []), null, `${primaryModuleName}_primaryInput`);
         const secondaryInputNode = new EBTorchNode(new EBTorchModule("nn.Identity", []), null, `${secondaryModuleName}_secondaryInput`);
 
-        const primaryInputStack = this.neuralNetworkComponentDispatch.generateInputStack(primarySchema, primaryInputNode, 'primary');
-        const secondaryInputStack = this.neuralNetworkComponentDispatch.generateInputStack(secondarySchema, secondaryInputNode, 'secondary');
+        const primaryInputStack = this.neuralNetworkComponentRegistry.generateInputStack(primarySchema, primaryInputNode, 'primary');
+        const secondaryInputStack = this.neuralNetworkComponentRegistry.generateInputStack(secondarySchema, secondaryInputNode, 'secondary');
 
         // Create summary nodes for the primary and secondary stacks
         const primarySummaryModule = EBNeuralNetworkComponentBase.createSummaryModule(primaryInputStack.outputTensorSchema);
@@ -134,13 +134,13 @@ class EBMatchingArchitecturePlugin extends EBArchitecturePluginBase
                 primaryModuleName: primaryModuleName,
                 secondaryModuleName: secondaryModuleName,
                 wordVectorDBPath: path.join(__dirname, '..', '..', '..', 'data', 'english_word_vectors.sqlite3'),
-                convertDataIn: this.neuralNetworkComponentDispatch.generateTensorInputCode.bind(this.neuralNetworkComponentDispatch),
-                convertDataOut: this.neuralNetworkComponentDispatch.generateTensorOutputCode.bind(this.neuralNetworkComponentDispatch),
-                prepareBatch: this.neuralNetworkComponentDispatch.generatePrepareBatchCode.bind(this.neuralNetworkComponentDispatch),
-                unwindBatchOutput: this.neuralNetworkComponentDispatch.generateUnwindBatchCode.bind(this.neuralNetworkComponentDispatch),
+                convertDataIn: this.neuralNetworkComponentRegistry.generateTensorInputCode.bind(this.neuralNetworkComponentRegistry),
+                convertDataOut: this.neuralNetworkComponentRegistry.generateTensorOutputCode.bind(this.neuralNetworkComponentRegistry),
+                prepareBatch: this.neuralNetworkComponentRegistry.generatePrepareBatchCode.bind(this.neuralNetworkComponentRegistry),
+                unwindBatchOutput: this.neuralNetworkComponentRegistry.generateUnwindBatchCode.bind(this.neuralNetworkComponentRegistry),
                 generateLocalizeFunction: (schema, name) =>
                 {
-                    return this.neuralNetworkComponentDispatch.getTensorSchema(schema).generateLocalizeFunction(name);
+                    return this.neuralNetworkComponentRegistry.getTensorSchema(schema).generateLocalizeFunction(name);
                 }
             })
         });

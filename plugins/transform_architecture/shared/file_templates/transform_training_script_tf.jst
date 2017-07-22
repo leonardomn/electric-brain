@@ -4,9 +4,15 @@ import json
 import fileinput
 import sys
 import tensorflow as tf
+from electricbrain.object_component import EBNeuralNetworkObjectComponent
+from electricbrain import eprint
 
-class TrainingScript:
-    def initializeModel(self):
+def initializeGraph(inputSchema, outputSchema):
+    inputComponent = EBNeuralNetworkObjectComponent(inputSchema)
+
+    placeholders, outputs, shapes = inputComponent.get_input_stack()
+
+    outputComponent = EBNeuralNetworkObjectComponent(outputSchema)
 
 
 
@@ -21,12 +27,16 @@ def main():
             response["type"] = "handshake"
             response["name"] = "TrainingScript.py"
             response["version"] = "0.0.1"
-        elif (data["type"] == 'reset'):
 
+        elif (data["type"] == 'initialize'):
+            inputSchema = data["inputSchema"]
+            outputSchema = data["outputSchema"]
 
+            results = initializeGraph(inputSchema, outputSchema)
 
+            eprint(results)
 
-
+            response["type"] = "initialized"
 
         elif (data["type"] == 'transform'):
             try:

@@ -33,7 +33,7 @@ const
     path = require('path'),
     Promise = require('bluebird'),
     stream = require('stream'),
-    transformTrainingScriptTemplate = require("../../../build/torch/transform_training_script"),
+    transformTrainingScriptTemplate = require("../../../build/torch/transform_training_script_tf"),
     underscore = require('underscore');
 
 
@@ -43,13 +43,13 @@ class EBTransformArchitecture extends EBArchitecturePluginBase
      * This constructs the plugin
      *
      * @param {EBInterpretationRegistry} registry The registry for the transformation stream
-     * @param {EBNeuralNetworkComponentDispatch} neuralNetworkComponentDispatch A reference the the globally initialized componentDispatch method
+     * @param {EBNeuralNetworkComponentRegistry} neuralNetworkComponentRegistry A reference the the globally initialized componentDispatch method
      */
-    constructor(registry, neuralNetworkComponentDispatch)
+    constructor(registry, neuralNetworkComponentRegistry)
     {
-        super(registry, neuralNetworkComponentDispatch);
+        super(registry, neuralNetworkComponentRegistry);
         this.registry = registry;
-        this.neuralNetworkComponentDispatch = neuralNetworkComponentDispatch;
+        this.neuralNetworkComponentRegistry = neuralNetworkComponentRegistry;
     }
 
 
@@ -78,7 +78,7 @@ class EBTransformArchitecture extends EBArchitecturePluginBase
      */
     generateFiles(architecture)
     {
-        const inputSchema = this.registry.getInterpretation('object').transformSchemaForNeuralNetwork(architecture.inputSchema.filterIncluded());
+        /*const inputSchema = this.registry.getInterpretation('object').transformSchemaForNeuralNetwork(architecture.inputSchema.filterIncluded());
         const outputSchema = this.registry.getInterpretation('object').transformSchemaForNeuralNetwork(architecture.outputSchema.filterIncluded());
 
         const rootModuleName = `${architecture.machineName}Module`;
@@ -88,8 +88,8 @@ class EBTransformArchitecture extends EBArchitecturePluginBase
         const files = [];
 
         const inputNode = new EBTorchNode(new EBTorchModule("nn.Identity", []), null, `${rootModuleName}_input`);
-        const inputStack = this.neuralNetworkComponentDispatch.generateInputStack(inputSchema, inputNode, 'main');
-        const outputStack = this.neuralNetworkComponentDispatch.generateOutputStack(outputSchema, inputStack.outputNode, inputStack.outputTensorSchema, "main");
+        const inputStack = this.neuralNetworkComponentRegistry.generateInputStack(inputSchema, inputNode, 'main');
+        const outputStack = this.neuralNetworkComponentRegistry.generateOutputStack(outputSchema, inputStack.outputNode, inputStack.outputTensorSchema, "main");
         const mainModule = new EBTorchCustomModule(rootModuleName, inputNode, outputStack.outputNode, (inputStack.additionalModules.concat(outputStack.additionalModules).map((module) => module.name)));
 
         const allModules = [mainModule].concat(inputStack.additionalModules).concat(outputStack.additionalModules);
@@ -112,26 +112,24 @@ class EBTransformArchitecture extends EBArchitecturePluginBase
             // Create the criterion template for the output schema
             data: criterionTemplate({
                 criterionName: rootCriterionName,
-                mainCriterion: this.neuralNetworkComponentDispatch.generateCriterion(outputSchema)
+                mainCriterion: this.neuralNetworkComponentRegistry.generateCriterion(outputSchema)
             })
-        });
+        });*/
+
+        const files = [];
 
         files.push({
-            path: "TrainingScript.lua",
+            path: "TrainingScript.py",
             data: transformTrainingScriptTemplate({
-                convertDataIn: this.neuralNetworkComponentDispatch.generateTensorInputCode.bind(this.neuralNetworkComponentDispatch),
-                convertDataOut: this.neuralNetworkComponentDispatch.generateTensorOutputCode.bind(this.neuralNetworkComponentDispatch),
-                prepareBatch: this.neuralNetworkComponentDispatch.generatePrepareBatchCode.bind(this.neuralNetworkComponentDispatch),
-                unwindBatchOutput: this.neuralNetworkComponentDispatch.generateUnwindBatchCode.bind(this.neuralNetworkComponentDispatch),
-                generateLocalizeFunction: (schema, name) =>
-                {
-                    return this.neuralNetworkComponentDispatch.getTensorSchema(schema).generateLocalizeFunction(name);
-                },
-                rootModuleName: rootModuleName,
-                rootCriterionName: rootCriterionName,
-                wordVectorDBPath: path.join(__dirname, '..', '..', '..', 'data', 'english_word_vectors.sqlite3'),
-                inputSchema,
-                outputSchema
+                // convertDataIn: this.neuralNetworkComponentRegistry.generateTensorInputCode.bind(this.neuralNetworkComponentRegistry),
+                // convertDataOut: this.neuralNetworkComponentRegistry.generateTensorOutputCode.bind(this.neuralNetworkComponentRegistry),
+                // prepareBatch: this.neuralNetworkComponentRegistry.generatePrepareBatchCode.bind(this.neuralNetworkComponentRegistry),
+                // unwindBatchOutput: this.neuralNetworkComponentRegistry.generateUnwindBatchCode.bind(this.neuralNetworkComponentRegistry),
+                // generateLocalizeFunction: (schema, name) =>
+                // {
+                //     return this.neuralNetworkComponentRegistry.getTensorSchema(schema).generateLocalizeFunction(name);
+                // },
+                wordVectorDBPath: path.join(__dirname, '..', '..', '..', 'data', 'english_word_vectors.sqlite3')
             })
         });
 

@@ -19,6 +19,7 @@
 const EBNumberInterpretation = require('./server/EBNumberInterpretation');
 const EBNeuralNetworkNumberComponent = require('./server/EBNeuralNetworkNumberComponent');
 const EBNeuralNetworkClassificationComponent = require('./server/EBNeuralNetworkClassificationComponent');
+const path = require('path');
 
 /*
  * Plugins must define a series of standard methods.
@@ -30,8 +31,7 @@ module.exports = {
     "dataSources": {},
     "interpretations": {'number': EBNumberInterpretation},
     "neuralNetworkComponents": {
-        'number': EBNeuralNetworkNumberComponent,
-        'classification': EBNeuralNetworkClassificationComponent
+        'number': path.join(__dirname, "server", "number_component.py")
     },
     "architecturePlugins": {}
 };

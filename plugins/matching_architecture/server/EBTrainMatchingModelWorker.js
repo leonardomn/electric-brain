@@ -65,9 +65,9 @@ class EBTrainMatchingModelWorker extends EBStdioScript
                     this.primaryTransformer = new EBNeuralTransformer(this.model.architecture.primarySchema);
                     this.secondaryTransformer = new EBNeuralTransformer(this.model.architecture.secondarySchema);
                     
-                    this.trainingProcess.generateCode(this.application.interpretationRegistry, this.application.neuralNetworkComponentDispatch).then(() =>
+                    this.trainingProcess.generateCode(this.application.interpretationRegistry, this.application.neuralNetworkComponentRegistry).then(() =>
                     {
-                        return this.trainingProcess.startProcess();
+                        return this.trainingProcess.startProcess(this.application.interpretationRegistry);
                     });
                 }
             }).then(() =>

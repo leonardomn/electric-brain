@@ -32,9 +32,9 @@ class EBNeuralNetworkComponentBase
     /**
      * Constructor.
      */
-    constructor(neuralNetworkComponentDispatch)
+    constructor(neuralNetworkComponentRegistry)
     {
-        this.neuralNetworkComponentDispatch = neuralNetworkComponentDispatch;
+        this.neuralNetworkComponentRegistry = neuralNetworkComponentRegistry;
     }
 
 

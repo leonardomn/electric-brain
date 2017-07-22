@@ -33,9 +33,9 @@ class EBNeuralNetworkWordComponent extends EBNeuralNetworkComponentBase
     /**
      * Constructor
      */
-    constructor(neuralNetworkComponentDispatch)
+    constructor(neuralNetworkComponentRegistry)
     {
-        super(neuralNetworkComponentDispatch);
+        super(neuralNetworkComponentRegistry);
     }
 
 

@@ -575,7 +575,7 @@ class EBModelAPI extends EBAPIRoot
                     // Generate the code
                     function generateCode(next)
                     {
-                        const promise = modelProcess.generateCode(self.application.interpretationRegistry, self.application.neuralNetworkComponentDispatch);
+                        const promise = modelProcess.generateCode(self.application.interpretationRegistry, self.application.neuralNetworkComponentRegistry);
                         promise.then(() =>
                         {
                             next(null);
@@ -598,7 +598,7 @@ class EBModelAPI extends EBAPIRoot
                     // Start up the process
                     function(next)
                     {
-                        const promise = modelProcess.startProcess();
+                        const promise = modelProcess.startProcess(self.application.interpretationRegistry);
                         promise.then(() =>
                         {
                             next(null);

@@ -35,12 +35,12 @@ class EBNeuralNetworkObjectComponent extends EBNeuralNetworkComponentBase
     /**
      * Constructor. Takes a neural network component dispatch
      */
-    constructor(neuralNetworkComponentDispatch)
+    constructor(neuralNetworkComponentRegistry)
     {
-        super(neuralNetworkComponentDispatch);
+        super(neuralNetworkComponentRegistry);
         this.variableName = 'a';
         this.machineVariableName ='b';
-        this.neuralNetworkComponentDispatch = neuralNetworkComponentDispatch;
+        this.neuralNetworkComponentRegistry = neuralNetworkComponentRegistry;
     }
 
 
@@ -58,7 +58,7 @@ class EBNeuralNetworkObjectComponent extends EBNeuralNetworkComponentBase
         const childProperties = [];
         children.forEach((childSchema) =>
         {
-            const tensorSchema = this.neuralNetworkComponentDispatch.getTensorSchema(childSchema);
+            const tensorSchema = this.neuralNetworkComponentRegistry.getTensorSchema(childSchema);
             childProperties.push(tensorSchema);
         });
 
@@ -93,7 +93,7 @@ class EBNeuralNetworkObjectComponent extends EBNeuralNetworkComponentBase
         children.forEach((subSchema) =>
         {
             const subFunctionName = `generateTensor_${subSchema.machineVariableName}`;
-            let subSchemaCode = this.neuralNetworkComponentDispatch.generateTensorInputCode(subSchema, subFunctionName);
+            let subSchemaCode = this.neuralNetworkComponentRegistry.generateTensorInputCode(subSchema, subFunctionName);
             subSchemaCode = `    ${subSchemaCode.replace(/\n/g, "\n    ")}`;
             code += subSchemaCode;
 
@@ -131,7 +131,7 @@ class EBNeuralNetworkObjectComponent extends EBNeuralNetworkComponentBase
         children.forEach((subSchema) =>
         {
             const subFunctionName = `generateJSON_${subSchema.machineVariableName}`;
-            let subSchemaCode = this.neuralNetworkComponentDispatch.generateTensorOutputCode(subSchema, subFunctionName);
+            let subSchemaCode = this.neuralNetworkComponentRegistry.generateTensorOutputCode(subSchema, subFunctionName);
             subSchemaCode = `    ${subSchemaCode.replace(/\n/g, "\n    ")}`;
             code += subSchemaCode;
 
@@ -171,7 +171,7 @@ class EBNeuralNetworkObjectComponent extends EBNeuralNetworkComponentBase
         children.forEach((subSchema) =>
         {
             const subFunctionName = `prepareBatch_${subSchema.machineVariableName}`;
-            let subSchemaCode = this.neuralNetworkComponentDispatch.generatePrepareBatchCode(subSchema, subFunctionName);
+            let subSchemaCode = this.neuralNetworkComponentRegistry.generatePrepareBatchCode(subSchema, subFunctionName);
             subSchemaCode = `    ${subSchemaCode.replace(/\n/g, "\n    ")}`;
             code += subSchemaCode;
 
@@ -217,7 +217,7 @@ class EBNeuralNetworkObjectComponent extends EBNeuralNetworkComponentBase
         children.forEach((subSchema) =>
         {
             const subFunctionName = `unwindBatch_${subSchema.machineVariableName}`;
-            let subSchemaCode = this.neuralNetworkComponentDispatch.generateUnwindBatchCode(subSchema, subFunctionName);
+            let subSchemaCode = this.neuralNetworkComponentRegistry.generateUnwindBatchCode(subSchema, subFunctionName);
             subSchemaCode = `    ${subSchemaCode.replace(/\n/g, "\n    ")}`;
             code += subSchemaCode;
 
@@ -268,7 +268,7 @@ class EBNeuralNetworkObjectComponent extends EBNeuralNetworkComponentBase
             const selectFieldNode = new EBTorchNode(new EBTorchModule("nn.SelectTable", [childIndex + 1]), inputNode, `${moduleName}_selectField_${childSchema.machineVariableName}`);
 
             // Get the input stack for the given variable
-            const inputStack = this.neuralNetworkComponentDispatch.generateInputStack(childSchema, selectFieldNode, rootName);
+            const inputStack = this.neuralNetworkComponentRegistry.generateInputStack(childSchema, selectFieldNode, rootName);
 
             outputs.push(inputStack);
         });
@@ -325,7 +325,7 @@ class EBNeuralNetworkObjectComponent extends EBNeuralNetworkComponentBase
         children.forEach((childSchema, childIndex) =>
         {
             // Get the output stack for the given variable
-            const outputStack = this.neuralNetworkComponentDispatch.generateOutputStack(childSchema, inputNode, inputTensorSchema, rootName);
+            const outputStack = this.neuralNetworkComponentRegistry.generateOutputStack(childSchema, inputNode, inputTensorSchema, rootName);
             outputs.push(outputStack);
         });
 
@@ -371,7 +371,7 @@ class EBNeuralNetworkObjectComponent extends EBNeuralNetworkComponentBase
         children.forEach((childSchema, childIndex) =>
         {
             // Get the sub-criterion
-            const subCriterion = this.neuralNetworkComponentDispatch.generateCriterion(childSchema);
+            const subCriterion = this.neuralNetworkComponentRegistry.generateCriterion(childSchema);
             criterions.push(subCriterion);
         });
 

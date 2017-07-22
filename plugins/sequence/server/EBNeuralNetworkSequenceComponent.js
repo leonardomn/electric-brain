@@ -36,10 +36,10 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
     /**
      * Constructor. Takes a neural network component dispatch
      */
-    constructor(neuralNetworkComponentDispatch)
+    constructor(neuralNetworkComponentRegistry)
     {
-        super(neuralNetworkComponentDispatch);
-        this.neuralNetworkComponentDispatch = neuralNetworkComponentDispatch;
+        super(neuralNetworkComponentRegistry);
+        this.neuralNetworkComponentRegistry = neuralNetworkComponentRegistry;
     }
 
 
@@ -57,7 +57,7 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
         return new EBTensorSchema({
             "type": "array",
             "variableName": schema.variableName,
-            "items": this.neuralNetworkComponentDispatch.getTensorSchema(schema.items)
+            "items": this.neuralNetworkComponentRegistry.getTensorSchema(schema.items)
         });
     }
 
@@ -79,7 +79,7 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
 
         let subFunctionName = `${name}_items`;
 
-        let itemSchemaCode = this.neuralNetworkComponentDispatch.generateTensorInputCode(schema.items, subFunctionName);
+        let itemSchemaCode = this.neuralNetworkComponentRegistry.generateTensorInputCode(schema.items, subFunctionName);
         itemSchemaCode = "    " + itemSchemaCode.replace(/\n/g, "\n    ");
 
         code += itemSchemaCode;
@@ -113,7 +113,7 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
 
         let subFunctionName = `${name}_items`;
 
-        let itemSchemaCode = this.neuralNetworkComponentDispatch.generateTensorOutputCode(schema.items, subFunctionName);
+        let itemSchemaCode = this.neuralNetworkComponentRegistry.generateTensorOutputCode(schema.items, subFunctionName);
         itemSchemaCode = `    ${itemSchemaCode.replace(/\n/g, "\n    ")}`;
 
         code += itemSchemaCode;
@@ -147,12 +147,12 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
         code += `local ${name} = function (input)\n`;
 
         let subFunctionName = `${name}_items`;
-        let itemSchemaCode = this.neuralNetworkComponentDispatch.generatePrepareBatchCode(schema.items, subFunctionName);
+        let itemSchemaCode = this.neuralNetworkComponentRegistry.generatePrepareBatchCode(schema.items, subFunctionName);
         itemSchemaCode = `    ${itemSchemaCode.replace(/\n/g, "\n    ")}`;
         code += itemSchemaCode;
 
         let emptyTensorFunctionName = `generateEmpty_${name}_item`;
-        let emptyTensorCode = EBNeuralNetworkComponentBase.generateEmptyTensorTableCode(this.neuralNetworkComponentDispatch.getTensorSchema(schema.items), emptyTensorFunctionName);
+        let emptyTensorCode = EBNeuralNetworkComponentBase.generateEmptyTensorTableCode(this.neuralNetworkComponentRegistry.getTensorSchema(schema.items), emptyTensorFunctionName);
         emptyTensorCode = `    ${emptyTensorCode.replace(/\n/g, "\n    ")}`;
         code += emptyTensorCode;
 
@@ -210,7 +210,7 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
         code += `local ${name} = function (input)\n`;
 
         const subFunctionName = `${name}_items`;
-        let itemSchemaCode = this.neuralNetworkComponentDispatch.generateUnwindBatchCode(schema.items, subFunctionName);
+        let itemSchemaCode = this.neuralNetworkComponentRegistry.generateUnwindBatchCode(schema.items, subFunctionName);
         itemSchemaCode = `    ${itemSchemaCode.replace(/\n/g, "\n    ")}`;
         code += itemSchemaCode;
 
@@ -259,7 +259,7 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
         // Create the input stack for the items of this array
         const subModuleName = `${moduleName}_itemInputStack`;
         const subModuleInputNode = new EBTorchNode(new EBTorchModule("nn.Identity", []), null, `${subModuleName}_input`);
-        const itemInputStack = this.neuralNetworkComponentDispatch.generateInputStack(schema.items, subModuleInputNode, rootName);
+        const itemInputStack = this.neuralNetworkComponentRegistry.generateInputStack(schema.items, subModuleInputNode, rootName);
         const subModule = new EBTorchCustomModule(subModuleName, subModuleInputNode, itemInputStack.outputNode, itemInputStack.additionalModules.map((module) => module.name));
 
         // Cleave off the length tensor at the beginning of the sequence
@@ -339,7 +339,7 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
         // Now create an output stack that we can apply to each item
         const subModuleName = `${moduleName}_itemOutputStack`;
         const subModuleInputNode = new EBTorchNode(new EBTorchModule("nn.Identity", []), null, `${subModuleName}_input`);
-        const itemOutputStack = this.neuralNetworkComponentDispatch.generateOutputStack(outputSchema.items, subModuleInputNode, sequenceTensorSchema.items, rootName);
+        const itemOutputStack = this.neuralNetworkComponentRegistry.generateOutputStack(outputSchema.items, subModuleInputNode, sequenceTensorSchema.items, rootName);
         const subModule = new EBTorchCustomModule(subModuleName, subModuleInputNode, itemOutputStack.outputNode, itemOutputStack.additionalModules.map((module) => module.name));
         
         // Use MapTable to run each item through the output stack
@@ -377,7 +377,7 @@ class EBNeuralNetworkSequenceComponent extends EBNeuralNetworkComponentBase
         assert(outputSchema.isArray);
 
         // Get the item criterion
-        const itemCriterion = this.neuralNetworkComponentDispatch.generateCriterion(outputSchema.items);
+        const itemCriterion = this.neuralNetworkComponentRegistry.generateCriterion(outputSchema.items);
         return new EBTorchModule("nn.ParallelCriterion", [], [
             new EBTorchModule("nn.EBSequenceLengthCriterion", []),
             new EBTorchModule("nn.SequencerCriterion", [itemCriterion])

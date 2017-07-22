@@ -31,12 +31,12 @@ class EBArchitecturePluginBase
      * This constructs the plugin
      *
      * @param {EBInterpretationRegistry} registry The registry for the transformation stream
-     * @param {EBNeuralNetworkComponentDispatch} neuralNetworkComponentDispatch A reference the the globally initialized componentDispatch method
+     * @param {EBNeuralNetworkComponentRegistry} neuralNetworkComponentRegistry A reference the the globally initialized componentDispatch method
      */
-    constructor(registry, neuralNetworkComponentDispatch)
+    constructor(registry, neuralNetworkComponentRegistry)
     {
         this.registry = registry;
-        this.neuralNetworkComponentDispatch = neuralNetworkComponentDispatch;
+        this.neuralNetworkComponentRegistry = neuralNetworkComponentRegistry;
     }
     
     

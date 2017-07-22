@@ -22,7 +22,7 @@ const
     EBArchitecturePluginRegistry = require("./components/architecture/EBArchitecturePluginRegistry"),
     EBDataSourcePluginDispatch = require("./components/datasource/EBDataSourcePluginDispatch"),
     EBInterpretationRegistry = require("./components/datasource/EBInterpretationRegistry"),
-    EBNeuralNetworkComponentDispatch = require("../shared/components/architecture/EBNeuralNetworkComponentDispatch"),
+    EBneuralNetworkComponentRegistry = require("../shared/components/architecture/EBNeuralNetworkComponentRegistry"),
     fs = require("fs"),
     path = require('path');
 
@@ -72,7 +72,7 @@ class EBApplicationBase
 
         // Set up the main data source plugin
         this.dataSourcePluginDispatch = new EBDataSourcePluginDispatch();
-        this.neuralNetworkComponentDispatch = new EBNeuralNetworkComponentDispatch();
+        this.neuralNetworkComponentRegistry = new EBneuralNetworkComponentRegistry();
         this.interpretationRegistry = new EBInterpretationRegistry();
         this.architectureRegistry = new EBArchitecturePluginRegistry();
 
@@ -87,13 +87,13 @@ class EBApplicationBase
             const neuralNetworkComponentNames = Object.keys(plugin.neuralNetworkComponents || {});
             neuralNetworkComponentNames.forEach((name) =>
             {
-                this.neuralNetworkComponentDispatch.registerPlugin(name, new plugin.neuralNetworkComponents[name](this.neuralNetworkComponentDispatch))
+                this.neuralNetworkComponentRegistry.registerPlugin(name, plugin.neuralNetworkComponents[name])
             });
 
             const architecturePluginNames = Object.keys(plugin.architecturePlugins || {});
             architecturePluginNames.forEach((name) =>
             {
-                this.architectureRegistry.registerPlugin(name, new plugin.architecturePlugins[name](this.interpretationRegistry, this.neuralNetworkComponentDispatch));
+                this.architectureRegistry.registerPlugin(name, new plugin.architecturePlugins[name](this.interpretationRegistry, this.neuralNetworkComponentRegistry));
             });
         });
     }

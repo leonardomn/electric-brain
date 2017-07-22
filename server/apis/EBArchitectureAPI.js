@@ -467,12 +467,12 @@ class EBArchitectureAPI extends EBAPIRoot
                 async.series([
                     function generateCode(next)
                     {
-                        const promise = process.generateCode(self.application.interpretationRegistry, self.application.neuralNetworkComponentDispatch);
+                        const promise = process.generateCode(self.application.interpretationRegistry, self.application.neuralNetworkComponentRegistry);
                         promise.then(() => next(), (err) => next(err));
                     },
                     function startProcess(next)
                     {
-                        const promise = process.startProcess();
+                        const promise = process.startProcess(self.application.interpretationRegistry);
 
                         promise.then(() => next(), (err) => next(err));
                     },
