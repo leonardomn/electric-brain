@@ -87,10 +87,10 @@ class EBTorchProcessBase
                             }
                             else
                             {
-                                if (fs.existsSync(self.scriptFolder))
-                                {
-                                    childProcess.execSync(`rm -rf ${path.join(self.scriptFolder, "*")}`)
-                                }
+                                // if (fs.existsSync(self.scriptFolder))
+                                // {
+                                //     childProcess.execSync(`rm -rf ${path.join(self.scriptFolder, "*")}`)
+                                // }
 
                                 return next(null, self.scriptFolder);
                             }
@@ -126,30 +126,26 @@ class EBTorchProcessBase
                 {
                     const libraryFolder = path.join(self.scriptFolder, 'electricbrain');
 
-                    // Create a folder to hold the electricbrain module files
-                    fs.mkdir(libraryFolder, (err) => {
-                        if (err)
-                        {
-                            return next(err);
-                        }
+                    if (!fs.existsSync(libraryFolder))
+                    {
+                        fs.mkdirSync(libraryFolder);
+                    }
 
-                        // Write any libraries
-                        const libraryFiles = fs.readdirSync(path.join(__dirname, '..', '..', '..', 'lib', 'python'));
-                        async.eachSeries(libraryFiles, function(filename, next)
+                    // Write any libraries
+                    const libraryFiles = fs.readdirSync(path.join(__dirname, '..', '..', '..', 'lib', 'python'));
+                    async.eachSeries(libraryFiles, function(filename, next)
+                    {
+                        fs.readFile(path.join(__dirname, '..', '..', '..', 'lib', 'python', filename), function(err, buffer)
                         {
-                            fs.readFile(path.join(__dirname, '..', '..', '..', 'lib', 'python', filename), function(err, buffer)
+                            if (err)
                             {
-                                if (err)
-                                {
-                                    return next(err);
-                                }
+                                return next(err);
+                            }
 
-                                totalFiles += 1;
-                                fs.writeFile(path.join(libraryFolder, filename), buffer, next);
-                            });
-                        }, next);
-                    });
-
+                            totalFiles += 1;
+                            fs.writeFile(path.join(libraryFolder, filename), buffer, next);
+                        });
+                    }, next);
                 },
                 function writeNeuralNetworkComponents(next)
                 {
@@ -419,7 +415,7 @@ class EBTorchProcessBase
             const promise = self.processes[0].writeAndWaitForMatchingOutput(message, {type: "saved"});
             promise.then((response) =>
             {
-                const stream = fs.createReadStream(path.join(self.scriptFolder, 'model.t7'));
+                const stream = fs.createReadStream(path.join(self.scriptFolder, 'model.tfg'));
 
                 return callback(null, stream);
             }, (err) => callback(err));

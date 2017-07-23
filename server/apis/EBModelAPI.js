@@ -584,8 +584,8 @@ class EBModelAPI extends EBAPIRoot
                     // Download the torch model file
                     function(next)
                     {
-                        gridFS.openDownloadStreamByName(`model-${model._id}.t7`).
-                            pipe(fs.createWriteStream(path.join(modelProcess.scriptFolder, 'model.t7'))).
+                        gridFS.openDownloadStreamByName(`model-${model._id}.tfg`).
+                            pipe(fs.createWriteStream(path.join(modelProcess.scriptFolder, 'model.tfg'))).
                             on('error', function(error)
                             {
                                 return next(error);

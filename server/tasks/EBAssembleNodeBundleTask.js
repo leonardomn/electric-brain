@@ -127,7 +127,7 @@ class EBAssembleNodeBundleTask
         {
             return Promise.fromCallback((next) =>
             {
-                torchGridFS.openDownloadStreamByName(`model-${this.model._id}.t7`).pipe(fs.createWriteStream(path.join(this.trainingProcess.scriptFolder, 'model.t7'))).on('error', (error) =>
+                torchGridFS.openDownloadStreamByName(`model-${this.model._id}.tfg`).pipe(fs.createWriteStream(path.join(this.trainingProcess.scriptFolder, 'model.tfg'))).on('error', (error) =>
                 {
                     return next(error);
                 }).on('finish', () =>

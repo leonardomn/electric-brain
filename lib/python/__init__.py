@@ -1,8 +1,6 @@
 
 # This file exists to force this folder to be treated as a module
 
-from electricbrain.shape import EBTensorShape
-
 
 def eprint(*args, **kwargs):
     import sys
@@ -17,3 +15,5 @@ def eprint(*args, **kwargs):
     print(message, file = sys.stderr)
     sys.stderr.flush()
 
+
+from electricbrain.shape import EBTensorShape

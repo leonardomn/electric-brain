@@ -26,7 +26,7 @@
 
 angular.module('eb').controller('EBDataSourceSelectDatabaseTypeController', function EBDataSourceSelectDatabaseTypeController($scope, $timeout, $state, EBDataSourceService)
 {
-    EBDataSourceService.getPlugins().then(function success(results)
+    EBDataSourceService.getSupportedDataSources().then(function success(results)
     {
         const allDatabases = results.data.types;
         

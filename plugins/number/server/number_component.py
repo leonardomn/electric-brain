@@ -16,34 +16,62 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import tensorflow as tf
-from electricbrain import EBTensorShape
+from electricbrain.shape import EBTensorShape, createSummaryModule
+from electricbrain import eprint
+import numpy
 
 class EBNeuralNetworkNumberComponent:
     def __init__(self, schema):
         self.schema = schema
 
-    def convert_input(self, input):
-        pass
+    def convert_input_in(self, input):
+        variableName = self.schema["metadata"]['variablePath']
+        converted = {}
+        converted[variableName + ":0"] = numpy.array(input)
+        return converted
 
-    def convert_output(self, output):
-        pass
+    def convert_output_in(self, output):
+        variableName = self.schema["metadata"]['variablePath']
+        converted = {}
+        converted[variableName + ":0"] = numpy.array(output)
+        return converted
+
+    def convert_output_out(self, outputs):
+        converted = []
+        for x in range(len(outputs)):
+            converted.append(float(outputs[x][0]))
+        return converted
 
     def get_input_stack(self):
         variableName = self.schema["metadata"]['variablePath']
         input = tf.placeholder(tf.float32, name = variableName)
         return ([input], [input], [EBTensorShape([1], ["data"], variableName )])
 
-    def get_output_stack(inputs, self):
+    def get_output_stack(self, inputs, shapes):
+        # Summarize the tensors being currently activated
+        summaryNode = createSummaryModule(inputs, shapes)
+
         # Since we have these input tensors, we must construct a multi layer perceptron from it
-        layer1 = tf.contrib.layers.fully_connected(inputs, 300)
-        activation1 = tf.nn.elu(layer1)
-        layer2 = tf.contrib.layers.fully_connected(activation1, 300)
-        activation2 = tf.nn.elu(layer2)
-        layer3 = tf.contrib.layers.fully_connected(activation2, 300)
-        activation3 = tf.nn.elu(layer3)
+        layer1 = tf.contrib.layers.fully_connected(summaryNode, 300, activation_fn=tf.nn.elu)
+        layer2 = tf.contrib.layers.fully_connected(layer1, 300, activation_fn=tf.nn.elu)
+        layer3 = tf.contrib.layers.fully_connected(layer2, 1, activation_fn=tf.nn.elu)
+        return ([layer3], [EBTensorShape([1], ["data"], "output")])
 
-        return (activation3)
+    def get_criterion_stack(self, output, outputShape):
 
+        variableName = self.schema["metadata"]['variablePath']
+
+        tf.summary.tensor_summary(variableName + "_predicted", output)
+
+        placeholder = tf.placeholder(tf.float32, name = variableName)
+
+        tf.summary.tensor_summary(variableName + "_actual", placeholder)
+
+        loss = tf.losses.mean_squared_error(placeholder, output)
+
+        tf.summary.tensor_summary(variableName + "_loss", loss)
+
+        return ([placeholder], [loss])
 
 
 

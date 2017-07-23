@@ -290,8 +290,8 @@ class EBTrainTransformModelTask extends EBTrainModelTaskBase
 
         return workerPromise.then((worker) =>
         {
-            const inputFileName = temp.path({suffix: '.t7'});
-            const outputFileName = temp.path({suffix: '.t7'});
+            const inputFileName = temp.path({suffix: '.npz'});
+            const outputFileName = temp.path({suffix: '.npz'});
             return worker.writeAndWaitForMatchingOutput({
                 "type": "prepareBatch",
                 "batchNumber": batchNumber,
@@ -699,8 +699,8 @@ class EBTrainTransformModelTask extends EBTrainModelTaskBase
             const promise = self.trainingProcess.getTorchModelFileStream();
             promise.then((stream) =>
             {
-                const fileName = `model-${self.model._id}.t7`;
-                stream.pipe(self.gridFS.openUploadStream(`model-${self.model._id}.t7`)).on('error', (error) =>
+                const fileName = `model-${self.model._id}.tfg`;
+                stream.pipe(self.gridFS.openUploadStream(`model-${self.model._id}.tfg`)).on('error', (error) =>
                 {
                     return callback(error);
                 }).on('finish', () =>
