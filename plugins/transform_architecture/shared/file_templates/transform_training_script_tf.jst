@@ -37,11 +37,10 @@ class TrainingScript:
 
         self.session = tf.Session()
 
-
         self.optimizationAlgorithm = optimizationAlgorithm
         self.optimizationParameters = optimizationParameters
 
-        self.trainingStep = tf.train.AdadeltaOptimizer().minimize(self.totalLoss)
+        self.trainingStep = tf.train.AdagradOptimizer(learning_rate=1e-3).minimize(self.totalLoss)
 
         self.allSummaryOutputs = tf.summary.merge_all()
         train_writer = tf.summary.FileWriter('./logs', self.session.graph)
@@ -65,7 +64,15 @@ class TrainingScript:
         feedDict.update(input)
         feedDict.update(output)
 
-        totalLoss, outputs, _, __ = self.session.run([self.totalLoss, self.outputs, self.trainingStep, self.allSummaryOutputs], feed_dict = feedDict)
+        evaluations = [self.totalLoss, self.outputs, self.trainingStep]
+
+        if self.allSummaryOutputs is not None:
+            evaluations.append(self.allSummaryOutputs)
+
+        evalTuple = self.session.run(evaluations, feed_dict = feedDict)
+
+        totalLoss = evalTuple[0]
+        outputs = evalTuple[1]
 
         outputs = self.outputComponent.convert_output_out(outputs)
 

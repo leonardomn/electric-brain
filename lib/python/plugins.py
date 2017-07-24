@@ -23,11 +23,17 @@ def createNeuralNetworkComponent(schema):
     """ This function creates a new neural network component object for the given schema """
     from electricbrain.object_component import EBNeuralNetworkObjectComponent
     from electricbrain.number_component import EBNeuralNetworkNumberComponent
+    from electricbrain.classification_component import EBNeuralNetworkClassificationComponent
+    from electricbrain.sequence_component import EBNeuralNetworkSequenceComponent
 
-    if schema["type"][0] == 'object':
+    if "enum" in schema:
+        return EBNeuralNetworkClassificationComponent(schema)
+    elif schema["type"][0] == 'object':
         return EBNeuralNetworkObjectComponent(schema)
     elif schema["type"][0] == 'number':
         return EBNeuralNetworkNumberComponent(schema)
+    elif schema["type"][0] == 'array':
+        return EBNeuralNetworkSequenceComponent(schema)
     else:
         raise Exception("Unrecognized schema type " + str(schema["type"]) + " on variable " + str(schema["metadata"]['variablePath']))
 

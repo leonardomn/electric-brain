@@ -31,7 +31,8 @@ module.exports = {
     "dataSources": {},
     "interpretations": {'number': EBNumberInterpretation},
     "neuralNetworkComponents": {
-        'number': path.join(__dirname, "server", "number_component.py")
+        'number': path.join(__dirname, "server", "number_component.py"),
+        'classification': path.join(__dirname, "server", "classification_component.py")
     },
     "architecturePlugins": {}
 };

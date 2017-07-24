@@ -18,6 +18,7 @@
 
 const EBSequenceInterpretation = require('./server/EBSequenceInterpretation');
 const EBNeuralNetworkSequenceComponent = require('./server/EBNeuralNetworkSequenceComponent');
+const path = require('path');
 
 /*
  * Plugins must define a series of standard methods.
@@ -28,7 +29,9 @@ module.exports = {
     "folder": __dirname,
     "dataSources": {},
     "interpretations": {'sequence': EBSequenceInterpretation},
-    "neuralNetworkComponents": {},
+    "neuralNetworkComponents": {
+        'sequence': path.join(__dirname, "server", "sequence_component.py")
+    },
     "architecturePlugins": {}
 };
 

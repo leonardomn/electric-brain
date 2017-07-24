@@ -20,7 +20,7 @@ from electricbrain.shape import EBTensorShape, createSummaryModule
 from electricbrain import eprint
 import numpy
 
-class EBNeuralNetworkNumberComponent:
+class EBNeuralNetworkClassificationComponent:
     def __init__(self, schema):
         self.schema = schema
 
@@ -39,28 +39,39 @@ class EBNeuralNetworkNumberComponent:
     def convert_output_out(self, outputs):
         converted = []
         for x in range(len(outputs)):
-            converted.append(float(outputs[x][0]))
+            index = numpy.argmax(outputs[x])
+            converted.append(int(index))
         return converted
 
     def get_input_stack(self):
-        variableName = self.schema["metadata"]['variablePath']
-        input = tf.placeholder(tf.float32, name = variableName)
-        return ([input], [input], [EBTensorShape([1], ["data"], variableName )])
+        variableName = self.schema["metadata"]['variablePath'].replace("[]", "__array__")
+        input = tf.placeholder(tf.int32, name = variableName)
+
+        tf.nn.embedding_lookup(params, ids)
+
+        embedding = tf.contrib.layers.embedding_column(input, 128)
+        return ([input], [embedding], [EBTensorShape([128], ["data"], variableName)])
 
     def get_output_stack(self, inputs, shapes):
+        # Output size
+        outputSize = len(self.schema["enum"])
+
         # Summarize the tensors being currently activated
         summaryNode = createSummaryModule(inputs, shapes)
 
         # Since we have these input tensors, we must construct a multi layer perceptron from it
         layer1 = tf.contrib.layers.fully_connected(summaryNode, 300, activation_fn=tf.nn.elu)
         layer2 = tf.contrib.layers.fully_connected(layer1, 300, activation_fn=tf.nn.elu)
-        layer3 = tf.contrib.layers.fully_connected(layer2, 1, activation_fn=tf.nn.elu)
-        return ([layer3], [EBTensorShape([1], ["data"], "output")])
+        layer3 = tf.contrib.layers.fully_connected(layer2, outputSize, activation_fn=tf.nn.elu)
+        return ([layer3], [EBTensorShape([outputSize], ["data"], "output")])
+
 
     def get_criterion_stack(self, output, outputShape):
         variableName = self.schema["metadata"]['variablePath']
-        placeholder = tf.placeholder(tf.float32, name = variableName)
-        loss = tf.losses.mean_squared_error(placeholder, output)
+        placeholder = tf.placeholder(tf.int32, name = variableName)
+        embedding = tf.contrib.layers.one_hot_encoding(placeholder, len(self.schema['enum']))
+        losses = tf.nn.softmax_cross_entropy_with_logits(labels=embedding, logits=output, dim=1)
+        loss = tf.reduce_mean(losses)
         return ([placeholder], [loss])
 
 
