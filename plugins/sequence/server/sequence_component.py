@@ -17,21 +17,19 @@
 
 import tensorflow as tf
 from electricbrain.shape import EBTensorShape, createSummaryModule
+from electricbrain.plugins import EBNeuralNetworkComponentBase
 from electricbrain import eprint
 import electricbrain.plugins
 import numpy
 
-class EBNeuralNetworkSequenceComponent:
+class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
     def __init__(self, schema):
+        super(EBNeuralNetworkSequenceComponent, self).__init__(schema)
         self.schema = schema
+        self.subComponent = electricbrain.plugins.createNeuralNetworkComponent(this.schema['items'])
 
     def convert_input_in(self, input):
         converted = []
-
-        # Create the sub-module for list items
-        subComponent = electricbrain.plugins.createNeuralNetworkComponent(this.schema['items'])
-
-        eprint(input)
 
         longest = 0
         # Find the longest sequence
@@ -49,16 +47,13 @@ class EBNeuralNetworkSequenceComponent:
                 else:
                     item.append([])
 
-            convertedItem = subComponent.convert_input_in(item)
+            convertedItem = self.subComponent.convert_input_in(item)
             converted.append(convertedItem)
         return converted
 
     def convert_output_in(self, output):
         converted = []
 
-        # Create the sub-module for list items
-        subComponent = electricbrain.plugins.createNeuralNetworkComponent(this.schema['items'])
-
         longest = 0
         # Find the longest sequence
         for sampleIndex in range(len(input)):
@@ -75,7 +70,7 @@ class EBNeuralNetworkSequenceComponent:
                 else:
                     item.append([])
 
-            convertedItem = subComponent.convert_output_in(item)
+            convertedItem = self.subComponent.convert_output_in(item)
             converted.append(convertedItem)
         return converted
 
@@ -87,41 +82,77 @@ class EBNeuralNetworkSequenceComponent:
             converted.append(int(index))
         return converted
 
-    def get_input_stack(self):
-        variableName = self.schema["metadata"]['variablePath']
+    def get_placeholders(self):
+        return self.subComponent.get_placeholders()
 
-        # Create the sub-module for list items
-        subComponent = electricbrain.plugins.createNeuralNetworkComponent(self.schema['items'])
+    def get_input_stack(self, placeholders):
+        # Find each of the placeholders for variables that exist underneath this sequence
+        subPlaceholders = []
+        for key in placeholders:
+            if key.startswith(self.machineVariableName()):
+                subPlaceholders.append(key)
 
-        subPlaceHolders, subOutputs, subShapes = subComponent.get_input_stack()
+        # Create modified placeholders, where each variable has been mapped along
+        # the time dimension
+        modifiedInputs = []
+        subOutputs
 
-        eprint(subPlaceHolders)
 
+        subPlaceHolders, subOutputs, subShapes = self.subComponent.get_input_stack(batchSize)
 
+        splitSubOutputs = []
 
+        # Take each sub-output, and create a time dimension
+        for index in range(len(subOutputs)):
+            # Get the batch size of the input. Batch is always the first dimension
+            batchSize = tf.shape(subPlaceHolders[index])[0]
 
-        #return ([input], [embedding], [EBTensorShape([128], ["data"], variableName )])
+            # Split the inputs into batch-size chunks, resulting in a time dimension on the top.
+            splitSubOutput = tf.stack(tf.split(subPlaceHolders[index], batchSize))
+
+            splitSubOutputs.append(splitSubOutput)
+
+        # Now join together all of the different sub elements
+        mergedTensor = tf.concat(splitSubOutputs, -1)
+
+        # Now run the input through a double layered, bidirectional LSTM
+        layer1 = tf.contrib.rnn.LSTMBlockFusedCell(300)(mergedTensor)
+        layer2 = tf.contrib.rnn.LSTMBlockFusedCell(300)(layer1)
+
+        # Create the shape of the output
+        outputShape = EBTensorShape(["*", "*", 300], [EBTensorShape.Time, EBTensorShape.Batch, EBTensorShape.Data], self.machineVariableName() )
+
+        return (subPlaceHolders, [layer2], [outputShape])
 
     def get_output_stack(self, inputs, shapes):
-        # Output size
-        outputSize = len(self.schema["enum"])
+        # Figure out which of the inputs correspond to this sequence.
+        origSequence = None
+        for shapeIndex in range(len(shapes)):
+            if shapes[shapeIndex].variableName == self.machineVariableName():
+                origSequence = inputs[shapeIndex]
 
-        # Summarize the tensors being currently activated
-        summaryNode = createSummaryModule(inputs, shapes)
+        if not origSequence:
+            raise Exception("Electric Brain does not currently support generative models. Please stay tuned for the next version of EB.")
 
-        # Since we have these input tensors, we must construct a multi layer perceptron from it
-        layer1 = tf.contrib.layers.fully_connected(summaryNode, 300, activation_fn=tf.nn.elu)
-        layer2 = tf.contrib.layers.fully_connected(layer1, 300, activation_fn=tf.nn.elu)
-        layer3 = tf.contrib.layers.fully_connected(layer2, outputSize, activation_fn=tf.nn.elu)
-        return ([layer3], [EBTensorShape([outputSize], ["data"], "output")])
+        subShapes = None
+        def subStack(item):
+            outputs, shapes = self.subComponent.get_output_stack(item, shapes)
+            subShapes = shapes
+
+        # Individual outputs
+        subOutputs = tf.map_fn(subStack, origSequence)
+
+        # Remap subShapes to add the time dimension to each shape
+        subShapes = map(lambda shape: shape.pushDimension("*", EBTensorShape.Time))
+
+        # Return the sub outputs
+        return (subOutputs, subShapes)
+
 
     def get_criterion_stack(self, output, outputShape):
-        variableName = self.schema["metadata"]['variablePath']
-        placeholder = tf.placeholder(tf.int32, name = variableName)
-        embedding = tf.contrib.layers.one_hot_encoding(placeholder, len(self.schema['enum']))
-        losses = tf.nn.softmax_cross_entropy_with_logits(labels=embedding, logits=output, dim=1)
-        loss = tf.reduce_mean(losses)
-        return ([placeholder], [loss])
+        pass
+
+
 
 
 

@@ -19,6 +19,14 @@ import tensorflow as tf
 
 loaded = False
 
+class EBNeuralNetworkComponentBase:
+    def __init__(self, schema):
+        self.schema = schema
+
+    def machineVariableName(self):
+        return self.schema["metadata"]['variablePath'].replace("[]", "__array__")
+
+
 def createNeuralNetworkComponent(schema):
     """ This function creates a new neural network component object for the given schema """
     from electricbrain.object_component import EBNeuralNetworkObjectComponent

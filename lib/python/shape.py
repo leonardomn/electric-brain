@@ -25,6 +25,18 @@ class EBTensorShape:
         self.dimensionNames = dimensionNames
         self.variableName = variableName
 
+    def pushDimension(self, size, name):
+        """ Returns a new EBTensorShape object with an additional dimension added to the front,
+            e.g. a new zeroth dimension. """
+        newDimensionSizes = [size] + self.dimensionSizes
+        newDimensionNames = [name] + self.dimensionNames
+        return EBTensorShape(newDimensionSizes, newDimensionShapes, self.variableName)
+
+    # Define some standard dimension names - these have special behaviour.
+    Data = "data"
+    Batch = "batch"
+    Time = "time"
+
 
 
 def createSummaryModule(inputTensors, inputShapes):
@@ -38,10 +50,13 @@ def createSummaryModule(inputTensors, inputShapes):
         summarizedSize = 1
         for dimen in range(len(shape.dimensionSizes)):
             size = shape.dimensionSizes[dimen]
-            if size == '*':
-                current = tf.reduce_sum(current, axis=dimen, keep_dims=True)
-            else:
-                summarizedSize = summarizedSize * size
+            name = shape.dimensionNames[dimen]
+
+            if name != EBTensorShape.Batch:
+                if size == '*':
+                    current = tf.reduce_sum(current, axis=dimen, keep_dims=True)
+                else:
+                    summarizedSize = summarizedSize * size
 
         reshaped = tf.reshape(tensor = current, shape=[-1, summarizedSize])
         reshapeNodes.append(reshaped)

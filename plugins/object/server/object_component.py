@@ -20,17 +20,25 @@ import tensorflow as tf
 import electricbrain.plugins
 from electricbrain import eprint
 
-class EBNeuralNetworkObjectComponent:
+class EBNeuralNetworkObjectComponent(electricbrain.plugins.EBNeuralNetworkComponentBase):
     def __init__(self, schema):
+        super(EBNeuralNetworkObjectComponent, self).__init__(schema)
         self.schema = schema
+
+        self.subComponents = {}
+
+        # Convert each of the sub variables
+        for variableName in self.schema["properties"]:
+            subSchema = self.schema["properties"][variableName]
+            self.subComponents[variableName] = electricbrain.plugins.createNeuralNetworkComponent(subSchema)
+
 
     def convert_input_in(self, inputs):
         converted = {}
 
         # Convert each of the sub variables
         for variableName in self.schema["properties"]:
-            subSchema = self.schema["properties"][variableName]
-            subComponent = electricbrain.plugins.createNeuralNetworkComponent(subSchema)
+            subComponent = self.subComponents[variableName]
 
             # Build up a list of the variables to be converted
             subValues = []
@@ -47,8 +55,7 @@ class EBNeuralNetworkObjectComponent:
 
         # Convert each of the sub variables
         for variableName in self.schema["properties"]:
-            subSchema = self.schema["properties"][variableName]
-            subComponent = electricbrain.plugins.createNeuralNetworkComponent(subSchema)
+            subComponent = self.subComponents[variableName]
 
             # Build up a list of the variables to be converted
             subValues = []
@@ -69,8 +76,7 @@ class EBNeuralNetworkObjectComponent:
         keys = list(self.schema["properties"].keys())
         for variableIndex in range(len(keys)):
             variableName = keys[variableIndex]
-            subSchema = self.schema["properties"][variableName]
-            subComponent = electricbrain.plugins.createNeuralNetworkComponent(subSchema)
+            subComponent = self.subComponents[variableName]
 
             variableOutput = outputs[variableIndex]
 
@@ -83,23 +89,26 @@ class EBNeuralNetworkObjectComponent:
 
         return outputObjects
 
+    def get_placeholders(self):
+        placeholders = {}
 
-    def get_input_stack(self):
+        for component in self.subComponents:
+            placeholders.update(component.get_placeholders())
+        return placeholders
+
+    def get_input_stack(self, placeholders):
         # List of outputs from each sub variable
-        placeholders = []
         outputs = []
         shapes = []
 
         # Create the input stack for each sub-variable in the schema
         for variableName in self.schema["properties"]:
-            subSchema = self.schema["properties"][variableName]
-            subComponent = electricbrain.plugins.createNeuralNetworkComponent(subSchema)
-            subPlaceHolders, subOutputs, subShapes = subComponent.get_input_stack()
-            placeholders.extend(subPlaceHolders)
+            subComponent = self.subComponents[variableName]
+            subOutputs, subShapes = subComponent.get_input_stack(placeholders)
             outputs.extend(subOutputs)
             shapes.extend(subShapes)
 
-        return (placeholders, outputs, shapes)
+        return (outputs, shapes)
 
 
     def get_output_stack(self, inputTensors, inputShapes):
@@ -109,8 +118,7 @@ class EBNeuralNetworkObjectComponent:
 
         # Create the output stack for each sub-variable in the schema
         for variableName in self.schema["properties"]:
-            subSchema = self.schema["properties"][variableName]
-            subComponent = electricbrain.plugins.createNeuralNetworkComponent(subSchema)
+            subComponent = self.subComponents[variableName]
             subOutputs, subShapes = subComponent.get_output_stack(inputTensors, inputShapes)
             outputs.extend(subOutputs)
             shapes.extend(subShapes)
@@ -126,8 +134,7 @@ class EBNeuralNetworkObjectComponent:
         keys = list(self.schema["properties"].keys())
         for variableIndex in range(len(keys)):
             variableName = keys[variableIndex]
-            subSchema = self.schema["properties"][variableName]
-            subComponent = electricbrain.plugins.createNeuralNetworkComponent(subSchema)
+            subComponent = self.subComponents[variableName]
 
             output = outputs[variableIndex]
             outputShape = outputShapes[variableIndex]
