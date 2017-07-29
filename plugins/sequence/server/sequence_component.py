@@ -18,6 +18,7 @@
 import tensorflow as tf
 from electricbrain.shape import EBTensorShape, createSummaryModule
 from electricbrain.plugins import EBNeuralNetworkComponentBase
+from electricbrain.editor import generateEditorNetwork
 from electricbrain import eprint
 import electricbrain.plugins
 import numpy
@@ -145,17 +146,11 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
         # Transpose them so batch is the top dimension
         transposed = tf.transpose(mergedTensor, [1, 0, 2])
 
-        rnnHiddenSize = 300
-        layer1ForwardCell = tf.nn.rnn_cell.LSTMCell(rnnHiddenSize, state_is_tuple=True)
-        layer1BackwardCell = tf.nn.rnn_cell.LSTMCell(rnnHiddenSize, state_is_tuple=True)
-        layer2ForwardCell = tf.nn.rnn_cell.LSTMCell(rnnHiddenSize, state_is_tuple=True)
-        layer2BackwardCell = tf.nn.rnn_cell.LSTMCell(rnnHiddenSize, state_is_tuple=True)
-
-        # Create the rnn
-        rnnOutput, outputStateFW, outputStateBW = tf.contrib.rnn.stack_bidirectional_dynamic_rnn([layer1ForwardCell, layer2ForwardCell], [layer1BackwardCell, layer2BackwardCell], transposed, dtype=tf.float32)
+        # Generate the neural network provided from the UI
+        rnnOutput, outputSize = generateEditorNetwork(self.schema, transposed, {})
 
         # Create the shape of the output
-        outputShape = EBTensorShape(["*", "*", 600], [EBTensorShape.Time, EBTensorShape.Batch, EBTensorShape.Data], self.machineVariableName() )
+        outputShape = EBTensorShape(["*", "*", outputSize], [EBTensorShape.Time, EBTensorShape.Batch, EBTensorShape.Data], self.machineVariableName() )
 
         # Transpose the output so the time dimension moves back to the top
         outputLayer = tf.transpose(rnnOutput, [1, 0, 2])

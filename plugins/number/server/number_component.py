@@ -19,6 +19,7 @@ import tensorflow as tf
 from electricbrain.shape import EBTensorShape, createSummaryModule
 from electricbrain.plugins import EBNeuralNetworkComponentBase
 from electricbrain import eprint
+from electricbrain.editor import generateEditorNetwork
 import numpy
 
 class EBNeuralNetworkNumberComponent(EBNeuralNetworkComponentBase):
@@ -61,11 +62,10 @@ class EBNeuralNetworkNumberComponent(EBNeuralNetworkComponentBase):
         # Summarize the tensors being currently activated
         summaryNode = createSummaryModule(inputs, shapes)
 
-        # Since we have these input tensors, we must construct a multi layer perceptron from it
-        layer1 = tf.contrib.layers.fully_connected(summaryNode, 300, activation_fn=tf.nn.elu)
-        layer2 = tf.contrib.layers.fully_connected(layer1, 300, activation_fn=tf.nn.elu)
-        layer3 = tf.contrib.layers.fully_connected(layer2, 1, activation_fn=tf.nn.elu)
-        outputs = {self.machineVariableName(): layer3}
+        # Generate the neural network provided from the UI
+        outputLayer, outputSize = generateEditorNetwork(self.schema, summaryNode, {"outputSize": 1})
+
+        outputs = {self.machineVariableName(): outputLayer}
         outputShapes = {self.machineVariableName(): EBTensorShape(["*", 1], [EBTensorShape.Batch, EBTensorShape.Data], self.machineVariableName())}
         return (outputs, outputShapes)
 
