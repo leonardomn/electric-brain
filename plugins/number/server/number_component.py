@@ -23,33 +23,39 @@ import numpy
 
 class EBNeuralNetworkNumberComponent(EBNeuralNetworkComponentBase):
     def __init__(self, schema):
-        super(EBNeuralNetworkClassificationComponent, self).__init__(schema)
+        super(EBNeuralNetworkNumberComponent, self).__init__(schema)
         self.schema = schema
 
     def convert_input_in(self, input):
         converted = {}
-        converted[self.machineVariableName() + ":0"] = numpy.array(input)
+        converted[self.machineVariableName() + ":0"] = numpy.array([(0 if value is None else value) for value in input])
         return converted
 
     def convert_output_in(self, output):
         converted = {}
-        converted[self.machineVariableName() + ":0"] = numpy.array(output)
+        converted[self.machineVariableName() + ":0"] = numpy.array([(0 if value is None else value) for value in output])
         return converted
 
     def convert_output_out(self, outputs):
+        output = outputs[self.machineVariableName()]
         converted = []
-        for x in range(len(outputs)):
-            converted.append(float(outputs[x][0]))
+        for x in range(len(output)):
+            converted.append(float(output[x][0]))
         return converted
 
-    def get_placeholders(self):
+    def get_input_placeholders(self, extraDimensions):
         placeholders = {}
-        placeholders[self.machineVariableName()] = tf.placeholder(tf.float32, name = self.machineVariableName())
+        placeholders[self.machineVariableName()] = tf.placeholder(tf.float32, name = self.machineVariableName(), shape = ([None] * extraDimensions) + [])
+        return placeholders
+
+    def get_output_placeholders(self, extraDimensions):
+        placeholders = {}
+        placeholders[self.machineVariableName()] = tf.placeholder(tf.float32, name = self.machineVariableName(), shape = ([None] * extraDimensions) + [])
         return placeholders
 
     def get_input_stack(self, placeholders):
         input = placeholders[self.machineVariableName()]
-        return ([input], [input], [EBTensorShape(["*", 1], [EBTensorShape.Batch, EBTensorShape.Data], self.machineVariableName() )])
+        return ([input], [EBTensorShape(["*", 1], [EBTensorShape.Batch, EBTensorShape.Data], self.machineVariableName() )])
 
     def get_output_stack(self, inputs, shapes):
         # Summarize the tensors being currently activated
@@ -59,12 +65,15 @@ class EBNeuralNetworkNumberComponent(EBNeuralNetworkComponentBase):
         layer1 = tf.contrib.layers.fully_connected(summaryNode, 300, activation_fn=tf.nn.elu)
         layer2 = tf.contrib.layers.fully_connected(layer1, 300, activation_fn=tf.nn.elu)
         layer3 = tf.contrib.layers.fully_connected(layer2, 1, activation_fn=tf.nn.elu)
-        return ([layer3], [EBTensorShape(["*", 1], [EBTensorShape.Batch, EBTensorShape.Data], "output")])
+        outputs = {self.machineVariableName(): layer3}
+        outputShapes = {self.machineVariableName(): EBTensorShape(["*", 1], [EBTensorShape.Batch, EBTensorShape.Data], self.machineVariableName())}
+        return (outputs, outputShapes)
 
-    def get_criterion_stack(self, output, outputShape):
-        placeholder = tf.placeholder(tf.float32, name = self.machineVariableName())
-        loss = tf.losses.mean_squared_error(placeholder, output)
-        return ([placeholder], [loss])
+    def get_criterion_stack(self, outputs, outputShapes, outputPlaceholders):
+        output = outputs[self.machineVariableName()]
+        placeholder = outputPlaceholders[self.machineVariableName()]
+        loss = tf.losses.mean_squared_error(tf.expand_dims(placeholder, 1), output)
+        return [loss]
 
 
 

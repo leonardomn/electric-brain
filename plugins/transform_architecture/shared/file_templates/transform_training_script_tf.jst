@@ -21,13 +21,14 @@ class TrainingScript:
         self.outputComponent = EBNeuralNetworkObjectComponent(outputSchema)
 
         # First, get all the placeholders for the sub-components
-        inputPlaceholders = self.inputComponent.get_placeholders()
+        inputPlaceholders = self.inputComponent.get_input_placeholders(1)
+        outputPlaceholders = self.outputComponent.get_output_placeholders(1)
 
         inputOutputs, inputShapes = self.inputComponent.get_input_stack(inputPlaceholders)
 
         outputOutputs, outputShapes = self.outputComponent.get_output_stack(inputOutputs, inputShapes)
 
-        outputPlaceholders, outputLosses = self.outputComponent.get_criterion_stack(outputOutputs, outputShapes)
+        outputLosses = self.outputComponent.get_criterion_stack(outputOutputs, outputShapes, outputPlaceholders)
 
         self.inputPlaceholders = inputPlaceholders
         self.outputs = outputOutputs
@@ -55,12 +56,10 @@ class TrainingScript:
 
     def prepareInputBatch(self, objects, filename):
         converted = self.inputComponent.convert_input_in(objects)
-        converted['eb_batchSize:0'] = [len(objects)]
         numpy.savez(filename, **converted)
 
     def prepareOutputBatch(self, objects, filename):
         converted = self.outputComponent.convert_output_in(objects)
-        converted['eb_batchSize:0'] = [len(objects)]
         numpy.savez(filename, **converted)
 
     def iteration(self, inputFileName, outputFileName):

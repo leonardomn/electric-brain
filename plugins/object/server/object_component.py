@@ -43,7 +43,10 @@ class EBNeuralNetworkObjectComponent(electricbrain.plugins.EBNeuralNetworkCompon
             # Build up a list of the variables to be converted
             subValues = []
             for valueIndex in range(len(inputs)):
-                subValues.append(inputs[valueIndex][variableName])
+                if inputs[valueIndex] is None:
+                    subValues.append(None)
+                else:
+                    subValues.append(inputs[valueIndex][variableName])
 
             subConverted = subComponent.convert_input_in(subValues)
             converted.update(subConverted)
@@ -60,7 +63,10 @@ class EBNeuralNetworkObjectComponent(electricbrain.plugins.EBNeuralNetworkCompon
             # Build up a list of the variables to be converted
             subValues = []
             for valueIndex in range(len(outputs)):
-                subValues.append(outputs[valueIndex][variableName])
+                if outputs[valueIndex] is None:
+                    subValues.append(None)
+                else:
+                    subValues.append(outputs[valueIndex][variableName])
 
             subConverted = subComponent.convert_output_in(subValues)
             converted.update(subConverted)
@@ -78,9 +84,9 @@ class EBNeuralNetworkObjectComponent(electricbrain.plugins.EBNeuralNetworkCompon
             variableName = keys[variableIndex]
             subComponent = self.subComponents[variableName]
 
-            variableOutput = outputs[variableIndex]
+            #variableOutput = outputs["." + variableName]
 
-            separated = subComponent.convert_output_out(variableOutput)
+            separated = subComponent.convert_output_out(outputs)
 
             for objectIndex in range(len(separated)):
                 if len(outputObjects) <= objectIndex:
@@ -89,11 +95,16 @@ class EBNeuralNetworkObjectComponent(electricbrain.plugins.EBNeuralNetworkCompon
 
         return outputObjects
 
-    def get_placeholders(self):
+    def get_input_placeholders(self, extraDimensions):
         placeholders = {}
-
         for component in self.subComponents:
-            placeholders.update(component.get_placeholders())
+            placeholders.update(self.subComponents[component].get_input_placeholders(extraDimensions))
+        return placeholders
+
+    def get_output_placeholders(self, extraDimensions):
+        placeholders = {}
+        for component in self.subComponents:
+            placeholders.update(self.subComponents[component].get_output_placeholders(extraDimensions))
         return placeholders
 
     def get_input_stack(self, placeholders):
@@ -113,21 +124,20 @@ class EBNeuralNetworkObjectComponent(electricbrain.plugins.EBNeuralNetworkCompon
 
     def get_output_stack(self, inputTensors, inputShapes):
         # List of outputs from each sub variable
-        outputs = []
-        shapes = []
+        outputs = {}
+        shapes = {}
 
         # Create the output stack for each sub-variable in the schema
         for variableName in self.schema["properties"]:
             subComponent = self.subComponents[variableName]
             subOutputs, subShapes = subComponent.get_output_stack(inputTensors, inputShapes)
-            outputs.extend(subOutputs)
-            shapes.extend(subShapes)
+            outputs.update(subOutputs)
+            shapes.update(subShapes)
 
         return (outputs, shapes)
 
-    def get_criterion_stack(self, outputs, outputShapes):
-        # List of criterions from each sub variable
-        placeholders = []
+    def get_criterion_stack(self, outputs, outputShapes, outputPlaceholders):
+        # Keep track of all the losses from each criterion
         losses = []
 
         # Create the criterion stack for each sub-variable
@@ -135,12 +145,8 @@ class EBNeuralNetworkObjectComponent(electricbrain.plugins.EBNeuralNetworkCompon
         for variableIndex in range(len(keys)):
             variableName = keys[variableIndex]
             subComponent = self.subComponents[variableName]
-
-            output = outputs[variableIndex]
-            outputShape = outputShapes[variableIndex]
-
-            subPlaceholders, subLosses = subComponent.get_criterion_stack(output, outputShapes)
-            placeholders.extend(subPlaceholders)
+            subLosses = subComponent.get_criterion_stack(outputs, outputShapes, outputPlaceholders)
             losses.extend(subLosses)
 
-        return (placeholders, losses)
+        return losses
+

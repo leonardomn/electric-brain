@@ -30,7 +30,27 @@ class EBTensorShape:
             e.g. a new zeroth dimension. """
         newDimensionSizes = [size] + self.dimensionSizes
         newDimensionNames = [name] + self.dimensionNames
-        return EBTensorShape(newDimensionSizes, newDimensionShapes, self.variableName)
+        return EBTensorShape(newDimensionSizes, newDimensionNames, self.variableName)
+
+    def popDimension(self):
+        """ Returns a new EBTensorShape object with the front dimension removed"""
+        newDimensionSizes = self.dimensionSizes[1:]
+        newDimensionNames = self.dimensionNames[1:]
+        return EBTensorShape(newDimensionSizes, newDimensionNames, self.variableName)
+
+    def __str__(self):
+        string = "EBTensorShape("
+        for x in range(len(self.dimensionSizes)):
+            string += str(self.dimensionNames[x]) + ":" + str(self.dimensionSizes[x]) + " "
+        string += ")"
+        return string
+
+    def __repr__(self):
+        string = "EBTensorShape("
+        for x in range(len(self.dimensionSizes)):
+            string += str(self.dimensionNames[x]) + ":" + str(self.dimensionSizes[x]) + " "
+        string += ")"
+        return string
 
     # Define some standard dimension names - these have special behaviour.
     Data = "data"
@@ -42,6 +62,7 @@ class EBTensorShape:
 def createSummaryModule(inputTensors, inputShapes):
     reshapeNodes = []
     totalSize = 0
+
     for tensorN in range(len(inputShapes)):
         # If there are any variable dimensions in the input-shape, then sum along that dimension
         shape = inputShapes[tensorN]

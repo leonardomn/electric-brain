@@ -10,8 +10,8 @@ def eprint(*args, **kwargs):
 
     caller = traceback.format_list(traceback.extract_stack())[-2]
     filename = caller.split("\"")[1].split("/")[-1]
-    lineNumber = re.search('line (\\d\\d)', caller).group(1)
-    message = filename + ":" + lineNumber + "  " + pprint.pformat(*args, **kwargs)
+    lineNumber = re.search('line (\\d+)', caller).group(1)
+    message = filename + ":" + lineNumber + "  " + " ".join([pprint.pformat(arg) for arg in args])
     print(message, file = sys.stderr)
     sys.stderr.flush()
 
