@@ -37,7 +37,7 @@ class EBNeuralNetworkNumberComponent(EBNeuralNetworkComponentBase):
         converted[self.machineVariableName() + ":0"] = numpy.array([(0 if value is None else value) for value in output])
         return converted
 
-    def convert_output_out(self, outputs):
+    def convert_output_out(self, outputs, inputs):
         output = outputs[self.machineVariableName()]
         converted = []
         for x in range(len(output)):

@@ -74,7 +74,7 @@ class EBNeuralNetworkObjectComponent(electricbrain.plugins.EBNeuralNetworkCompon
         return converted
 
 
-    def convert_output_out(self, outputs):
+    def convert_output_out(self, outputs, inputs):
         # Assemble together the output objects
         outputObjects = []
 
@@ -86,7 +86,7 @@ class EBNeuralNetworkObjectComponent(electricbrain.plugins.EBNeuralNetworkCompon
 
             #variableOutput = outputs["." + variableName]
 
-            separated = subComponent.convert_output_out(outputs)
+            separated = subComponent.convert_output_out(outputs, inputs)
 
             for objectIndex in range(len(separated)):
                 if len(outputObjects) <= objectIndex:

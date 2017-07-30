@@ -80,7 +80,7 @@ class TrainingScript:
         totalLoss = evalTuple[0]
         outputs = evalTuple[1]
 
-        outputs = self.outputComponent.convert_output_out(outputs)
+        outputs = self.outputComponent.convert_output_out(outputs, input)
 
         return float(totalLoss), outputs
 
@@ -88,7 +88,7 @@ class TrainingScript:
         feedDict = {}
         feedDict.update(input)
         outputs = self.session.run([self.outputs], feed_dict = feedDict)[0]
-        outputs = self.outputComponent.convert_output_out(outputs)
+        outputs = self.outputComponent.convert_output_out(outputs, input)
         return outputs
 
     def evaluateBatchFile(self, batchFileName):

@@ -37,7 +37,7 @@ class EBNeuralNetworkClassificationComponent(EBNeuralNetworkComponentBase):
         converted[self.machineVariableName() + ":0"] = numpy.array([(-1 if value is None else value) for value in output])
         return converted
 
-    def convert_output_out(self, outputs):
+    def convert_output_out(self, outputs, inputs):
         output = outputs[self.machineVariableName()]
         converted = []
         for x in range(len(output)):
@@ -82,8 +82,15 @@ class EBNeuralNetworkClassificationComponent(EBNeuralNetworkComponentBase):
         output = outputs[self.machineVariableName()]
         placeholder = outputPlaceholders[self.machineVariableName()]
 
-        embedding = tf.contrib.layers.one_hot_encoding(placeholder, len(self.schema['enum']))
-        losses = tf.nn.softmax_cross_entropy_with_logits(labels=embedding, logits=output, dim=1)
+        # If there is no value for the output, loss is 0
+        def checkSingleValue(value):
+            embedding = tf.one_hot(value[0], len(self.schema['enum']))
+            mask = tf.sign(tf.reduce_max(tf.abs(embedding), 0))
+            losses = tf.nn.softmax_cross_entropy_with_logits(labels=embedding, logits=value[1], dim=0) * mask
+            return [tf.to_int32(losses)] + [losses]
+
+        losses = tf.map_fn(checkSingleValue, [placeholder, output])[1]
+
         loss = tf.reduce_mean(losses)
         return [loss]
 

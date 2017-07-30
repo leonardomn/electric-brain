@@ -32,10 +32,14 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
     def convert_input_in(self, input):
         converted = {}
 
+        # Add in the sequence lengths
+        converted[self.machineVariableName() + "__length__:0"] = []
+
         longest = 0
         # Find the longest sequence
         for sampleIndex in range(len(input)):
             sequence = input[sampleIndex]
+            converted[self.machineVariableName() + "__length__:0"].append(len(sequence))
             longest = max(len(sequence), longest)
 
         # combine each of the inputs
@@ -61,10 +65,14 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
     def convert_output_in(self, output):
         converted = {}
 
+        # Add in the sequence lengths
+        converted[self.machineVariableName() + "__length__:0"] = []
+
         longest = 0
         # Find the longest sequence
         for sampleIndex in range(len(output)):
             sequence = output[sampleIndex]
+            converted[self.machineVariableName() + "__length__:0"].append(len(sequence))
             longest = max(len(sequence), longest)
 
         # combine each of the outputs
@@ -88,13 +96,16 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
         return converted
 
 
-    def convert_output_out(self, outputs):
+    def convert_output_out(self, outputs, inputs):
         outputKeys = []
         for key in outputs.keys():
             if key.startswith(self.machineVariableName()):
                 outputKeys.append(key)
 
         timeObjects = []
+
+        # Get the sequence lengths
+        sequenceLengths = inputs[self.machineVariableName() + "__length__:0"]
 
         # For each output we have a multi-dimensional tensor with time
         # as the top dimension so separate each of the items.
@@ -107,27 +118,32 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
 
         objects = []
         for timeIndex in range(len(timeObjects)):
-            batchItems = self.subComponent.convert_output_out(timeObjects[timeIndex])
+            batchItems = self.subComponent.convert_output_out(timeObjects[timeIndex], inputs)
             for batchIndex in range(len(batchItems)):
-                if len(objects) <= batchIndex:
-                    objects.append([])
+                if timeIndex < sequenceLengths[batchIndex]:
+                    if len(objects) <= batchIndex:
+                        objects.append([])
 
-                objects[batchIndex].append(batchItems[batchIndex])
+                    objects[batchIndex].append(batchItems[batchIndex])
 
         return objects
 
     def get_input_placeholders(self, extraDimensions):
-        return self.subComponent.get_input_placeholders(extraDimensions + 1)
+        placeholders = self.subComponent.get_input_placeholders(extraDimensions + 1)
+        placeholders[self.machineVariableName() + "__length__"] = tf.placeholder(tf.int32, name = self.machineVariableName() + "__length__")
+        return placeholders
 
     def get_output_placeholders(self, extraDimensions):
-        return self.subComponent.get_output_placeholders(extraDimensions + 1)
+        placeholders = self.subComponent.get_output_placeholders(extraDimensions + 1)
+        placeholders[self.machineVariableName() + "__length__"] = tf.placeholder(tf.int32, name = self.machineVariableName() + "__length__")
+        return placeholders
 
     def get_input_stack(self, placeholders):
         # Find each of the placeholders for variables that exist underneath this sequence
         subPlaceholderKeys = []
         subPlaceholders = []
         for key in placeholders:
-            if key.startswith(self.machineVariableName()):
+            if key.startswith(self.machineVariableName()) and (key != self.machineVariableName() + "__length__"):
                 subPlaceholderKeys.append(key)
                 subPlaceholders.append(placeholders[key])
 
@@ -143,8 +159,11 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
         # Now join together all of the different sub elements
         mergedTensor = tf.concat(mappedSubOutputs, -1)
 
+        # Get the sequence lengths tensor
+        sequenceLengths = placeholders[self.machineVariableName() + "__length__"]
+
         # Generate the neural network provided from the UI
-        outputLayer, outputSize = generateEditorNetwork(self.schema, mergedTensor, {})
+        outputLayer, outputSize = generateEditorNetwork(self.schema, mergedTensor, {"sequenceLengths": sequenceLengths})
 
         # Create the shape of the output
         outputShape = EBTensorShape(["*", "*", outputSize], [EBTensorShape.Time, EBTensorShape.Batch, EBTensorShape.Data], self.machineVariableName() )
@@ -187,7 +206,7 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
         # Find each of the placeholders for variables that exist underneath this sequence
         outputKeys = []
         for key in outputs.keys():
-            if key.startswith(self.machineVariableName()):
+            if key.startswith(self.machineVariableName()) and (key != self.machineVariableName() + "__length__"):
                 outputKeys.append(key)
 
         losses = []

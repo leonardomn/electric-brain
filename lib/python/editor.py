@@ -52,38 +52,39 @@ def generateEditorNetwork(schema, input, templateVars):
             current = tf.layers.dense(current, units = getValue(layer, 'units'))
             currentOutputSize = getValue(layer, 'units')
         elif layer['name'] == 'bidirectional_lstm':
-            rnnHiddenSize = getValue(layer, 'outputSize')
+            rnnHiddenSize = int(getValue(layer, 'outputSize'))
             with tf.variable_scope('forward' + str(layerIndex)):
                 forwardCell = tf.nn.rnn_cell.LSTMCell(rnnHiddenSize, state_is_tuple=True)
             with tf.variable_scope('backward' + str(layerIndex)):
                 backwardCell = tf.nn.rnn_cell.LSTMCell(rnnHiddenSize, state_is_tuple=True)
             with tf.variable_scope('layer'+ str(layerIndex)):
-                output, state = tf.nn.bidirectional_dynamic_rnn(forwardCell, backwardCell, current, dtype=tf.float32, time_major = True)
-            currentOutputSize = getValue(layer, 'outputSize') * 2
+                output, state = tf.nn.bidirectional_dynamic_rnn(forwardCell, backwardCell, current, dtype=tf.float32, time_major = True, sequence_length = templateVars['sequenceLengths'])
+            currentOutputSize = rnnHiddenSize * 2
             current = tf.concat(output, axis = 2)
         elif layer['name'] == 'lstm':
-            rnnHiddenSize = getValue(layer, 'outputSize')
+            rnnHiddenSize = int(getValue(layer, 'outputSize'))
             with tf.variable_scope('layer'+ str(layerIndex)):
-                forwardCell = tf.nn.rnn_cell.LSTMCell(rnnHiddenSize, state_is_tuple=True)
-                output, state = tf.nn.dynamic_rnn(forwardCell, current, dtype=tf.float32, time_major = True)
-            currentOutputSize = getValue(layer, 'outputSize')
+                #forwardCell = tf.nn.rnn_cell.LSTMCell(rnnHiddenSize, state_is_tuple=True)
+                #output, state = tf.nn.dynamic_rnn(forwardCell, current, dtype=tf.float32, time_major = True, sequence_length = templateVars['sequenceLengths'])
+                output, state = tf.contrib.rnn.LSTMBlockFusedCell(rnnHiddenSize)(current, dtype=tf.float32)
+            currentOutputSize = rnnHiddenSize
             current = output
         elif layer['name'] == 'bidirectional_gru':
-            rnnHiddenSize = getValue(layer, 'outputSize')
+            rnnHiddenSize = int(getValue(layer, 'outputSize'))
             with tf.variable_scope('forward' + str(layerIndex)):
                 forwardCell = tf.nn.rnn_cell.GRUCell(rnnHiddenSize, state_is_tuple=True)
             with tf.variable_scope('backward' + str(layerIndex)):
                 backwardCell = tf.nn.rnn_cell.GRUCell(rnnHiddenSize, state_is_tuple=True)
             with tf.variable_scope('layer'+ str(layerIndex)):
-                output, state = tf.nn.bidirectional_dynamic_rnn(forwardCell, backwardCell, current, dtype=tf.float32, time_major = True)
-            currentOutputSize = getValue(layer, 'outputSize') * 2
+                output, state = tf.nn.bidirectional_dynamic_rnn(forwardCell, backwardCell, current, dtype=tf.float32, time_major = True, sequence_length = templateVars['sequenceLengths'])
+            currentOutputSize = rnnHiddenSize * 2
             current = tf.concat(output, axis = 2)
         elif layer['name'] == 'gru':
-            rnnHiddenSize = getValue(layer, 'outputSize')
+            rnnHiddenSize = int(getValue(layer, 'outputSize'))
             with tf.variable_scope('layer'+ str(layerIndex)):
                 forwardCell = tf.nn.rnn_cell.GRUCell(rnnHiddenSize, state_is_tuple=True)
-                output, state = tf.nn.dynamic_rnn(forwardCell, current, dtype=tf.float32, time_major = True)
-            currentOutputSize = getValue(layer, 'outputSize')
+                output, state = tf.nn.dynamic_rnn(forwardCell, current, dtype=tf.float32, time_major = True, sequence_length = templateVars['sequenceLengths'])
+            currentOutputSize = rnnHiddenSize
             current = output
         else:
             eprint("Unknown layer type: " + layer['name'])

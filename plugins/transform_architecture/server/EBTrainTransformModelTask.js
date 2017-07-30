@@ -535,7 +535,10 @@ class EBTrainTransformModelTask extends EBTrainModelTaskBase
                 {
                     return self.outputTransformer.convertObjectOut(this.application.interpretationRegistry, zipped[1]).then((actual) =>
                     {
-                        return self.getAccuracyFromOutput(zipped[0].original, actual, true);
+                        return self.getAccuracyFromOutput(zipped[0].original, actual, true).then((accuracy) =>
+                        {
+                            return accuracy;
+                        })
                     });
                 });
             }).then((accuracies) =>
