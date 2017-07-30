@@ -46,7 +46,7 @@ class TrainingScript:
         self.optimizationAlgorithm = optimizationAlgorithm
         self.optimizationParameters = optimizationParameters
 
-        self.trainingStep = tf.train.AdagradOptimizer(learning_rate=1e-3).minimize(self.totalLoss)
+        self.trainingStep = getattr(tf.train, optimizationAlgorithm)(**self.optimizationParameters).minimize(self.totalLoss)
 
         self.allSummaryOutputs = tf.summary.merge_all()
         train_writer = tf.summary.FileWriter('./logs', self.session.graph)

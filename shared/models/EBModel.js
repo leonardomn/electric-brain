@@ -62,15 +62,10 @@ class EBModel
                 batchSize: 16,
                 testingBatchSize: 4,
                 iterations: 50000,
-                initializationRangeBottom: -0.08,
-                initializationRangeTop: 0.08,
-                optimizationAlgorithm: 'adamax',
+                optimizationAlgorithm: 'AdagradOptimizer',
                 optimizationParameters: {
-                    learningRate: 2e-3,
-                    beta: 0.9,
-                    beta2: 0.999,
-                    epsilon: 1e-38,
-                    weightDecay: 0
+                    learning_rate: 1e-3,
+                    initial_accumulator_value: 0.1
                 }
             };
         }
