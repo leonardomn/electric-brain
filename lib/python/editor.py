@@ -58,14 +58,14 @@ def generateEditorNetwork(schema, input, templateVars):
             with tf.variable_scope('backward' + str(layerIndex)):
                 backwardCell = tf.nn.rnn_cell.LSTMCell(rnnHiddenSize, state_is_tuple=True)
             with tf.variable_scope('layer'+ str(layerIndex)):
-                output, state = tf.nn.bidirectional_dynamic_rnn(forwardCell, backwardCell, current, dtype=tf.float32)
+                output, state = tf.nn.bidirectional_dynamic_rnn(forwardCell, backwardCell, current, dtype=tf.float32, time_major = True)
             currentOutputSize = getValue(layer, 'outputSize') * 2
             current = tf.concat(output, axis = 2)
         elif layer['name'] == 'lstm':
             rnnHiddenSize = getValue(layer, 'outputSize')
             with tf.variable_scope('layer'+ str(layerIndex)):
                 forwardCell = tf.nn.rnn_cell.LSTMCell(rnnHiddenSize, state_is_tuple=True)
-                output, state = tf.nn.dynamic_rnn(forwardCell, current, dtype=tf.float32)
+                output, state = tf.nn.dynamic_rnn(forwardCell, current, dtype=tf.float32, time_major = True)
             currentOutputSize = getValue(layer, 'outputSize')
             current = output
         elif layer['name'] == 'bidirectional_gru':
@@ -75,14 +75,14 @@ def generateEditorNetwork(schema, input, templateVars):
             with tf.variable_scope('backward' + str(layerIndex)):
                 backwardCell = tf.nn.rnn_cell.GRUCell(rnnHiddenSize, state_is_tuple=True)
             with tf.variable_scope('layer'+ str(layerIndex)):
-                output, state = tf.nn.bidirectional_dynamic_rnn(forwardCell, backwardCell, current, dtype=tf.float32)
+                output, state = tf.nn.bidirectional_dynamic_rnn(forwardCell, backwardCell, current, dtype=tf.float32, time_major = True)
             currentOutputSize = getValue(layer, 'outputSize') * 2
             current = tf.concat(output, axis = 2)
         elif layer['name'] == 'gru':
             rnnHiddenSize = getValue(layer, 'outputSize')
             with tf.variable_scope('layer'+ str(layerIndex)):
                 forwardCell = tf.nn.rnn_cell.GRUCell(rnnHiddenSize, state_is_tuple=True)
-                output, state = tf.nn.dynamic_rnn(forwardCell, current, dtype=tf.float32)
+                output, state = tf.nn.dynamic_rnn(forwardCell, current, dtype=tf.float32, time_major = True)
             currentOutputSize = getValue(layer, 'outputSize')
             current = output
         else:

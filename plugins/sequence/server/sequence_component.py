@@ -143,17 +143,11 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
         # Now join together all of the different sub elements
         mergedTensor = tf.concat(mappedSubOutputs, -1)
 
-        # Transpose them so batch is the top dimension
-        transposed = tf.transpose(mergedTensor, [1, 0, 2])
-
         # Generate the neural network provided from the UI
-        rnnOutput, outputSize = generateEditorNetwork(self.schema, transposed, {})
+        outputLayer, outputSize = generateEditorNetwork(self.schema, mergedTensor, {})
 
         # Create the shape of the output
         outputShape = EBTensorShape(["*", "*", outputSize], [EBTensorShape.Time, EBTensorShape.Batch, EBTensorShape.Data], self.machineVariableName() )
-
-        # Transpose the output so the time dimension moves back to the top
-        outputLayer = tf.transpose(rnnOutput, [1, 0, 2])
 
         return ([outputLayer], [outputShape])
 
@@ -172,7 +166,7 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
         def subStack(item):
             # Remove time dimension from the shapes
             newShapes = [shape.popDimension() for shape in shapes]
-            localOutputs, localShapes = self.subComponent.get_output_stack([item], newShapes)
+            localOutputs, localShapes = self.subComponent.get_output_stack([item[0]], newShapes)
             subShapes.update(localShapes)
             outputKeys.extend(localOutputs.keys())
             return list(localOutputs.values())
@@ -207,8 +201,7 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
             losses = self.subComponent.get_criterion_stack(outputs, shapes, placeholders)
             return losses + losses
 
-        tensorsToMap = [outputs[key] for key in outputKeys] + [outputPlaceholders[key] for key in outputPlaceholders]
-
+        tensorsToMap = [outputs[key] for key in outputKeys] + [outputPlaceholders[key] for key in outputKeys]
 
         # Map both the network outputs and the actual outputs, and apply the sub-stacks to them
         subLosses = tf.map_fn(subStack, tensorsToMap)
