@@ -20,14 +20,15 @@ import tensorflow as tf
 loaded = False
 
 class EBNeuralNetworkComponentBase:
-    def __init__(self, schema):
+    def __init__(self, schema, prefix):
         self.schema = schema
+        self.prefix = prefix
 
     def machineVariableName(self):
-        return self.schema["metadata"]['variablePath'].replace("[]", "__array__")
+        return self.prefix + "-" + self.schema["metadata"]['variablePath'].replace("[]", "__array__")
 
 
-def createNeuralNetworkComponent(schema):
+def createNeuralNetworkComponent(schema, prefix):
     """ This function creates a new neural network component object for the given schema """
     from electricbrain.object_component import EBNeuralNetworkObjectComponent
     from electricbrain.number_component import EBNeuralNetworkNumberComponent
@@ -35,13 +36,13 @@ def createNeuralNetworkComponent(schema):
     from electricbrain.sequence_component import EBNeuralNetworkSequenceComponent
 
     if "enum" in schema:
-        return EBNeuralNetworkClassificationComponent(schema)
+        return EBNeuralNetworkClassificationComponent(schema, prefix)
     elif schema["type"][0] == 'object':
-        return EBNeuralNetworkObjectComponent(schema)
+        return EBNeuralNetworkObjectComponent(schema, prefix)
     elif schema["type"][0] == 'number':
-        return EBNeuralNetworkNumberComponent(schema)
+        return EBNeuralNetworkNumberComponent(schema, prefix)
     elif schema["type"][0] == 'array':
-        return EBNeuralNetworkSequenceComponent(schema)
+        return EBNeuralNetworkSequenceComponent(schema, prefix)
     else:
         raise Exception("Unrecognized schema type " + str(schema["type"]) + " on variable " + str(schema["metadata"]['variablePath']))
 

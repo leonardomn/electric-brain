@@ -19,6 +19,8 @@
 const EBStringInterpretation = require('./server/EBStringInterpretation');
 const EBNeuralNetworkWordComponent = require('./server/EBNeuralNetworkWordComponent');
 
+const path = require('path');
+
 /*
  * Plugins must define a series of standard methods.
  */
@@ -28,7 +30,9 @@ module.exports = {
     "folder": __dirname,
     "dataSources": {},
     "interpretations": {'string': EBStringInterpretation},
-    "neuralNetworkComponents": {},
+    "neuralNetworkComponents": {
+        'word': path.join(__dirname, "server", "word_component.py")
+    },
     "architecturePlugins": {}
 };
 

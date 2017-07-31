@@ -18,7 +18,7 @@
 import tensorflow as tf
 from electricbrain import eprint
 
-def generateEditorNetwork(schema, input, templateVars):
+def generateEditorNetwork(layers, input, templateVars):
     def getValue(layer, variable):
         value = layer[variable]
         if value in templateVars:
@@ -28,8 +28,8 @@ def generateEditorNetwork(schema, input, templateVars):
 
     currentOutputSize = None
     current = input
-    for layerIndex in range(len(schema['configuration']['component']['layers'])):
-        layer = schema['configuration']['component']['layers'][layerIndex]
+    for layerIndex in range(len(layers)):
+        layer = layers[layerIndex]
         if layer['name'] == 'sigmoid':
             current = tf.nn.sigmoid(current)
         elif layer['name'] == 'tanh':

@@ -21,28 +21,37 @@ from electricbrain.plugins import EBNeuralNetworkComponentBase
 from electricbrain import eprint
 from electricbrain.editor import generateEditorNetwork
 import numpy
+import sqlite3
 
-class EBNeuralNetworkNumberComponent(EBNeuralNetworkComponentBase):
+class EBNeuralNetworkWordComponent(EBNeuralNetworkComponentBase):
     def __init__(self, schema, prefix):
-        super(EBNeuralNetworkNumberComponent, self).__init__(schema, prefix)
+        super(EBNeuralNetworkWordComponent, self).__init__(schema, prefix)
         self.schema = schema
+        self.vectorDB = sqlite3.connect('/home/bradley/eb/electric-brain/scripts/word_vectors.db')
 
     def convert_input_in(self, input):
-        converted = {}
-        converted[self.machineVariableName() + ":0"] = numpy.array([(0 if value is None else value) for value in input])
+        cur = self.vectorDB.cursor()
+        converted = []
+        for value in input:
+            tensorBytes = cur.execute("SELECT tensor FROM word_vectors WHERE word = ?", )
+            tensor = numpy.fromstring(tensorBytes)
+            converted.append(value)
+
         return converted
 
     def convert_output_in(self, output):
-        converted = {}
-        converted[self.machineVariableName() + ":0"] = numpy.array([(0 if value is None else value) for value in output])
+        cur = self.vectorDB.cursor()
+        converted = []
+        for value in input:
+            tensorBytes = cur.execute("SELECT tensor FROM word_vectors WHERE word = ?", )
+            tensor = numpy.fromstring(tensorBytes)
+
+            converted.append(value)
+
         return converted
 
     def convert_output_out(self, outputs, inputs):
-        output = outputs[self.machineVariableName()]
-        converted = []
-        for x in range(len(output)):
-            converted.append(float(output[x][0]))
-        return converted
+        throw Exception("Unimplemented")
 
     def get_input_placeholders(self, extraDimensions):
         placeholders = {}

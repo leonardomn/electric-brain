@@ -24,10 +24,10 @@ import electricbrain.plugins
 import numpy
 
 class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
-    def __init__(self, schema):
-        super(EBNeuralNetworkSequenceComponent, self).__init__(schema)
+    def __init__(self, schema, prefix):
+        super(EBNeuralNetworkSequenceComponent, self).__init__(schema, prefix)
         self.schema = schema
-        self.subComponent = electricbrain.plugins.createNeuralNetworkComponent(self.schema['items'])
+        self.subComponent = electricbrain.plugins.createNeuralNetworkComponent(self.schema['items'], prefix)
 
     def convert_input_in(self, input):
         converted = {}
@@ -163,7 +163,7 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
         sequenceLengths = placeholders[self.machineVariableName() + "__length__"]
 
         # Generate the neural network provided from the UI
-        outputLayer, outputSize = generateEditorNetwork(self.schema, mergedTensor, {"sequenceLengths": sequenceLengths})
+        outputLayer, outputSize = generateEditorNetwork(self.schema['configuration']['component']['layers'], mergedTensor, {"sequenceLengths": sequenceLengths})
 
         # Create the shape of the output
         outputShape = EBTensorShape(["*", "*", outputSize], [EBTensorShape.Time, EBTensorShape.Batch, EBTensorShape.Data], self.machineVariableName() )

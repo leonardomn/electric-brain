@@ -23,8 +23,8 @@ from electricbrain import eprint
 import numpy
 
 class EBNeuralNetworkClassificationComponent(EBNeuralNetworkComponentBase):
-    def __init__(self, schema):
-        super(EBNeuralNetworkClassificationComponent, self).__init__(schema)
+    def __init__(self, schema, prefix):
+        super(EBNeuralNetworkClassificationComponent, self).__init__(schema, prefix)
         self.schema = schema
 
     def convert_input_in(self, input):
@@ -70,7 +70,7 @@ class EBNeuralNetworkClassificationComponent(EBNeuralNetworkComponentBase):
         summaryNode = createSummaryModule(inputs, shapes)
 
         # Generate the neural network provided from the UI
-        outputLayer, outputSize = generateEditorNetwork(self.schema, summaryNode, {"outputSize": outputSize})
+        outputLayer, outputSize = generateEditorNetwork(self.schema['configuration']['component']['layers'], summaryNode, {"outputSize": outputSize})
 
         outputs = {self.machineVariableName(): outputLayer}
         outputShapes = {self.machineVariableName(): EBTensorShape(["*", outputSize], [EBTensorShape.Batch, EBTensorShape.Data], self.machineVariableName())}

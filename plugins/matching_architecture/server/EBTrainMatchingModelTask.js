@@ -319,7 +319,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
 
         return workerPromise.then((worker) =>
         {
-            const batchFileName = temp.path({suffix: '.t7'});
+            const batchFileName = temp.path({suffix: '.npz'});
 
             return worker.writeAndWaitForMatchingOutput({
                 "type": "prepareBatch",

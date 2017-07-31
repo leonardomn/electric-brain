@@ -17,8 +17,8 @@ class TrainingScript:
         self.outputSchema = outputSchema
 
         # Create components for each object
-        self.inputComponent = EBNeuralNetworkObjectComponent(inputSchema)
-        self.outputComponent = EBNeuralNetworkObjectComponent(outputSchema)
+        self.inputComponent = EBNeuralNetworkObjectComponent(inputSchema, "input")
+        self.outputComponent = EBNeuralNetworkObjectComponent(outputSchema, "output")
 
         # First, get all the placeholders for the sub-components
         inputPlaceholders = self.inputComponent.get_input_placeholders(1)

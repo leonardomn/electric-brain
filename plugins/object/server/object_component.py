@@ -21,8 +21,8 @@ import electricbrain.plugins
 from electricbrain import eprint
 
 class EBNeuralNetworkObjectComponent(electricbrain.plugins.EBNeuralNetworkComponentBase):
-    def __init__(self, schema):
-        super(EBNeuralNetworkObjectComponent, self).__init__(schema)
+    def __init__(self, schema, prefix):
+        super(EBNeuralNetworkObjectComponent, self).__init__(schema, prefix)
         self.schema = schema
 
         self.subComponents = {}
@@ -30,7 +30,7 @@ class EBNeuralNetworkObjectComponent(electricbrain.plugins.EBNeuralNetworkCompon
         # Convert each of the sub variables
         for variableName in self.schema["properties"]:
             subSchema = self.schema["properties"][variableName]
-            self.subComponents[variableName] = electricbrain.plugins.createNeuralNetworkComponent(subSchema)
+            self.subComponents[variableName] = electricbrain.plugins.createNeuralNetworkComponent(subSchema, prefix)
 
 
     def convert_input_in(self, inputs):

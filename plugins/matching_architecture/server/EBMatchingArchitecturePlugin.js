@@ -28,7 +28,7 @@ const EBArchitecturePluginBase = require("../../../server/components/architectur
     EBNeuralNetworkComponentBase = require("../../../shared/components/architecture/EBNeuralNetworkComponentBase"),
     EBTorchModule = require("../../../shared/components/architecture/EBTorchModule"),
     EBTorchNode = require("../../../shared/components/architecture/EBTorchNode"),
-    matchingTrainingScriptTemplate = require("../../../build/torch/matching_training_script"),
+    matchingTrainingScriptTemplate = require("../../../build/torch/matching_training_script_tf"),
     path = require('path');
 
 /**
@@ -77,72 +77,12 @@ class EBMatchingArchitecturePlugin extends EBArchitecturePluginBase
     {
         const self = this;
 
-        const primarySchema = this.registry.getInterpretation('object').transformSchemaForNeuralNetwork(architecture.primarySchema.filterIncluded());
-        const secondarySchema = this.registry.getInterpretation('object').transformSchemaForNeuralNetwork(architecture.secondarySchema.filterIncluded());
-
-        const primaryModuleName = `${architecture.machineName}PrimaryModule`;
-        const secondaryModuleName = `${architecture.machineName}SecondaryModule`;
-
-        // Create a list of files that need to be written
         const files = [];
 
-        const primaryInputNode = new EBTorchNode(new EBTorchModule("nn.Identity", []), null, `${primaryModuleName}_primaryInput`);
-        const secondaryInputNode = new EBTorchNode(new EBTorchModule("nn.Identity", []), null, `${secondaryModuleName}_secondaryInput`);
-
-        const primaryInputStack = this.neuralNetworkComponentRegistry.generateInputStack(primarySchema, primaryInputNode, 'primary');
-        const secondaryInputStack = this.neuralNetworkComponentRegistry.generateInputStack(secondarySchema, secondaryInputNode, 'secondary');
-
-        // Create summary nodes for the primary and secondary stacks
-        const primarySummaryModule = EBNeuralNetworkComponentBase.createSummaryModule(primaryInputStack.outputTensorSchema);
-        const primarySummaryNode = new EBTorchNode(primarySummaryModule.module, primaryInputStack.outputNode, `primary_summaryNode`);
-
-        const secondarySummaryModule = EBNeuralNetworkComponentBase.createSummaryModule(secondaryInputStack.outputTensorSchema);
-        const secondarySummaryNode = new EBTorchNode(secondarySummaryModule.module, secondaryInputStack.outputNode, `secondary_summaryNode`);
-
-        // Create the fully connected layers for the primary and secondary trees
-        const primaryFullyConnectedStack = EBNeuralNetworkEditorModule.createModuleChain(architecture.primaryFixedLayers, primarySummaryModule.tensorSchema, {
-            outputSize: 200
-        });
-        const secondaryFullyConnectedStack = EBNeuralNetworkEditorModule.createModuleChain(architecture.secondaryFixedLayers, secondarySummaryModule.tensorSchema, {
-            outputSize: 200
-        });
-        const primaryLinearUnit = new EBTorchNode(primaryFullyConnectedStack.module, primarySummaryNode, `primary_linearUnit`);
-        const secondaryLinearUnit = new EBTorchNode(secondaryFullyConnectedStack.module, secondarySummaryNode, `secondary_linearUnit`);
-
-        const primaryModule = new EBTorchCustomModule(primaryModuleName, primaryInputNode, primaryLinearUnit, (primaryInputStack.additionalModules.map((module) => module.name)));
-        const secondaryModule = new EBTorchCustomModule(secondaryModuleName, secondaryInputNode, secondaryLinearUnit, (secondaryInputStack.additionalModules.map((module) => module.name)));
-
-        const allModules = [primaryModule, secondaryModule].concat(primaryInputStack.additionalModules).concat(secondaryInputStack.additionalModules);
-
-        // Create a file for each module
-        allModules.forEach((module) =>
-        {
-            const file = {
-                path: module.filename,
-                data: module.generatePythonCode()
-            };
-
-            files.push(file);
-        });
-        
         // Generate the training script
         files.push({
-            path: "TrainingScript.lua",
-            data: matchingTrainingScriptTemplate({
-                primarySchema: primarySchema,
-                secondarySchema: secondarySchema,
-                primaryModuleName: primaryModuleName,
-                secondaryModuleName: secondaryModuleName,
-                wordVectorDBPath: path.join(__dirname, '..', '..', '..', 'data', 'english_word_vectors.sqlite3'),
-                convertDataIn: this.neuralNetworkComponentRegistry.generateTensorInputCode.bind(this.neuralNetworkComponentRegistry),
-                convertDataOut: this.neuralNetworkComponentRegistry.generateTensorOutputCode.bind(this.neuralNetworkComponentRegistry),
-                prepareBatch: this.neuralNetworkComponentRegistry.generatePrepareBatchCode.bind(this.neuralNetworkComponentRegistry),
-                unwindBatchOutput: this.neuralNetworkComponentRegistry.generateUnwindBatchCode.bind(this.neuralNetworkComponentRegistry),
-                generateLocalizeFunction: (schema, name) =>
-                {
-                    return this.neuralNetworkComponentRegistry.getTensorSchema(schema).generateLocalizeFunction(name);
-                }
-            })
+            path: "TrainingScript.py",
+            data: matchingTrainingScriptTemplate({            })
         });
 
         return files;

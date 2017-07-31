@@ -58,6 +58,31 @@ class EBMatchingTorchProcess extends EBTorchProcessBase
     }
 
     /**
+     * This method initializes the TensorFlow process.
+     *
+     * @param {EBInterpretationRegistry} registry The registry for interpretations, used during initialization
+     * @returns {Promise} A promise that will resolve when the model has been initialized
+     */
+    initialize(registry)
+    {
+        const primarySchema = registry.getInterpretation('object').transformSchemaForNeuralNetwork(this.architecture.primarySchema.filterIncluded());
+        const secondarySchema = registry.getInterpretation('object').transformSchemaForNeuralNetwork(this.architecture.secondarySchema.filterIncluded());
+
+        return Promise.each(this.processes, (process) =>
+        {
+            // Now we handshake with the process and get version / name information
+            return process.writeAndWaitForMatchingOutput({
+                type: "initialize",
+                primarySchema: primarySchema,
+                secondarySchema: secondarySchema,
+                primaryLayers: this.architecture.primaryFixedLayers,
+                secondaryLayers: this.architecture.secondaryFixedLayers
+            }, {"type": "initialized"});
+        });
+    }
+
+
+    /**
      * This method loads an object into the lua process.
      *
      * @param {string} id The ID of the object to be stored
