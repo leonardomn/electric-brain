@@ -39,8 +39,12 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
         # Find the longest sequence
         for sampleIndex in range(len(input)):
             sequence = input[sampleIndex]
-            converted[self.machineVariableName() + "__length__:0"].append(len(sequence))
-            longest = max(len(sequence), longest)
+            if self.schema['configuration']['component']['enforceSequenceLengthLimit']:
+                length = min(self.schema['configuration']['component']['maxSequenceLength'], len(sequence))
+            else:
+                length = len(sequence)
+            converted[self.machineVariableName() + "__length__:0"].append(length)
+            longest = max(longest, length)
 
         # combine each of the inputs
         for itemIndex in range(longest):
@@ -130,12 +134,12 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
 
     def get_input_placeholders(self, extraDimensions):
         placeholders = self.subComponent.get_input_placeholders(extraDimensions + 1)
-        placeholders[self.machineVariableName() + "__length__"] = tf.placeholder(tf.int32, name = self.machineVariableName() + "__length__")
+        placeholders[self.machineVariableName() + "__length__"] = tf.placeholder(tf.int32, name = self.machineVariableName() + "__length__", shape = ([None] * extraDimensions) + [])
         return placeholders
 
     def get_output_placeholders(self, extraDimensions):
         placeholders = self.subComponent.get_output_placeholders(extraDimensions + 1)
-        placeholders[self.machineVariableName() + "__length__"] = tf.placeholder(tf.int32, name = self.machineVariableName() + "__length__")
+        placeholders[self.machineVariableName() + "__length__"] = tf.placeholder(tf.int32, name = self.machineVariableName() + "__length__", shape = ([None] * extraDimensions) + [])
         return placeholders
 
     def get_input_stack(self, placeholders):
@@ -149,15 +153,21 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
 
         mappedSubShapes = []
 
+        allFields = self.schema.allFields()
+
         def subInputStack(items):
             subOutputs, subShapes = self.subComponent.get_input_stack({subPlaceholderKeys[i]: items[i] for i in range(len(items))})
             mappedSubShapes.extend(subShapes)
             return subOutputs
 
-        mappedSubOutputs = tf.map_fn(subInputStack, subPlaceholders, dtype=[tf.float32]*len(subPlaceholders))
+        mappedSubOutputs = tf.map_fn(subInputStack, subPlaceholders, dtype=[tf.float32]*len(allFields))
 
-        # Now join together all of the different sub elements
-        mergedTensor = tf.concat(mappedSubOutputs, -1)
+        mergedTensor = None
+        if len(mappedSubOutputs) > 1:
+            # Now join together all of the different sub elements
+            mergedTensor = tf.concat(mappedSubOutputs, -1)
+        else:
+            mergedTensor = mappedSubOutputs[0]
 
         # Get the sequence lengths tensor
         sequenceLengths = placeholders[self.machineVariableName() + "__length__"]

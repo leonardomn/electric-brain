@@ -53,20 +53,19 @@ def generateEditorNetwork(layers, input, templateVars):
             currentOutputSize = getValue(layer, 'units')
         elif layer['name'] == 'bidirectional_lstm':
             rnnHiddenSize = int(getValue(layer, 'outputSize'))
-            with tf.variable_scope('forward' + str(layerIndex)):
-                forwardCell = tf.nn.rnn_cell.LSTMCell(rnnHiddenSize, state_is_tuple=True)
-            with tf.variable_scope('backward' + str(layerIndex)):
-                backwardCell = tf.nn.rnn_cell.LSTMCell(rnnHiddenSize, state_is_tuple=True)
             with tf.variable_scope('layer'+ str(layerIndex)):
-                output, state = tf.nn.bidirectional_dynamic_rnn(forwardCell, backwardCell, current, dtype=tf.float32, time_major = True, sequence_length = templateVars['sequenceLengths'])
-            currentOutputSize = rnnHiddenSize * 2
+                with tf.variable_scope('forward' + str(layerIndex)):
+                    forwardOutput, state = tf.contrib.rnn.LSTMBlockFusedCell(rnnHiddenSize)(current, dtype=tf.float32, sequence_length = templateVars['sequenceLengths'])
+                with tf.variable_scope('backward' + str(layerIndex)):
+                    backwardOutput, state = tf.contrib.rnn.TimeReversedFusedRNN(tf.contrib.rnn.LSTMBlockFusedCell(rnnHiddenSize))(current, dtype=tf.float32, sequence_length = templateVars['sequenceLengths'])
+                output = forwardOutput + backwardOutput
+
+            currentOutputSize = rnnHiddenSize
             current = tf.concat(output, axis = 2)
         elif layer['name'] == 'lstm':
             rnnHiddenSize = int(getValue(layer, 'outputSize'))
             with tf.variable_scope('layer'+ str(layerIndex)):
-                #forwardCell = tf.nn.rnn_cell.LSTMCell(rnnHiddenSize, state_is_tuple=True)
-                #output, state = tf.nn.dynamic_rnn(forwardCell, current, dtype=tf.float32, time_major = True, sequence_length = templateVars['sequenceLengths'])
-                output, state = tf.contrib.rnn.LSTMBlockFusedCell(rnnHiddenSize)(current, dtype=tf.float32)
+                output, state = tf.contrib.rnn.LSTMBlockFusedCell(rnnHiddenSize)(current, dtype=tf.float32, sequence_length = templateVars['sequenceLengths'])
             currentOutputSize = rnnHiddenSize
             current = output
         elif layer['name'] == 'bidirectional_gru':

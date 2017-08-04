@@ -7,6 +7,7 @@ import tensorflow as tf
 import numpy
 from electricbrain.object_component import EBNeuralNetworkObjectComponent
 from electricbrain import eprint
+from electricbrain.schema import EBSchema
 
 class TrainingScript:
     def __init__(self):
@@ -106,8 +107,8 @@ class TrainingScript:
                 response["version"] = "0.0.1"
 
             elif (data["type"] == 'initialize'):
-                inputSchema = data["inputSchema"]
-                outputSchema = data["outputSchema"]
+                inputSchema = EBSchema(data["inputSchema"])
+                outputSchema = EBSchema(data["outputSchema"])
 
                 results = self.initializeGraph(inputSchema, outputSchema)
 

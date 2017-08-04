@@ -22,20 +22,54 @@ from electricbrain import eprint
 from electricbrain.editor import generateEditorNetwork
 import numpy
 import sqlite3
+import sys
 
 class EBNeuralNetworkWordComponent(EBNeuralNetworkComponentBase):
     def __init__(self, schema, prefix):
         super(EBNeuralNetworkWordComponent, self).__init__(schema, prefix)
         self.schema = schema
-        self.vectorDB = sqlite3.connect('/home/bradley/eb/electric-brain/scripts/word_vectors.db')
+
+        eprint(sys.argv[1])
+
+        self.vectorDB = sqlite3.connect(sys.argv[1])
+
+        self.wordVectorsVariableName = self.machineVariableName() + "_wordVectors"
+        self.embeddingIndexVariableName = self.machineVariableName() + "_embeddingIndex"
+
+        self.wordVectorsPlaceholderName = self.wordVectorsVariableName + ":0"
+        self.embeddingIndexPlaceholderName = self.embeddingIndexVariableName + ":0"
+
+        self.embeddingDictionary = {}
+        self.currentEmbeddingIndex = 0
 
     def convert_input_in(self, input):
         cur = self.vectorDB.cursor()
-        converted = []
-        for value in input:
-            tensorBytes = cur.execute("SELECT tensor FROM word_vectors WHERE word = ?", )
-            tensor = numpy.fromstring(tensorBytes)
-            converted.append(value)
+
+        converted = {}
+        converted[self.wordVectorsPlaceholderName] = []
+        converted[self.embeddingIndexPlaceholderName] = []
+
+        for index in range(len(input)):
+            word = input[index]
+            if word is None:
+                converted[self.wordVectorsPlaceholderName].append([0] * 300)
+                converted[self.embeddingIndexPlaceholderName].append(-1)
+            else:
+                tensorBytes = cur.execute("SELECT tensor FROM word_vectors WHERE word = ?", [word]).fetchone()
+                if tensorBytes is None:
+                    converted[self.wordVectorsPlaceholderName].append([0] * 300)
+                    if not word in self.embeddingDictionary:
+                        self.embeddingDictionary[word] = self.currentEmbeddingIndex
+                        self.currentEmbeddingIndex += 1
+
+                    converted[self.embeddingIndexPlaceholderName].append(self.embeddingDictionary[word])
+                else:
+                    tensor = numpy.fromstring(tensorBytes[0])
+                    converted[self.wordVectorsPlaceholderName].append(tensor)
+                    converted[self.embeddingIndexPlaceholderName].append(-1)
+
+        converted[self.wordVectorsPlaceholderName] = numpy.array(converted[self.wordVectorsPlaceholderName])
+        converted[self.embeddingIndexPlaceholderName] = numpy.array(converted[self.embeddingIndexPlaceholderName])
 
         return converted
 
@@ -51,40 +85,49 @@ class EBNeuralNetworkWordComponent(EBNeuralNetworkComponentBase):
         return converted
 
     def convert_output_out(self, outputs, inputs):
-        throw Exception("Unimplemented")
+        raise Exception("Unimplemented")
 
     def get_input_placeholders(self, extraDimensions):
         placeholders = {}
-        placeholders[self.machineVariableName()] = tf.placeholder(tf.float32, name = self.machineVariableName(), shape = ([None] * extraDimensions) + [])
+
+        placeholders[self.wordVectorsPlaceholderName] = tf.placeholder(tf.float32, name = self.wordVectorsVariableName, shape = ([None] * extraDimensions) + [300])
+        placeholders[self.embeddingIndexPlaceholderName] = tf.placeholder(tf.int32, name = self.embeddingIndexVariableName, shape = ([None] * extraDimensions) + [])
+
         return placeholders
 
     def get_output_placeholders(self, extraDimensions):
         placeholders = {}
-        placeholders[self.machineVariableName()] = tf.placeholder(tf.float32, name = self.machineVariableName(), shape = ([None] * extraDimensions) + [])
+
+        placeholders[self.wordVectorsPlaceholderName] = tf.placeholder(tf.float32, name = self.wordVectorsVariableName, shape = ([None] * extraDimensions) + [300])
+        placeholders[self.embeddingIndexPlaceholderName] = tf.placeholder(tf.int32, name = self.embeddingIndexVariableName, shape = ([None] * extraDimensions) + [])
+
         return placeholders
 
     def get_input_stack(self, placeholders):
-        input = placeholders[self.machineVariableName()]
-        return ([input], [EBTensorShape(["*", 1], [EBTensorShape.Batch, EBTensorShape.Data], self.machineVariableName() )])
+        wordVectors = placeholders[self.wordVectorsPlaceholderName]
+        embeddingIndexes = placeholders[self.embeddingIndexPlaceholderName]
+
+        # Create a large tensor to be used for learned embedding lookups
+        with tf.variable_scope(self.machineVariableName()):
+            learnedEmbeddings = tf.get_variable("embeddings", dtype = tf.float32, shape=[10000,300])
+
+            def handleWordItem(items):
+                wordVector = items[0]
+                embeddingIndex = items[1]
+
+                output = tf.cond(tf.equal(embeddingIndex, -1), lambda: wordVector, lambda: learnedEmbeddings[embeddingIndex])
+                return [output, output]
+
+            output = tf.map_fn(handleWordItem, [wordVectors, embeddingIndexes])[0]
+
+            return ([output], [EBTensorShape(["*", 300], [EBTensorShape.Batch, EBTensorShape.Data], self.machineVariableName() )])
+
 
     def get_output_stack(self, inputs, shapes):
-        # Summarize the tensors being currently activated
-        summaryNode = createSummaryModule(inputs, shapes)
-
-        # Generate the neural network provided from the UI
-        outputLayer, outputSize = generateEditorNetwork(self.schema['configuration']['component']['layers'], summaryNode, {"outputSize": 1})
-
-        outputs = {self.machineVariableName(): outputLayer}
-        outputShapes = {self.machineVariableName(): EBTensorShape(["*", 1], [EBTensorShape.Batch, EBTensorShape.Data], self.machineVariableName())}
-        return (outputs, outputShapes)
+        raise Exception("Unimplemented")
 
     def get_criterion_stack(self, outputs, outputShapes, outputPlaceholders):
-        output = outputs[self.machineVariableName()]
-        placeholder = outputPlaceholders[self.machineVariableName()]
-        loss = tf.losses.mean_squared_error(tf.expand_dims(placeholder, 1), output)
-        return [loss]
-
-
+        raise Exception("Unimplemented")
 
 
 

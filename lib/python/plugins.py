@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import tensorflow as tf
+from electricbrain import eprint
 
 loaded = False
 
@@ -25,7 +26,7 @@ class EBNeuralNetworkComponentBase:
         self.prefix = prefix
 
     def machineVariableName(self):
-        return self.prefix + "-" + self.schema["metadata"]['variablePath'].replace("[]", "__array__")
+        return self.prefix + "-" + self.schema["metadata"]['variablePath'].replace("[]", "__array__").replace(" ", "")
 
 
 def createNeuralNetworkComponent(schema, prefix):
@@ -34,6 +35,7 @@ def createNeuralNetworkComponent(schema, prefix):
     from electricbrain.number_component import EBNeuralNetworkNumberComponent
     from electricbrain.classification_component import EBNeuralNetworkClassificationComponent
     from electricbrain.sequence_component import EBNeuralNetworkSequenceComponent
+    from electricbrain.word_component import EBNeuralNetworkWordComponent
 
     if "enum" in schema:
         return EBNeuralNetworkClassificationComponent(schema, prefix)
@@ -43,6 +45,8 @@ def createNeuralNetworkComponent(schema, prefix):
         return EBNeuralNetworkNumberComponent(schema, prefix)
     elif schema["type"][0] == 'array':
         return EBNeuralNetworkSequenceComponent(schema, prefix)
+    elif schema["type"][0] == 'string':
+        return EBNeuralNetworkWordComponent(schema, prefix)
     else:
         raise Exception("Unrecognized schema type " + str(schema["type"]) + " on variable " + str(schema["metadata"]['variablePath']))
 

@@ -194,7 +194,7 @@ class EBTorchProcessBase
                 {
                     async.times(self.numProcesses, function(n, next)
                     {
-                        const promise = EBStdioJSONStreamProcess.spawn('python3', ['TrainingScript.py', n + 1, self.numProcesses], {
+                        const promise = EBStdioJSONStreamProcess.spawn('python3', ['TrainingScript.py', path.join(__dirname, '../../../data/english_word_vectors_tensorflow.db')], {
                             cwd: self.scriptFolder,
                             env: underscore.extend({TERM: "xterm"}, process.env)
                         });

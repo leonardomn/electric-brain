@@ -10,6 +10,7 @@ from electricbrain import eprint
 import electricbrain.shape
 import electricbrain.utils
 from electricbrain.editor import generateEditorNetwork
+from electricbrain.schema import EBSchema
 
 class TrainingScript:
     def __init__(self):
@@ -129,8 +130,8 @@ class TrainingScript:
                 response["version"] = "0.0.1"
 
             elif (data["type"] == 'initialize'):
-                primarySchema = data["primarySchema"]
-                secondarySchema = data["secondarySchema"]
+                primarySchema = EBSchema(data["primarySchema"])
+                secondarySchema = EBSchema(data["secondarySchema"])
                 primaryLayers = data["primaryLayers"]
                 secondaryLayers = data["secondaryLayers"]
 
