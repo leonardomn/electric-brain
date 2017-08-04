@@ -37,7 +37,7 @@ class TrainingScript:
         self.outputPlaceholders = outputPlaceholders
         self.outputLosses = outputLosses
 
-        self.totalLoss = tf.reduce_sum(self.outputLosses)
+        self.totalLoss = tf.reduce_mean(self.outputLosses)
 
     def reset(self, optimizationAlgorithm, optimizationParameters):
         if self.session is not None:

@@ -11,6 +11,7 @@ import electricbrain.shape
 import electricbrain.utils
 from electricbrain.editor import generateEditorNetwork
 from electricbrain.schema import EBSchema
+from electricbrain.adamax import AdamaxOptimizer
 
 class TrainingScript:
     def __init__(self):
@@ -51,9 +52,9 @@ class TrainingScript:
         # Between 0 and 1, where 0 is same and 1 is different
         modifiedValences = (tf.negative(self.valencePlaceholder) + 1) / 2
 
-        loss = electricbrain.utils.compute_contrastive_loss(self.primaryOutput, self.secondaryOutput, modifiedValences, 1.0)
+        loss = electricbrain.utils.compute_contrastive_loss(self.primaryOutput, self.secondaryOutput, modifiedValences, 10.0)
 
-        self.totalLoss = tf.reduce_sum(loss)
+        self.totalLoss = tf.reduce_mean(loss)
 
     def reset(self, optimizationAlgorithm, optimizationParameters):
         if self.session is not None:
@@ -64,7 +65,10 @@ class TrainingScript:
         self.optimizationAlgorithm = optimizationAlgorithm
         self.optimizationParameters = optimizationParameters
 
-        self.trainingStep = getattr(tf.train, optimizationAlgorithm)(**self.optimizationParameters).minimize(self.totalLoss)
+        if optimizationAlgorithm == 'AdamaxOptimizer':
+            self.trainingStep = AdamaxOptimizer(**self.optimizationParameters).minimize(self.totalLoss)
+        else:
+            self.trainingStep = getattr(tf.train, optimizationAlgorithm)(**self.optimizationParameters).minimize(self.totalLoss)
 
         self.allSummaryOutputs = tf.summary.merge_all()
         train_writer = tf.summary.FileWriter('./logs', self.session.graph)

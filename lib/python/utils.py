@@ -20,14 +20,7 @@
 #
 
 import tensorflow as tf
-
-def compute_euclidean_distance(x, y):
-    """
-    Computes the euclidean distance between two tensorflow variables
-    """
-    d = tf.reduce_sum(tf.square(tf.subtract(x, y)),1)
-    return d
-
+from electricbrain import eprint
 
 def compute_contrastive_loss(left_feature, right_feature, label, margin):
     """
@@ -46,16 +39,7 @@ def compute_contrastive_loss(left_feature, right_feature, label, margin):
 
     """
 
-    #label = tf.to_float(label)
-    one = tf.constant(1.0)
-
-    d = compute_euclidean_distance(left_feature, right_feature)
-    d_sqrt = tf.sqrt(compute_euclidean_distance(left_feature, right_feature))
-    first_part = tf.multiply(one-label, d)# (Y-1)*(d)
-
-    max_part = tf.square(tf.maximum(margin-d_sqrt, 0))
-    second_part = tf.multiply(label, max_part)  # (Y) * max(margin - d, 0)
-
-    loss = 0.5 * tf.reduce_mean(first_part + second_part)
-
-    return loss
+    d = tf.reduce_sum(tf.square(tf.subtract(left_feature, right_feature)), 1)
+    d_sqrt = tf.sqrt(d)
+    losses = label * tf.square(tf.maximum(0.0, margin - d_sqrt)) + (1 - label) * d
+    return losses
