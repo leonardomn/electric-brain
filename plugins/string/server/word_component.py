@@ -29,8 +29,6 @@ class EBNeuralNetworkWordComponent(EBNeuralNetworkComponentBase):
         super(EBNeuralNetworkWordComponent, self).__init__(schema, prefix)
         self.schema = schema
 
-        eprint(sys.argv[1])
-
         self.vectorDB = sqlite3.connect(sys.argv[1])
 
         self.wordVectorsVariableName = self.machineVariableName() + "_wordVectors"

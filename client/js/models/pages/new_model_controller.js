@@ -54,13 +54,20 @@ angular.module('eb').controller('EBNewModelController', function EBNewModelContr
         {
             const optimFunction = _.find($scope.optimizationAlgorithms, (func) => func.name === newValue);
 
-            console.log(newValue)
-            console.log(optimFunction)
             $scope.model.parameters.optimizationParameters = _.clone(optimFunction.parameters);
         }
     });
 
     $scope.optimizationAlgorithms = [
+        {
+            "name": "AdamaxOptimizer",
+            "title": "AdaMax",
+            "parameters": {
+                "learning_rate": 0.001,
+                "beta1": 0.9,
+                "beta2": 0.999
+            }
+        },
         {
             "name": "AdadeltaOptimizer",
             "title": "AdaDelta",

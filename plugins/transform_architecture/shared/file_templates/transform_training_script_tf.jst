@@ -8,6 +8,7 @@ import numpy
 from electricbrain.object_component import EBNeuralNetworkObjectComponent
 from electricbrain import eprint
 from electricbrain.schema import EBSchema
+from electricbrain.adamax import AdamaxOptimizer
 
 class TrainingScript:
     def __init__(self):
@@ -47,7 +48,10 @@ class TrainingScript:
         self.optimizationAlgorithm = optimizationAlgorithm
         self.optimizationParameters = optimizationParameters
 
-        self.trainingStep = getattr(tf.train, optimizationAlgorithm)(**self.optimizationParameters).minimize(self.totalLoss)
+        if optimizationAlgorithm == 'AdamaxOptimizer':
+            self.trainingStep = AdamaxOptimizer(**self.optimizationParameters).minimize(self.totalLoss)
+        else:
+            self.trainingStep = getattr(tf.train, optimizationAlgorithm)(**self.optimizationParameters).minimize(self.totalLoss)
 
         self.allSummaryOutputs = tf.summary.merge_all()
         train_writer = tf.summary.FileWriter('./logs', self.session.graph)

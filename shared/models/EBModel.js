@@ -62,10 +62,11 @@ class EBModel
                 batchSize: 16,
                 testingBatchSize: 4,
                 iterations: 50000,
-                optimizationAlgorithm: 'AdagradOptimizer',
+                optimizationAlgorithm: 'AdamaxOptimizer',
                 optimizationParameters: {
                     learning_rate: 1e-3,
-                    initial_accumulator_value: 0.1
+                    beta1: 0.9,
+                    beta2: 0.999
                 }
             };
         }
