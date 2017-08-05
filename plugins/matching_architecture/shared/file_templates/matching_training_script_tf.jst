@@ -8,7 +8,7 @@ import numpy
 from electricbrain.object_component import EBNeuralNetworkObjectComponent
 from electricbrain import eprint
 import electricbrain.shape
-import electricbrain.utils
+import electricbrain.losses
 from electricbrain.editor import generateEditorNetwork
 from electricbrain.schema import EBSchema
 from electricbrain.adamax import AdamaxOptimizer
@@ -52,7 +52,7 @@ class TrainingScript:
         # Between 0 and 1, where 0 is same and 1 is different
         modifiedValences = (tf.negative(self.valencePlaceholder) + 1) / 2
 
-        loss = electricbrain.utils.compute_contrastive_loss(self.primaryOutput, self.secondaryOutput, modifiedValences, 10.0)
+        loss = electricbrain.losses.contrastive_loss(self.primaryOutput, self.secondaryOutput, modifiedValences, 1.0)
 
         self.totalLoss = tf.reduce_mean(loss)
 
@@ -115,13 +115,14 @@ class TrainingScript:
         del input['primaryIds']
         del input['secondaryIds']
 
-        evaluations = [self.primaryOutput]
+        evaluations = [self.primaryOutput, self.secondaryOutput]
 
         evalTuple = self.session.run(evaluations, feed_dict = input)
 
         primaryOutputs = numpy.ndarray.tolist(evalTuple[0])
+        secondaryOutputs = numpy.ndarray.tolist(evalTuple[1])
 
-        return primaryOutputs
+        return (primaryOutputs, primaryIds, secondaryOutputs, secondaryIds)
 
     def main(self):
         """  This is the main entry point of the training script."""
@@ -166,12 +167,15 @@ class TrainingScript:
 
 
             elif (data["type"] == 'evaluateBatch'):
-                outputs = self.evaluateBatchFile(data["batchFilename"])
-
+                primaryOutputs, primaryIds, secondaryOutputs, secondaryIds = self.evaluateBatchFile(data["batchFilename"])
 
                 response["primary"] = {}
-                for index in range(len(outputs)):
-                    response["primary"][primaryIds[index]] = outputs[index]
+                for index in range(len(primaryOutputs)):
+                    response["primary"][primaryIds[index]] = primaryOutputs[index]
+
+                response["secondary"] = {}
+                for index in range(len(secondaryOutputs)):
+                    response["secondary"][secondaryIds[index]] = secondaryOutputs[index]
 
                 response["type"] = "evaluationCompleted"
             elif (data["type"] == 'save'):

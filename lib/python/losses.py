@@ -22,24 +22,11 @@
 import tensorflow as tf
 from electricbrain import eprint
 
-def compute_contrastive_loss(left_feature, right_feature, label, margin):
-    """
-    Compute the contrastive loss as in
+def contrastive_loss(primary, secondary, label, margin):
+    """This function computes the contrastive loss using the L1 Norm."""
 
-    L = 0.5 * Y * D^2 + 0.5 * (Y-1) * {max(0, margin - D)}^2
-
-    **Parameters**
-     left_feature: First element of the pair
-     right_feature: Second element of the pair
-     label: Label of the pair (0 or 1)
-     margin: Contrastive margin
-
-    **Returns**
-     Return the loss operation
-
-    """
-
-    d = tf.reduce_sum(tf.square(tf.subtract(left_feature, right_feature)), 1)
-    d_sqrt = tf.sqrt(d)
-    losses = label * tf.square(tf.maximum(0.0, margin - d_sqrt)) + (1 - label) * d
+    d = tf.norm(tf.subtract(primary, secondary), ord = 2, axis = 1)
+    differentPortion = label * tf.maximum(0.0, margin - d)
+    samePortion = (1 - label) * d
+    losses = differentPortion + samePortion
     return losses

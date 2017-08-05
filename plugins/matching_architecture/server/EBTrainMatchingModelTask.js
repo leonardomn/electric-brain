@@ -552,6 +552,12 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
         {
             return self.trainingProcess.processBatch(batch.fileName).then((outputs) =>
             {
+                // Store all of the secondary vectors
+                for (const key of Object.keys(outputs.secondary))
+                {
+                    this.vectorMatcher.recordSecondaryVector(key, outputs.secondary[key]);
+                }
+
                 return Promise.map(Object.keys(outputs.primary), (primaryKey) =>
                 {
                     return self.getAccuracyFromPrimaryVector(primaryKey, outputs.primary[primaryKey], true);
