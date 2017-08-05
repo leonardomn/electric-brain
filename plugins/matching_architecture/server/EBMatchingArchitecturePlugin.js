@@ -22,13 +22,8 @@ const EBArchitecturePluginBase = require("../../../server/components/architectur
     EBCustomTransformation = require("../../../shared/components/architecture/EBCustomTransformation"),
     EBDataSource = require("../../../shared/models/EBDataSource"),
     EBSchema = require("../../../shared/models/EBSchema"),
-    EBMatchingTorchProcess = require("./EBMatchingTorchProcess"),
-    EBTorchCustomModule = require("../../../shared/components/architecture/EBTorchCustomModule"),
+    EBMatchingProcess = require("./EBMatchingProcess"),
     EBNeuralNetworkEditorModule = require("../../../shared/models/EBNeuralNetworkEditorModule"),
-    EBNeuralNetworkComponentBase = require("../../../shared/components/architecture/EBNeuralNetworkComponentBase"),
-    EBTorchModule = require("../../../shared/components/architecture/EBTorchModule"),
-    EBTorchNode = require("../../../shared/components/architecture/EBTorchNode"),
-    matchingTrainingScriptTemplate = require("../../../build/torch/matching_training_script_tf"),
     path = require('path');
 
 /**
@@ -40,52 +35,27 @@ class EBMatchingArchitecturePlugin extends EBArchitecturePluginBase
      * This constructs the plugin
      *
      * @param {EBInterpretationRegistry} registry The registry for the transformation stream
-     * @param {EBNeuralNetworkComponentRegistry} neuralNetworkComponentRegistry A reference the the globally initialized componentDispatch method
+     * @param {EBPythonComponentRegistry} pythonComponentRegistry A reference the the globally initialized componentDispatch method
      */
-    constructor(registry, neuralNetworkComponentRegistry)
+    constructor(registry, pythonComponentRegistry)
     {
-        super(registry, neuralNetworkComponentRegistry);
+        super(registry, pythonComponentRegistry);
         this.registry = registry;
-        this.neuralNetworkComponentRegistry = neuralNetworkComponentRegistry;
+        this.pythonComponentRegistry = pythonComponentRegistry;
     }
 
 
     /**
-     * This method creates an EBTorchProcessBase object for this architecture.
+     * This method creates an EBModelProcessBase object for this architecture.
      *
      * @param {EBMatchingArchitecture} architecture An EBMatchingArchitecture object
      * @param {string} [scriptFolder] Optional script folder for the files to go
      *
-     * @returns {EBMatchingTorchProcess} A matching torch process object
+     * @returns {EBMatchingProcess} A matching process object
      */
-    getTorchProcess(architecture, scriptFolder)
+    getProcess(architecture, scriptFolder)
     {
-        return new EBMatchingTorchProcess(architecture, this, scriptFolder);
-    }
-    
-
-    /**
-     * This method generates all the files for this neural network architecture
-     *
-     * @param {EBTransformArchitecture} architecture An EBTransformArchitecture object
-     * @returns {[object]} The an array of objects describing the generated files.
-     *                     Each object has two properties, 'path' for the files
-     *                     path and filename, and 'data' for the contents of the
-     *                     file
-     */
-    generateFiles(architecture)
-    {
-        const self = this;
-
-        const files = [];
-
-        // Generate the training script
-        files.push({
-            path: "TrainingScript.py",
-            data: matchingTrainingScriptTemplate({            })
-        });
-
-        return files;
+        return new EBMatchingProcess(architecture, this, scriptFolder);
     }
 }
 

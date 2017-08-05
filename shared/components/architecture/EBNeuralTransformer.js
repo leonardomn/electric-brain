@@ -20,7 +20,6 @@
 
 const
     async = require('async'),
-    criterionTemplate = require("../../../build/torch/criterion"),
     deepcopy = require('deepcopy'),
     stream = require('stream'),
     Promise = require('bluebird'),

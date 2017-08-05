@@ -19,7 +19,6 @@
 "use strict";
 
 const EBClassFactory = require("../components/EBClassFactory"),
-    EBTorchModule = require('./../components/architecture/EBTorchModule'),
     EBTensorSchema = require("./EBTensorSchema");
 
 /**

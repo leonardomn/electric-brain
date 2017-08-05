@@ -32,7 +32,7 @@ const
 /**
  * This is a base class for various architecture-specific torch process classes.
  */
-class EBTorchProcessBase
+class EBModelProcessBase
 {
     /**
      * Creates the process object for the given EBArchitecture object.
@@ -40,14 +40,15 @@ class EBTorchProcessBase
      * @param {EBArchitecture} architecture The architecture object that we are creating the torch process for
      * @param {EBArchitecturePluginBase} architecturePlugin The plugin for the architecture object
      * @param {string} [scriptFolder] Optional directory where the script files should be written
+     * @param {string} [scriptFilename] The script filename
      */
-    constructor(architecture, architecturePlugin, scriptFolder)
+    constructor(architecture, architecturePlugin, scriptFolder, scriptFilename)
     {
         const self = this;
         self.architecture = architecture;
         self.architecturePlugin = architecturePlugin;
         self.scriptFolder = scriptFolder || null;
-        self.scriptFile = null;
+        self.scriptFilename = scriptFilename;
         self.processes = [];
         self.allLoadedEntries = [];
         self.testingSet = {};
@@ -60,7 +61,7 @@ class EBTorchProcessBase
      *
      * @param {function(err, totalFiles)} callback Callback after the code has been written to disk, ready for the process to start
      */
-    generateCode(registry, neuralNetworkComponentRegistry)
+    generateCode(registry, pythonComponentRegistry)
     {
         const self = this;
         return Promise.fromCallback((callback) =>
@@ -68,59 +69,31 @@ class EBTorchProcessBase
             let totalFiles = 0;
 
             async.series([
-                function writeGeneratedFiles(next)
+                function createFolder(next)
                 {
-                    async.waterfall([
-                        function(next)
-                        {
-                            if (!self.scriptFolder)
-                            {
-                                // First, create a temporary folder to put all of the model files in
-                                temp.mkdir('electric-brain-model', (err, temporaryFolder) => {
-                                    if (err)
-                                    {
-                                        return next(err);
-                                    }
-
-                                    return next(null, temporaryFolder);
-                                });
-                            }
-                            else
-                            {
-                                // if (fs.existsSync(self.scriptFolder))
-                                // {
-                                //     childProcess.execSync(`rm -rf ${path.join(self.scriptFolder, "*")}`)
-                                // }
-
-                                return next(null, self.scriptFolder);
-                            }
-                        },
-                        function(temporaryFolder, next)
-                        {
-                            self.scriptFolder = temporaryFolder;
-                            try
-                            {
-                                // Create a list of files that need to be written
-                                if (!self.architecturePlugin.generateFiles)
-                                {
-                                    console.error(self.architecturePlugin);
-                                }
-                                const files = self.architecturePlugin.generateFiles(self.architecture);
-
-                                // Write out each of the files
-                                const writeFilePromise = Promise.each(files,(file) =>
-                                {
-                                    totalFiles += 1;
-                                    return Promise.fromCallback((next) => fs.writeFile(path.join(self.scriptFolder, file.path), file.data, next));
-                                });
-                                writeFilePromise.then(() => next());
-                            }
-                            catch (err)
+                    if (!self.scriptFolder)
+                    {
+                        // First, create a temporary folder to put all of the model files in
+                        temp.mkdir('electric-brain-model', (err, temporaryFolder) => {
+                            if (err)
                             {
                                 return next(err);
                             }
-                        }
-                    ], next);
+
+                            self.scriptFolder = temporaryFolder;
+
+                            return next(null, temporaryFolder);
+                        });
+                    }
+                    else
+                    {
+                        // if (fs.existsSync(self.scriptFolder))
+                        // {
+                        //     childProcess.execSync(`rm -rf ${path.join(self.scriptFolder, "*")}`)
+                        // }
+
+                        return next(null, self.scriptFolder);
+                    }
                 },
                 function writeLibraryFiles(next)
                 {
@@ -147,12 +120,12 @@ class EBTorchProcessBase
                         });
                     }, next);
                 },
-                function writeNeuralNetworkComponents(next)
+                function writePythonComponents(next)
                 {
                     const libraryFolder = path.join(self.scriptFolder, 'electricbrain');
 
                     // Write any neural network component files
-                    async.eachSeries(neuralNetworkComponentRegistry.getPlugins(), function(filename, next)
+                    async.eachSeries(pythonComponentRegistry.getPlugins(), function(filename, next)
                     {
                         fs.readFile(path.join(filename), function(err, buffer)
                         {
@@ -194,7 +167,7 @@ class EBTorchProcessBase
                 {
                     async.times(self.numProcesses, function(n, next)
                     {
-                        const promise = EBStdioJSONStreamProcess.spawn('python3', ['TrainingScript.py', path.join(__dirname, '../../../data/english_word_vectors_tensorflow.db')], {
+                        const promise = EBStdioJSONStreamProcess.spawn('python3', [path.join("electricbrain", self.scriptFilename), path.join(__dirname, '../../../data/english_word_vectors_tensorflow.db')], {
                             cwd: self.scriptFolder,
                             env: underscore.extend({TERM: "xterm"}, process.env)
                         });
@@ -264,7 +237,7 @@ class EBTorchProcessBase
      */
     initialize(registry)
     {
-        throw new Error("EBTorchProcessBase::initialize is unimplemented!")
+        throw new Error("EBModelProcessBase::initialize is unimplemented!")
     }
 
     /**
@@ -405,7 +378,7 @@ class EBTorchProcessBase
      *
      * @return {promise} A promise that will resolve when the model file returns a stream
      */
-    getTorchModelFileStream()
+    getModelFileStream()
     {
         const self = this;
 
@@ -442,4 +415,4 @@ class EBTorchProcessBase
     }
 }
 
-module.exports = EBTorchProcessBase;
+module.exports = EBModelProcessBase;

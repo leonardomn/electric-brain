@@ -22,7 +22,7 @@ const
     async = require('async'),
     childProcess = require('child_process'),
     EBStdioJSONStreamProcess = require("../../../server/components/EBStdioJSONStreamProcess"),
-    EBTorchProcessBase = require("../../../server/components/architecture/EBTorchProcessBase"),
+    EBModelProcessBase = require("../../../server/components/architecture/EBModelProcessBase"),
     fs = require('fs'),
     math = require("mathjs"),
     path = require('path'),
@@ -31,20 +31,20 @@ const
     underscore = require('underscore');
 
 /**
- * This class is used to manage the Torch sub-process for a given architecture
+ * This class is used to manage the tensorflow sub-process for a given architecture
  */
-class EBMatchingTorchProcess extends EBTorchProcessBase
+class EBMatchingProcess extends EBModelProcessBase
 {
     /**
      * Creates the process object for the given EBMatchingArchitecture object.
      *
-     * @param {EBMatchingArchitecture} architecture The matching architecture object that we are creating the torch process for.
+     * @param {EBMatchingArchitecture} architecture The matching architecture object that we are creating the tensorflow process for.
      * @param {EBArchitecturePluginBase} architecturePlugin The plugin for the architecture object
      * @param {string} [scriptFolder] Optional directory where the script files should be written
      */
     constructor(architecture, architecturePlugin, scriptFolder)
     {
-        super(architecture, architecturePlugin, scriptFolder);
+        super(architecture, architecturePlugin, scriptFolder, "matching_model_script.py");
         
         const self = this;
         self.architecture = architecture;
@@ -201,4 +201,4 @@ class EBMatchingTorchProcess extends EBTorchProcessBase
     }
 }
 
-module.exports = EBMatchingTorchProcess;
+module.exports = EBMatchingProcess;

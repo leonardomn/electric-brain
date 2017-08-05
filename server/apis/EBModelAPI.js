@@ -570,12 +570,12 @@ class EBModelAPI extends EBAPIRoot
                 const model = new models.EBModel(modelObject);
                 const architecture = EBClassFactory.createObject(model.architecture);
                 const architecturePlugin = self.application.architectureRegistry.getPluginForArchitecture(architecture);
-                let modelProcess = architecturePlugin.getTorchProcess(architecture, self.application.config.get('overrideModelFolder'));
+                let modelProcess = architecturePlugin.getProcess(architecture, self.application.config.get('overrideModelFolder'));
                 async.series([
                     // Generate the code
                     function generateCode(next)
                     {
-                        const promise = modelProcess.generateCode(self.application.interpretationRegistry, self.application.neuralNetworkComponentRegistry);
+                        const promise = modelProcess.generateCode(self.application.interpretationRegistry, self.application.pythonComponentRegistry);
                         promise.then(() =>
                         {
                             next(null);

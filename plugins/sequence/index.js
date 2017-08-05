@@ -17,7 +17,6 @@
  */
 
 const EBSequenceInterpretation = require('./server/EBSequenceInterpretation');
-const EBNeuralNetworkSequenceComponent = require('./server/EBNeuralNetworkSequenceComponent');
 const path = require('path');
 
 /*
@@ -29,7 +28,7 @@ module.exports = {
     "folder": __dirname,
     "dataSources": {},
     "interpretations": {'sequence': EBSequenceInterpretation},
-    "neuralNetworkComponents": {
+    "pythonComponents": {
         'sequence': path.join(__dirname, "server", "sequence_component.py")
     },
     "architecturePlugins": {}

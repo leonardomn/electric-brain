@@ -104,7 +104,7 @@ class EBAssembleNodeBundleTask
                             return next(err);
                         }
 
-                        this.trainingProcess = architecturePlugin.getTorchProcess(architecture, temporaryFolder);
+                        this.trainingProcess = architecturePlugin.getProcess(architecture, temporaryFolder);
                         return next(null, temporaryFolder);
                     });
                 });

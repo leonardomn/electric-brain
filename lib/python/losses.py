@@ -20,7 +20,7 @@
 #
 
 import tensorflow as tf
-from electricbrain import eprint
+from utils import eprint
 
 def contrastive_loss(primary, secondary, label, margin):
     """This function computes the contrastive loss using the L1 Norm."""

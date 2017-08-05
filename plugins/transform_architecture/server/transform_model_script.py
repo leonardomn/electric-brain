@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 
+import sys
+sys.path.insert(0, '..')
+
 import json
 import fileinput
 import sys
 import tensorflow as tf
 import numpy
-from electricbrain.object_component import EBNeuralNetworkObjectComponent
-from electricbrain import eprint
-from electricbrain.schema import EBSchema
-from electricbrain.adamax import AdamaxOptimizer
+from object_component import EBNeuralNetworkObjectComponent
+from utils import eprint
+from schema import EBSchema
+from adamax import AdamaxOptimizer
 
 class TrainingScript:
     def __init__(self):
@@ -145,10 +148,22 @@ class TrainingScript:
                 response["type"] = "evaluationCompleted"
                 response["objects"] = outputs
             elif (data["type"] == 'save'):
-                tf.train.export_meta_graph(filename="model.tfg")
+                if self.session is None:
+                    self.reset("AdadeltaOptimizer", {})
+
+                saver = tf.train.Saver()
+                saver.save(self.session, "model.tfg")
+
                 response["type"] = "saved"
             elif (data["type"] == 'load'):
-                pass
+                if self.session is None:
+                    self.reset("AdadeltaOptimizer", {})
+
+                saver = tf.train.Saver()
+                saver.restore(self.session, "model.tfg")
+
+                tf.set_random_seed(565)
+                response["type"] = "loaded"
 
             sys.stdout.write(json.dumps(response) + "\n")
             sys.stdout.flush()

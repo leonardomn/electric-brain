@@ -5,13 +5,13 @@ import fileinput
 import sys
 import tensorflow as tf
 import numpy
-from electricbrain.object_component import EBNeuralNetworkObjectComponent
-from electricbrain import eprint
-import electricbrain.shape
-import electricbrain.losses
-from electricbrain.editor import generateEditorNetwork
-from electricbrain.schema import EBSchema
-from electricbrain.adamax import AdamaxOptimizer
+from object_component import EBNeuralNetworkObjectComponent
+from utils import eprint
+import shape
+import losses
+from editor import generateEditorNetwork
+from schema import EBSchema
+from adamax import AdamaxOptimizer
 
 class TrainingScript:
     def __init__(self):
@@ -41,8 +41,8 @@ class TrainingScript:
         self.valencePlaceholder = tf.placeholder(tf.float32, name="valences")
 
         # Construct the loss function by comparing the outputs
-        primarySummary = electricbrain.shape.createSummaryModule(primaryOutputs, primaryShapes)
-        secondarySummary = electricbrain.shape.createSummaryModule(secondaryOutputs, secondaryShapes)
+        primarySummary = shape.createSummaryModule(primaryOutputs, primaryShapes)
+        secondarySummary = shape.createSummaryModule(secondaryOutputs, secondaryShapes)
 
         # Generate the neural network provided from the UI
         self.primaryOutput, primaryOutputSize = generateEditorNetwork(primaryFixedLayers, primarySummary, {"outputSize": 200})
@@ -52,7 +52,7 @@ class TrainingScript:
         # Between 0 and 1, where 0 is same and 1 is different
         modifiedValences = (tf.negative(self.valencePlaceholder) + 1) / 2
 
-        loss = electricbrain.losses.contrastive_loss(self.primaryOutput, self.secondaryOutput, modifiedValences, 1.0)
+        loss = losses.contrastive_loss(self.primaryOutput, self.secondaryOutput, modifiedValences, 14.0)
 
         self.totalLoss = tf.reduce_mean(loss)
 

@@ -31,39 +31,24 @@ class EBArchitecturePluginBase
      * This constructs the plugin
      *
      * @param {EBInterpretationRegistry} registry The registry for the transformation stream
-     * @param {EBNeuralNetworkComponentRegistry} neuralNetworkComponentRegistry A reference the the globally initialized componentDispatch method
+     * @param {EBPythonComponentRegistry} pythonComponentRegistry A reference the the globally initialized componentDispatch method
      */
-    constructor(registry, neuralNetworkComponentRegistry)
+    constructor(registry, pythonComponentRegistry)
     {
         this.registry = registry;
-        this.neuralNetworkComponentRegistry = neuralNetworkComponentRegistry;
+        this.pythonComponentRegistry = pythonComponentRegistry;
     }
     
     
     /**
-     * This method creates an EBTorchProcessBase object for this architecture.
+     * This method creates an EBModelProcessBase object for this architecture.
      *
      * @param {EBArchitecture} architecture An EBArchitecture object
      * @param {string} [scriptFolder] Optional script folder for the files to go
      * 
-     * @returns {EBTorchProcessBase} A torch process object
+     * @returns {EBModelProcessBase} A torch process object
      */
-    getTorchProcess(architecture, scriptFolder)
-    {
-        throw new Error("Unimplemented");
-    }
-
-
-    /**
-     * This method generates all the files for this neural network architecture
-     *
-     * @param {EBTransformArchitecture} architecture An EBTransformArchitecture object
-     * @returns {[object]} The an array of objects describing the generated files.
-     *                     Each object has two properties, 'path' for the files
-     *                     path and filename, and 'data' for the contents of the
-     *                     file
-     */
-    generateFiles(architecture)
+    getProcess(architecture, scriptFolder)
     {
         throw new Error("Unimplemented");
     }

@@ -22,7 +22,7 @@ const
     EBArchitecturePluginRegistry = require("./components/architecture/EBArchitecturePluginRegistry"),
     EBDataSourcePluginDispatch = require("./components/datasource/EBDataSourcePluginDispatch"),
     EBInterpretationRegistry = require("./components/datasource/EBInterpretationRegistry"),
-    EBneuralNetworkComponentRegistry = require("../shared/components/architecture/EBNeuralNetworkComponentRegistry"),
+    EBPythonComponentRegistry = require("../shared/components/architecture/EBPythonComponentRegistry"),
     fs = require("fs"),
     path = require('path');
 
@@ -72,7 +72,7 @@ class EBApplicationBase
 
         // Set up the main data source plugin
         this.dataSourcePluginDispatch = new EBDataSourcePluginDispatch();
-        this.neuralNetworkComponentRegistry = new EBneuralNetworkComponentRegistry();
+        this.pythonComponentRegistry = new EBPythonComponentRegistry();
         this.interpretationRegistry = new EBInterpretationRegistry();
         this.architectureRegistry = new EBArchitecturePluginRegistry();
 
@@ -84,16 +84,16 @@ class EBApplicationBase
                 this.interpretationRegistry.addInterpretation(new plugin.interpretations[name](this.interpretationRegistry));
             });
 
-            const neuralNetworkComponentNames = Object.keys(plugin.neuralNetworkComponents || {});
+            const neuralNetworkComponentNames = Object.keys(plugin.pythonComponents || {});
             neuralNetworkComponentNames.forEach((name) =>
             {
-                this.neuralNetworkComponentRegistry.registerPlugin(name, plugin.neuralNetworkComponents[name])
+                this.pythonComponentRegistry.registerPlugin(name, plugin.pythonComponents[name])
             });
 
             const architecturePluginNames = Object.keys(plugin.architecturePlugins || {});
             architecturePluginNames.forEach((name) =>
             {
-                this.architectureRegistry.registerPlugin(name, new plugin.architecturePlugins[name](this.interpretationRegistry, this.neuralNetworkComponentRegistry));
+                this.architectureRegistry.registerPlugin(name, new plugin.architecturePlugins[name](this.interpretationRegistry, this.pythonComponentRegistry));
             });
         });
     }

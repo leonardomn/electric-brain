@@ -28,7 +28,7 @@ module.exports = {
         'mongo': EBMongoPlugin
     },
     "interpretations": {},
-    "neuralNetworkComponents": {},
+    "pythonComponents": {},
     "architecturePlugins": {}
 };
 

@@ -16,10 +16,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import tensorflow as tf
-from electricbrain.shape import EBTensorShape, createSummaryModule
-from electricbrain.plugins import EBNeuralNetworkComponentBase
-from electricbrain.editor import generateEditorNetwork
-from electricbrain import eprint
+from shape import EBTensorShape, createSummaryModule
+from plugins import EBNeuralNetworkComponentBase
+from editor import generateEditorNetwork
+from utils import eprint
 import numpy
 
 class EBNeuralNetworkClassificationComponent(EBNeuralNetworkComponentBase):

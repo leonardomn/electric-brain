@@ -17,10 +17,10 @@
 
 import tensorflow as tf
 
-import electricbrain.plugins
-from electricbrain import eprint
+import plugins
+from utils import eprint
 
-class EBNeuralNetworkObjectComponent(electricbrain.plugins.EBNeuralNetworkComponentBase):
+class EBNeuralNetworkObjectComponent(plugins.EBNeuralNetworkComponentBase):
     def __init__(self, schema, prefix):
         super(EBNeuralNetworkObjectComponent, self).__init__(schema, prefix)
         self.schema = schema
@@ -28,16 +28,16 @@ class EBNeuralNetworkObjectComponent(electricbrain.plugins.EBNeuralNetworkCompon
         self.subComponents = {}
 
         # Convert each of the sub variables
-        for variableName in self.schema["properties"]:
+        for variableName in self.schema.propertyNames():
             subSchema = self.schema["properties"][variableName]
-            self.subComponents[variableName] = electricbrain.plugins.createNeuralNetworkComponent(subSchema, prefix)
+            self.subComponents[variableName] = plugins.createNeuralNetworkComponent(subSchema, prefix)
 
 
     def convert_input_in(self, inputs):
         converted = {}
 
         # Convert each of the sub variables
-        for variableName in self.schema["properties"]:
+        for variableName in self.schema.propertyNames():
             subComponent = self.subComponents[variableName]
 
             # Build up a list of the variables to be converted
@@ -57,7 +57,7 @@ class EBNeuralNetworkObjectComponent(electricbrain.plugins.EBNeuralNetworkCompon
         converted = {}
 
         # Convert each of the sub variables
-        for variableName in self.schema["properties"]:
+        for variableName in self.schema.propertyNames():
             subComponent = self.subComponents[variableName]
 
             # Build up a list of the variables to be converted
@@ -113,7 +113,7 @@ class EBNeuralNetworkObjectComponent(electricbrain.plugins.EBNeuralNetworkCompon
         shapes = []
 
         # Create the input stack for each sub-variable in the schema
-        for variableName in self.schema["properties"]:
+        for variableName in self.schema.propertyNames():
             subComponent = self.subComponents[variableName]
             subOutputs, subShapes = subComponent.get_input_stack(placeholders)
             outputs.extend(subOutputs)
@@ -128,7 +128,7 @@ class EBNeuralNetworkObjectComponent(electricbrain.plugins.EBNeuralNetworkCompon
         shapes = {}
 
         # Create the output stack for each sub-variable in the schema
-        for variableName in self.schema["properties"]:
+        for variableName in self.schema.propertyNames():
             subComponent = self.subComponents[variableName]
             subOutputs, subShapes = subComponent.get_output_stack(inputTensors, inputShapes)
             outputs.update(subOutputs)

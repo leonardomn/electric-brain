@@ -28,7 +28,7 @@ const
     EBStdioJSONStreamProcess = require("../../../server/components/EBStdioJSONStreamProcess"),
     EBTrainModelTaskBase = require("../../../server/tasks/EBTrainModelTaskBase"),
     EBTrainingSet = require("../../../server/components/model/EBTrainingSet"),
-    EBTransformTorchProcess = require("./EBTransformTorchProcess"),
+    EBTransformProcess = require("./EBTransformProcess"),
     fs = require('fs'),
     math = require('mathjs'),
     models = require("../../../shared/models/models"),
@@ -114,7 +114,7 @@ class EBTrainTransformModelTask extends EBTrainModelTaskBase
                 self.trainingSet = new EBTrainingSet(self.application, self.model.architecture.dataSource, 0.3);
                 self.inputTransformer = new EBNeuralTransformer(self.model.architecture.inputSchema);
                 self.outputTransformer = new EBNeuralTransformer(self.model.architecture.outputSchema);
-                self.trainingProcess = new EBTransformTorchProcess(self.model.architecture, self.architecturePlugin, self.application.config.get('overrideModelFolder'));
+                self.trainingProcess = new EBTransformProcess(self.model.architecture, self.architecturePlugin, self.application.config.get('overrideModelFolder'));
 
                 this.setupCancellationCallback(self.model, () =>
                 {
@@ -150,7 +150,7 @@ class EBTrainTransformModelTask extends EBTrainModelTaskBase
         }).then(() =>
         {
             // Generate the code
-            const promise = self.trainingProcess.generateCode(self.application.interpretationRegistry, self.application.neuralNetworkComponentRegistry);
+            const promise = self.trainingProcess.generateCode(self.application.interpretationRegistry, self.application.pythonComponentRegistry);
             return promise.then((totalFiles) =>
             {
                 const codeGenerationResult = {
@@ -175,7 +175,7 @@ class EBTrainTransformModelTask extends EBTrainModelTaskBase
             // Save the model in its vanilla state. This just ensures that other
             // functionality that depends on downloading the torch model file
             // works from the first iteration of training
-            return self.saveTorchModelFile();
+            return self.saveModelFile();
         }).then(() =>
         {
             // Training model
@@ -492,7 +492,7 @@ class EBTrainTransformModelTask extends EBTrainModelTaskBase
 
                                 if ((trainingResult.completedIterations % saveFrequency) === 0)
                                 {
-                                    return self.saveTorchModelFile();
+                                    return self.saveModelFile();
                                 }
                                 else
                                 {
@@ -694,12 +694,12 @@ class EBTrainTransformModelTask extends EBTrainModelTaskBase
      *
      * @return {Promise} Resolves a promise  after the file has been saved
      */
-    saveTorchModelFile()
+    saveModelFile()
     {
         const self = this;
         return Promise.fromCallback((callback) =>
         {
-            const promise = self.trainingProcess.getTorchModelFileStream();
+            const promise = self.trainingProcess.getModelFileStream();
             promise.then((stream) =>
             {
                 const fileName = `model-${self.model._id}.tfg`;

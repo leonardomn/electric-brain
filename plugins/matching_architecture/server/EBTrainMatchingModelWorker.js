@@ -22,7 +22,7 @@ const
     async = require('async'),
     EBCustomTransformationProcess = require('../../../server/components/architecture/EBCustomTransformationProcess'),
     EBNeuralTransformer = require('../../../shared/components/architecture/EBNeuralTransformer'),
-    EBMatchingTorchProcess = require("./EBMatchingTorchProcess"),
+    EBMatchingProcess = require("./EBMatchingProcess"),
     EBStdioScript = require("../../../server/components/EBStdioScript"),
     fs = require('fs'),
     models = require("../../../shared/models/models"),
@@ -60,12 +60,12 @@ class EBTrainMatchingModelWorker extends EBStdioScript
                 {
                     this.model = new models.EBModel(objects[0]);
                     this.architecturePlugin = this.application.architectureRegistry.getPluginForArchitecture(this.model.architecture);
-                    this.trainingProcess = new EBMatchingTorchProcess(this.model.architecture, this.architecturePlugin);
+                    this.trainingProcess = new EBMatchingProcess(this.model.architecture, this.architecturePlugin);
                     
                     this.primaryTransformer = new EBNeuralTransformer(this.model.architecture.primarySchema);
                     this.secondaryTransformer = new EBNeuralTransformer(this.model.architecture.secondarySchema);
                     
-                    this.trainingProcess.generateCode(this.application.interpretationRegistry, this.application.neuralNetworkComponentRegistry).then(() =>
+                    this.trainingProcess.generateCode(this.application.interpretationRegistry, this.application.pythonComponentRegistry).then(() =>
                     {
                         return this.trainingProcess.startProcess(this.application.interpretationRegistry);
                     });

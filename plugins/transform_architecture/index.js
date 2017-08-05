@@ -17,6 +17,7 @@
  */
 
 const EBTransformArchitecturePlugin = require("./server/EBTransformArchitecturePlugin");
+const path = require('path');
 
 /*
  * Plugins must provides a list of the various support plugins for each type.
@@ -26,7 +27,9 @@ module.exports = {
     "folder": __dirname,
     "dataSources": {},
     "interpretations": {},
-    "neuralNetworkComponents": {},
+    "pythonComponents": {
+        'transform_model_script': path.join(__dirname, "server", "transform_model_script.py")
+    },
     "architecturePlugins": {
         "EBTransformArchitecturePlugin": EBTransformArchitecturePlugin
     }

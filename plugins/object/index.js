@@ -17,7 +17,6 @@
  */
 
 const EBObjectInterpretation = require('./server/EBObjectInterpretation');
-const EBNeuralNetworkObjectComponent = require('./server/EBNeuralNetworkObjectComponent');
 const path = require('path');
 
 /*
@@ -29,7 +28,7 @@ module.exports = {
     "folder": __dirname,
     "dataSources": {},
     "interpretations": {'object': EBObjectInterpretation},
-    "neuralNetworkComponents": {
+    "pythonComponents": {
         'object': path.join(__dirname, "server", "object_component.py")
     },
     "architecturePlugins": {}

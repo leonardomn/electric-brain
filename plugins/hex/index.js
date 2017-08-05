@@ -27,7 +27,7 @@ module.exports = {
     "folder": __dirname,
     "dataSources": {},
     "interpretations": {'hex': EBHexInterpretation},
-    "neuralNetworkComponents": {},
+    "pythonComponents": {},
     "architecturePlugins": {}
 };
 

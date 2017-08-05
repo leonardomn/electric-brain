@@ -27,7 +27,7 @@ const
     EBRollingAverage = require("../../../shared/models/EBRollingAverage"),
     EBStdioJSONStreamProcess = require("../../../server/components/EBStdioJSONStreamProcess"),
     EBTrainModelTaskBase = require("../../../server/tasks/EBTrainModelTaskBase"),
-    EBMatchingTorchProcess = require('./EBMatchingTorchProcess'),
+    EBMatchingProcess = require('./EBMatchingProcess'),
     EBTrainingSet = require("../../../server/components/model/EBTrainingSet"),
     EBVectorMatcher = require("./EBVectorMatcher"),
     fs = require('fs'),
@@ -120,7 +120,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
                 self.primaryTrainingSet = new EBTrainingSet(self.application, self.model.architecture.primaryDataSource, 0.3);
                 self.secondaryTrainingSet = new EBTrainingSet(self.application, self.model.architecture.secondaryDataSource, 0.3);
 
-                self.trainingProcess = new EBMatchingTorchProcess(self.model.architecture, self.architecturePlugin, self.application.config.get('overrideModelFolder'));
+                self.trainingProcess = new EBMatchingProcess(self.model.architecture, self.architecturePlugin, self.application.config.get('overrideModelFolder'));
                 
                 this.setupCancellationCallback(self.model, () =>
                 {
@@ -156,7 +156,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
         }).then(() =>
         {
             // Generate the code
-            const promise = self.trainingProcess.generateCode(self.application.interpretationRegistry, self.application.neuralNetworkComponentRegistry);
+            const promise = self.trainingProcess.generateCode(self.application.interpretationRegistry, self.application.pythonComponentRegistry);
             return promise.then((totalFiles) =>
             {
                 const codeGenerationResult = {
@@ -179,9 +179,9 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
         }).then(() =>
         {
             // Save the model in its vanilla state. This just ensures that other
-            // functionality that depends on downloading the torch model file
+            // functionality that depends on downloading the tensorflow graph file
             // works from the first iteration of training
-            return self.saveTorchModelFile();
+            return self.saveModelFile();
         }).then(() =>
         {
             // Training model
@@ -514,7 +514,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
 
                                 if ((trainingResult.completedIterations % saveFrequency) === 0)
                                 {
-                                    return self.saveTorchModelFile();
+                                    return self.saveModelFile();
                                 }
                                 else
                                 {
@@ -755,16 +755,16 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
 
 
     /**
-     * This saves the trained torch model file
+     * This saves the trained tensorflow graph model file
      *
      * @return {Promise} Resolves a promise  after the file has been saved
      */
-    saveTorchModelFile()
+    saveModelFile()
     {
         const self = this;
         return Promise.fromCallback((callback) =>
         {
-            const promise = self.trainingProcess.getTorchModelFileStream();
+            const promise = self.trainingProcess.getModelFileStream();
             promise.then((stream) =>
             {
                 const fileName = `model-${self.model._id}.t7`;

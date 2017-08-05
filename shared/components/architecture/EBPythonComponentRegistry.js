@@ -27,10 +27,10 @@ const
 /**
  *  This class is used to register TensorFlow neural network components
  */
-class EBNeuralNetworkComponentRegistry
+class EBPythonComponentRegistry
 {
     /**
-     * Creates an EBNeuralNetworkComponentRegistry object.
+     * Creates an EBPythonComponentRegistry object.
      */
     constructor()
     {
@@ -51,7 +51,7 @@ class EBNeuralNetworkComponentRegistry
      * This method registers a plugin with the dispatch.
      *
      * @param {string} type The machine name of the plugin
-     * @param {string} plugin The filename containing the plugin
+     * @param {string} plugin The filename for the python file containing the plugin
      */
     registerPlugin(type, plugin)
     {
@@ -59,4 +59,4 @@ class EBNeuralNetworkComponentRegistry
     }
 }
 
-module.exports = EBNeuralNetworkComponentRegistry;
+module.exports = EBPythonComponentRegistry;

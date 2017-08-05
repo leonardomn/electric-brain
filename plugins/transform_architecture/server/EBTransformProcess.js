@@ -22,7 +22,7 @@ const
     async = require('async'),
     childProcess = require('child_process'),
     EBStdioJSONStreamProcess = require("../../../server/components/EBStdioJSONStreamProcess"),
-    EBTorchProcessBase = require("../../../server/components/architecture/EBTorchProcessBase"),
+    EBModelProcessBase = require("../../../server/components/architecture/EBModelProcessBase"),
     fs = require('fs'),
     math = require("mathjs"),
     path = require('path'),
@@ -33,7 +33,7 @@ const
 /**
  * This class is used to manage the Torch sub-process for a given architecture
  */
-class EBTransformTorchProcess extends EBTorchProcessBase
+class EBTransformProcess extends EBModelProcessBase
 {
     /**
      * Creates the process object for the given EBTransformArchitecture object.
@@ -44,7 +44,7 @@ class EBTransformTorchProcess extends EBTorchProcessBase
      */
     constructor(architecture, architecturePlugin, scriptFolder)
     {
-        super(architecture, architecturePlugin, scriptFolder);
+        super(architecture, architecturePlugin, scriptFolder, "transform_model_script.py");
         const self = this;
         self.architecture = architecture;
         self.architecturePlugin = architecturePlugin;
@@ -203,4 +203,4 @@ class EBTransformTorchProcess extends EBTorchProcessBase
     }
 }
 
-module.exports = EBTransformTorchProcess;
+module.exports = EBTransformProcess;

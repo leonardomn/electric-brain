@@ -57,8 +57,8 @@ class EBTrainTransformModelWorker extends EBStdioScript
                 {
                     this.model = new models.EBModel(objects[0]);
                     this.architecturePlugin = this.application.architectureRegistry.getPluginForArchitecture(this.model.architecture);
-                    this.trainingProcess = this.architecturePlugin.getTorchProcess(this.model.architecture, this.application.config.get('overrideModelFolder'));
-                    this.trainingProcess.generateCode(this.application.interpretationRegistry, this.application.neuralNetworkComponentRegistry).then(() =>
+                    this.trainingProcess = this.architecturePlugin.getProcess(this.model.architecture, this.application.config.get('overrideModelFolder'));
+                    this.trainingProcess.generateCode(this.application.interpretationRegistry, this.application.pythonComponentRegistry).then(() =>
                     {
                         return this.trainingProcess.startProcess(this.application.interpretationRegistry);
                     });

@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import tensorflow as tf
-from electricbrain import eprint
+from utils import eprint
 
 loaded = False
 
@@ -31,11 +31,11 @@ class EBNeuralNetworkComponentBase:
 
 def createNeuralNetworkComponent(schema, prefix):
     """ This function creates a new neural network component object for the given schema """
-    from electricbrain.object_component import EBNeuralNetworkObjectComponent
-    from electricbrain.number_component import EBNeuralNetworkNumberComponent
-    from electricbrain.classification_component import EBNeuralNetworkClassificationComponent
-    from electricbrain.sequence_component import EBNeuralNetworkSequenceComponent
-    from electricbrain.word_component import EBNeuralNetworkWordComponent
+    from object_component import EBNeuralNetworkObjectComponent
+    from number_component import EBNeuralNetworkNumberComponent
+    from classification_component import EBNeuralNetworkClassificationComponent
+    from sequence_component import EBNeuralNetworkSequenceComponent
+    from word_component import EBNeuralNetworkWordComponent
 
     if "enum" in schema:
         return EBNeuralNetworkClassificationComponent(schema, prefix)

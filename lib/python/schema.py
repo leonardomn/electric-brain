@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import tensorflow as tf
-from electricbrain import eprint
+from utils import eprint
 
 loaded = False
 
@@ -59,6 +59,12 @@ class EBSchema:
 
     def isBinary(self):
         return 'binary' in self.type
+
+    def propertyNames(self):
+        if not self.isObject():
+            return []
+        else:
+            return sorted(self.properties.keys())
 
     def fields(self):
         if not self.isObject():
