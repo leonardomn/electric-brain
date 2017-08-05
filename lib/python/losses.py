@@ -25,7 +25,7 @@ from electricbrain import eprint
 def contrastive_loss(primary, secondary, label, margin):
     """This function computes the contrastive loss using the L1 Norm."""
 
-    d = tf.norm(tf.subtract(primary, secondary), ord = 2, axis = 1)
+    d = tf.norm(tf.subtract(primary, secondary), ord = 1, axis = 1)
     differentPortion = label * tf.maximum(0.0, margin - d)
     samePortion = (1 - label) * d
     losses = differentPortion + samePortion
