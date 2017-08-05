@@ -28,7 +28,7 @@ module.exports = {
         'csv': EBCSVPlugin
     },
     "interpretations": {},
-    "neuralNetworkComponents": {},
+    "pythonComponents": {},
     "architecturePlugins": {}
 };
 

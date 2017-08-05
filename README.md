@@ -11,7 +11,7 @@ Electric Brain has several major dependencies:
  - NodeJS >= 4.2.6
  - MongoDB >= 2.6
  - RabbitMQ
- - Torch
+ - TensorFlow
  - Graphviz
  - SQLLite3
 
@@ -22,20 +22,13 @@ Installation of these four tools will vary greatly depending on your platform.
 On Ubuntu 16.04, several of the required tools can be installed with their required versions very easily from
 the mainline package repository.
 
-    user@machine:~$ sudo apt install mongodb rabbitmq-server graphviz git build-essential libsqlite3-dev -y
+    user@machine:~$ sudo apt install mongodb rabbitmq-server graphviz git build-essential libsqlite3-dev python3-pip -y
 
-Torch must be installed separately. There are no easily available Ubuntu packages for Torch, because of its
-nature as an academic tool. The easiest way to install it is to follow their Getting Started Guide here: 
-http://torch.ch/docs/getting-started.html . There is one modification that we recommend, which is to set
-your environment variable PREFIX to "/usr/local" prior to running the commands. The complete commands
-for installing Torch on Ubuntu 16.04 are, thus:
+Tensorflow must be install separately, using Pip.
 
-    user@machine:~$ export PREFIX=/usr/local
-    user@machine:~$ git clone https://github.com/torch/distro.git ~/torch --recursive
-    user@machine:~$ cd ~/torch; bash install-deps;
-    user@machine:~$ sudo ./install.sh
+    user@machine:~$ sudo pip3 install tensorflow
 
-After installing Torch, you will need to manually install several Electric Brain dependencies in Lua via
+After installing Tensorflow, you will need to manually install several Electric Brain dependencies in Lua via
 luarocks:
 
     user@machine:~$ sudo luarocks install json

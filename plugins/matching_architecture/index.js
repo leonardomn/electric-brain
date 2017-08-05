@@ -18,6 +18,7 @@
 
 
 const EBMatchingArchitecturePlugin = require("./server/EBMatchingArchitecturePlugin");
+const path = require('path');
 
 /*
  * Plugins must provides a list of the various support plugins for each type.
@@ -28,7 +29,9 @@ module.exports = {
     "folder": __dirname,
     "dataSources": {},
     "interpretations": {},
-    "neuralNetworkComponents": {},
+    "pythonComponents": {
+        'matching_model_script': path.join(__dirname, "server", "matching_model_script.py")
+    },
     "architecturePlugins": {
         "EBMatchingArchitecturePlugin": EBMatchingArchitecturePlugin
     }

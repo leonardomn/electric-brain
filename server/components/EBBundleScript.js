@@ -26,7 +26,6 @@ const
     EBClassFactory = require("../../shared/components/EBClassFactory"),
     EBModel = require('../../shared/models/EBModel'),
     EBNeuralTransformer = require("../../shared/components/architecture/EBNeuralTransformer"),
-    EBTorchProcess = require('./architecture/EBTorchProcessBase'),
     express = require('express'),
     flattener = require('../middleware/flattener'),
     fs = require('fs'),
@@ -46,7 +45,7 @@ class EBBundleScript extends EBApplicationBase
      * Constructor for the EBBundleScript object. It will load the model data contained within
      * the given filename.
      *
-     * @param {string} [bundleFolder] The folder containing the torch bundle.
+     * @param {string} [bundleFolder] The folder containing the tensorflow bundle.
      */
     constructor(bundleFolder)
     {
@@ -96,11 +95,11 @@ class EBBundleScript extends EBApplicationBase
     {
         const architecture = EBClassFactory.createObject(this.model.architecture);
         const architecturePlugin = this.architectureRegistry.getPluginForArchitecture(architecture);
-        this.modelProcess = architecturePlugin.getTorchProcess(architecture, this.bundleFolder);
+        this.modelProcess = architecturePlugin.getProcess(architecture, this.bundleFolder);
 
-        return this.modelProcess.generateCode(this.interpretationRegistry, this.neuralNetworkComponentDispatch).then(() =>
+        return this.modelProcess.generateCode(this.interpretationRegistry, this.pythonComponentRegistry).then(() =>
         {
-            return this.modelProcess.startProcess();
+            return this.modelProcess.startProcess(this.interpretationRegistry);
         }).then(() =>
         {
             return this.modelProcess.loadModelFile();

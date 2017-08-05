@@ -54,121 +54,66 @@ angular.module('eb').controller('EBNewModelController', function EBNewModelContr
         {
             const optimFunction = _.find($scope.optimizationAlgorithms, (func) => func.name === newValue);
 
-            console.log(newValue)
-            console.log(optimFunction)
             $scope.model.parameters.optimizationParameters = _.clone(optimFunction.parameters);
         }
     });
 
     $scope.optimizationAlgorithms = [
         {
-            "name": "sgd",
-            "title": "Stochastic Gradient Descent",
-            "parameters": {
-                "learningRate": 1e-3,
-                "learningRateDecay": 0,
-                "weightDecay": 0,
-                "momentum": 0,
-                "dampening": 0,
-                "nesterov": 0
-            }
-        },
-        {
-            "name": "asgd",
-            "title": "Averaged Stochastic Gradient Descent",
-            "parameters": {
-                "eta0": 1e-4,
-                "lambda": 1e-4,
-                "alpha": 0.75,
-                "t0": 1e6
-            }
-        },
-        {
-            "name": "cg",
-            "title": "Conjugate Gradient",
-            "parameters": {
-                "rho": 0.01,
-                "sig": 0.5,
-                "int": 0.1,
-                "ext": 3.0,
-                "maxIter": 20,
-                "ratio": 100,
-                "maxEval": 25
-            }
-        },
-        {
-            "name": "adadelta",
-            "title": "AdaDelta",
-            "parameters": {
-                "rho": 0.9,
-                "eps": 1e-6,
-                "weightDecay": 0
-            }
-        },
-        {
-            "name": "adagrad",
-            "title": "AdaGrad",
-            "parameters": {
-                "learningRate": 1e-3,
-                "learningRateDecay": 0,
-                "weightDecay": 0
-            }
-        },
-        {
-            "name": "adam",
-            "title": "Adam",
-            "parameters": {
-                "learningRate": 1e-3,
-                "learningRateDecay": 0,
-                "beta1": 0.9,
-                "beta2": 0.999,
-                "epsilon": 1e-8,
-                "weightDecay": 0
-            }
-        },
-        {
-            "name": "adamax",
+            "name": "AdamaxOptimizer",
             "title": "AdaMax",
             "parameters": {
-                "learningRate": 2e-3,
+                "learning_rate": 0.001,
+                "beta1": 0.9,
+                "beta2": 0.999
+            }
+        },
+        {
+            "name": "AdadeltaOptimizer",
+            "title": "AdaDelta",
+            "parameters": {
+                "learning_rate": 0.001,
+                "epsilon": 1e-8,
+                "rho": 0.95
+            }
+        },
+        {
+            "name": "AdagradOptimizer",
+            "title": "AdaGrad",
+            "parameters": {
+                "learning_rate": 1e-3,
+                "initial_accumulator_value": 0.1
+            }
+        },
+        {
+            "name": "AdamOptimizer",
+            "title": "Adam",
+            "parameters": {
+                "learning_rate": 0.001,
                 "beta1": 0.9,
                 "beta2": 0.999,
-                "epsilon": 1e-38,
-                "weightDecay": 0
+                "epsilon": 1e-08
             }
         },
         {
-            "name": "nag",
-            "title": "Nesterov's Accelerated Gradient",
+            "name": "FtrlOptimizer",
+            "title": "FTRL",
             "parameters": {
-                "learningRate": 1e-3,
-                "learningRateDecay": 0,
-                "weightDecay": 0,
-                "momentum": 0.9,
-                "dampening": 0.9
+                "learning_rate": 0.001,
+                "learning_rate_power": -0.5,
+                "initial_accumulator_value": 0.1,
+                "l1_regularization_strength": 0.0,
+                "l2_regularization_strength": 0.0
             }
         },
         {
-            "name": "rmsprop",
-            "title": "RMSProp",
+            "name": "RMSPropOptimizer",
+            "title": "RMS Prop",
             "parameters": {
-                "learningRate": 1e-2,
-                "alpha": 0.99,
-                "epsilon": 1e-8,
-                "weightDecay": 0,
-                "initialMean": 0
-            }
-        },
-        {
-            "name": "rprop",
-            "title": "RProp",
-            "parameters": {
-                "stepsize": 0.1,
-                "etaplus": 1.2,
-                "etaminus": 0.5,
-                "stepsizemax": 50,
-                "stepsizemin": 1e-6,
-                "niter": 1
+                "learning_rate": 1e-2,
+                "decay": 0.9,
+                "momentum": 0.0,
+                "epsilon": 1e-10
             }
         }
     ];

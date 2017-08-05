@@ -19,7 +19,6 @@ set -e
 #
 # This script is used for installation of Electric Brain.
 #
-# Portions of this script were adapted from the Torch (http://torch.ch) installation script.
 
 
 install_dependencies_darwin() {
@@ -62,7 +61,7 @@ install_dependencies_redhat() {
 
     # Now install nodejs, mongodb
     sudo yum -y update
-    sudo yum -y install mongodb mongodb-server nodejs git graphviz gcc-c++ sqlite3-devel
+    sudo yum -y install mongodb mongodb-server nodejs git graphviz gcc-c++ sqlite3-devel python3 python3-pip
 
     install_rabbitmq_redhat
 
@@ -76,30 +75,12 @@ install_dependencies_ubuntu() {
     curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
 
     sudo apt update
-    sudo apt install mongodb rabbitmq-server nodejs graphviz git build-essential libsqlite3-dev -y
+    sudo apt install mongodb rabbitmq-server nodejs graphviz git build-essential libsqlite3-dev libcupti python3 python3-pip -y
 }
 
 
-install_torch() {
-    if [[ `which th` == '' ]]; then
-        # Install torch and then clean up
-        cd /tmp
-        git clone https://github.com/torch/distro.git /tmp/torch --recursive
-        cd /tmp/torch; bash install-deps;
-        sudo PREFIX=/usr/local ./install.sh -b
-        cd ..
-        sudo rm -rf /tmp/torch
-
-        # Torch Activate and install Lua dependencies
-        /usr/local/bin/torch-activate
-        sudo /usr/local/bin/luarocks install json
-        sudo /usr/local/bin/luarocks install distlearn
-        sudo /usr/local/bin/luarocks install ipc
-        sudo /usr/local/bin/luarocks install rnn
-        sudo /usr/local/bin/luarocks install underscore
-        sudo /usr/local/bin/luarocks install luasocket
-        sudo /usr/local/bin/luarocks install lsqlite3 SQLITE_DIR=/usr/local/Cellar/sqlite/`ls /usr/local/Cellar/sqlite/`
-    fi
+install_tensorflow() {
+    sudo pip3 install --upgrade tensorflow
 }
 
 install_electric_brain() {
@@ -111,7 +92,7 @@ installation_main()
 {
     if [[ `uname` == 'Darwin' ]]; then
         install_dependencies_darwin
-        install_torch
+        install_tensorflow
         # Must be run without sudo on mac
         npm install electricbrain -g
     elif [[ `uname` == 'Linux' ]]; then
@@ -138,12 +119,12 @@ installation_main()
         # Installation for fedora / centos
         if [[ "$DISTRO" = "fedora" ||  "$DISTRO" = "centos" ]]; then
             install_dependencies_redhat
-            install_torch
+            install_tensorflow
             install_electric_brain
         # Installation for Ubuntu
         elif [[ "$DISTRO" = "ubuntu" ]]; then
             install_dependencies_ubuntu
-            install_torch
+            install_tensorflow
             install_electric_brain
         else
             echo '==> Only Ubuntu, Fedora, and CentOS are supported.'

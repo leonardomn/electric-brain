@@ -27,7 +27,7 @@ const
     EBRollingAverage = require("../../../shared/models/EBRollingAverage"),
     EBStdioJSONStreamProcess = require("../../../server/components/EBStdioJSONStreamProcess"),
     EBTrainModelTaskBase = require("../../../server/tasks/EBTrainModelTaskBase"),
-    EBMatchingTorchProcess = require('./EBMatchingTorchProcess'),
+    EBMatchingProcess = require('./EBMatchingProcess'),
     EBTrainingSet = require("../../../server/components/model/EBTrainingSet"),
     EBVectorMatcher = require("./EBVectorMatcher"),
     fs = require('fs'),
@@ -58,7 +58,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
         this.modelResults = application.db.collection("EBModel_results");
         this.gridFS = new mongodb.GridFSBucket(application.db, {
             chunkSizeBytes: 1024,
-            bucketName: 'EBModel.torch'
+            bucketName: 'EBModel.savedModel'
         });
         
         this.rollingAverageAccuracy = EBRollingAverage.createWithPeriod(100);
@@ -119,7 +119,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
                 self.primaryTrainingSet = new EBTrainingSet(self.application, self.model.architecture.primaryDataSource, self.model.parameters.testingSetPortion);
                 self.secondaryTrainingSet = new EBTrainingSet(self.application, self.model.architecture.secondaryDataSource, self.model.parameters.testingSetPortion);
 
-                self.trainingProcess = new EBMatchingTorchProcess(self.model.architecture, self.architecturePlugin, self.application.config.get('overrideModelFolder'));
+                self.trainingProcess = new EBMatchingProcess(self.model.architecture, self.architecturePlugin, self.application.config.get('overrideModelFolder'));
                 
                 this.setupCancellationCallback(self.model, () =>
                 {
@@ -155,7 +155,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
         }).then(() =>
         {
             // Generate the code
-            const promise = self.trainingProcess.generateCode(self.application.interpretationRegistry, self.application.neuralNetworkComponentDispatch);
+            const promise = self.trainingProcess.generateCode(self.application.interpretationRegistry, self.application.pythonComponentRegistry);
             return promise.then((totalFiles) =>
             {
                 const codeGenerationResult = {
@@ -169,7 +169,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
         }).then(() =>
         {
             // Start up the process
-            return self.trainingProcess.startProcess();
+            return self.trainingProcess.startProcess(self.application.interpretationRegistry);
 
         }).then(() =>
         {
@@ -178,9 +178,9 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
         }).then(() =>
         {
             // Save the model in its vanilla state. This just ensures that other
-            // functionality that depends on downloading the torch model file
+            // functionality that depends on downloading the tensorflow graph file
             // works from the first iteration of training
-            return self.saveTorchModelFile();
+            return self.saveModelFile();
         }).then(() =>
         {
             // Training model
@@ -318,7 +318,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
 
         return workerPromise.then((worker) =>
         {
-            const batchFileName = temp.path({suffix: '.t7'});
+            const batchFileName = temp.path({suffix: '.npz'});
 
             return worker.writeAndWaitForMatchingOutput({
                 "type": "prepareBatch",
@@ -513,7 +513,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
 
                                 if ((trainingResult.completedIterations % saveFrequency) === 0)
                                 {
-                                    return self.saveTorchModelFile();
+                                    return self.saveModelFile();
                                 }
                                 else
                                 {
@@ -551,6 +551,12 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
         {
             return self.trainingProcess.processBatch(batch.fileName).then((outputs) =>
             {
+                // Store all of the secondary vectors
+                for (const key of Object.keys(outputs.secondary))
+                {
+                    this.vectorMatcher.recordSecondaryVector(key, outputs.secondary[key]);
+                }
+
                 return Promise.map(Object.keys(outputs.primary), (primaryKey) =>
                 {
                     return self.getAccuracyFromPrimaryVector(primaryKey, outputs.primary[primaryKey], true);
@@ -748,16 +754,16 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
 
 
     /**
-     * This saves the trained torch model file
+     * This saves the trained tensorflow graph model file
      *
      * @return {Promise} Resolves a promise  after the file has been saved
      */
-    saveTorchModelFile()
+    saveModelFile()
     {
         const self = this;
         return Promise.fromCallback((callback) =>
         {
-            const promise = self.trainingProcess.getTorchModelFileStream();
+            const promise = self.trainingProcess.getModelFileStream();
             promise.then((stream) =>
             {
                 const fileName = `model-${self.model._id}.t7`;

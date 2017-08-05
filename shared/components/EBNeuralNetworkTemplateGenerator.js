@@ -19,7 +19,6 @@
 "use strict";
 
 const EBClassFactory = require("./EBClassFactory"),
-    EBTorchModule = require('./architecture/EBTorchModule'),
     EBNeuralNetworkEditorModule = require("../models/EBNeuralNetworkEditorModule");
 
 /**
@@ -39,19 +38,18 @@ class EBNeuralNetworkTemplateGenerator
         {
             return [
                 new EBNeuralNetworkEditorModule({
-                    name: 'Linear',
+                    name: 'dense',
                     locked: false,
-                    outputSize: 150
+                    units: 150
                 }),
                 new EBNeuralNetworkEditorModule({
-                    name: 'ELU',
-                    locked: false,
-                    alpha: 1
+                    name: 'elu',
+                    locked: false
                 }),
                 new EBNeuralNetworkEditorModule({
-                    name: 'Linear',
+                    name: 'dense',
                     locked: true,
-                    outputSize: "outputSize"
+                    units: "outputSize"
                 })
             ];
         }
@@ -59,29 +57,27 @@ class EBNeuralNetworkTemplateGenerator
         {
             return [
                 new EBNeuralNetworkEditorModule({
-                    name: 'Linear',
+                    name: 'dense',
                     locked: false,
-                    outputSize: 250
+                    units: 250
                 }),
                 new EBNeuralNetworkEditorModule({
-                    name: 'ELU',
-                    locked: false,
-                    alpha: 1
+                    name: 'elu',
+                    locked: false
                 }),
                 new EBNeuralNetworkEditorModule({
-                    name: 'Linear',
+                    name: 'dense',
                     locked: false,
-                    outputSize: 250
+                    units: 250
                 }),
                 new EBNeuralNetworkEditorModule({
-                    name: 'ELU',
-                    locked: false,
-                    alpha: 1
+                    name: 'elu',
+                    locked: false
                 }),
                 new EBNeuralNetworkEditorModule({
-                    name: 'Linear',
+                    name: 'dense',
                     locked: true,
-                    outputSize: "outputSize"
+                    units: "outputSize"
                 })
             ];
         }
@@ -89,27 +85,27 @@ class EBNeuralNetworkTemplateGenerator
         {
             return [
                 new EBNeuralNetworkEditorModule({
-                    name: 'Linear',
+                    name: 'dense',
                     locked: false,
                     outputSize: 500
                 }),
                 new EBNeuralNetworkEditorModule({
-                    name: 'ELU',
+                    name: 'elu',
                     locked: false,
                     alpha: 1
                 }),
                 new EBNeuralNetworkEditorModule({
-                    name: 'Linear',
+                    name: 'dense',
                     locked: false,
                     outputSize: 500
                 }),
                 new EBNeuralNetworkEditorModule({
-                    name: 'ELU',
+                    name: 'elu',
                     locked: false,
                     alpha: 1
                 }),
                 new EBNeuralNetworkEditorModule({
-                    name: 'Linear',
+                    name: 'dense',
                     locked: true,
                     outputSize: "outputSize"
                 })
@@ -129,12 +125,12 @@ class EBNeuralNetworkTemplateGenerator
         {
             return [
                 new EBNeuralNetworkEditorModule({
-                    name: 'SeqBRNN',
+                    name: 'bidirectional_lstm',
                     locked: false,
                     outputSize: 100
                 }),
                 new EBNeuralNetworkEditorModule({
-                    name: 'SeqBRNN',
+                    name: 'bidirectional_lstm',
                     locked: false,
                     outputSize: 100
                 })
@@ -144,12 +140,12 @@ class EBNeuralNetworkTemplateGenerator
         {
             return [
                 new EBNeuralNetworkEditorModule({
-                    name: 'SeqBRNN',
+                    name: 'bidirectional_lstm',
                     locked: false,
                     outputSize: 300
                 }),
                 new EBNeuralNetworkEditorModule({
-                    name: 'SeqBRNN',
+                    name: 'bidirectional_lstm',
                     locked: false,
                     outputSize: 300
                 })
@@ -159,17 +155,17 @@ class EBNeuralNetworkTemplateGenerator
         {
             return [
                 new EBNeuralNetworkEditorModule({
-                    name: 'SeqBRNN',
+                    name: 'bidirectional_lstm',
                     locked: false,
                     outputSize: 500
                 }),
                 new EBNeuralNetworkEditorModule({
-                    name: 'SeqBRNN',
+                    name: 'bidirectional_lstm',
                     locked: false,
                     outputSize: 500
                 }),
                 new EBNeuralNetworkEditorModule({
-                    name: 'SeqBRNN',
+                    name: 'bidirectional_lstm',
                     locked: false,
                     outputSize: 500
                 })

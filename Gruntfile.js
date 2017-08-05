@@ -24,7 +24,7 @@ module.exports = function(grunt)
         mkdir: {
             dev: {
                 options: {
-                    create: ['build/torch', 'build/frontend']
+                    create: ['build/frontend']
                 }
             }
         },
@@ -75,25 +75,9 @@ module.exports = function(grunt)
             frontend: {
                 src  : ['server/file_templates/frontend'],
                 dest : 'build/frontend'
-            },
-            torch: {
-                src  : ['shared/file_templates/torch'],
-                dest : 'build/torch'
-            },
-            matchingPlugin: {
-                src  : ['plugins/matching_architecture/shared/file_templates'],
-                dest : 'build/torch'
-            },
-            transformPlugin: {
-                src  : ['plugins/transform_architecture/shared/file_templates'],
-                dest : 'build/torch'
             }
         },
         watch: {
-            templates: {
-                files: ['shared/**/*.jst'],
-                tasks: ['dot:torch']
-            },
             sharedCode: {
                 files: ['shared/**/*.js'],
                 tasks: ['browserify:dev']
@@ -113,7 +97,7 @@ module.exports = function(grunt)
             }
         },
         curl: {
-            'data/english_word_vectors.sqlite3': 'https://storage.bhs3.cloud.ovh.net/v1/AUTH_6f85527f05c84cb68c882959fc961a42/electric-brain-downloads/english_word_vectors.sqlite3'
+            'data/english_word_vectors_tensorflow.db': 'https://storage.bhs3.cloud.ovh.net/v1/AUTH_6f85527f05c84cb68c882959fc961a42/electric-brain-downloads/english_word_vectors_tensorflow.db'
         }
     });
 
@@ -148,6 +132,5 @@ module.exports = function(grunt)
     grunt.loadNpmTasks('grunt-zip');
 
     // Default task(s).
-    grunt.registerTask('default', ['mkdir:dev', 'dot:torch', 'dot:matchingPlugin', 'dot:transformPlugin', 'dot:frontend', 'browserify:dev', 'uglify:dev', 'copy:dev', 'if-missing:curl']);
-    grunt.registerTask('worker', ['dot:torch', 'dot:matchingPlugin', 'dot:transformPlugin']);
+    grunt.registerTask('default', ['mkdir:dev', 'dot:matchingPlugin', 'dot:transformPlugin', 'dot:frontend', 'browserify:dev', 'uglify:dev', 'copy:dev', 'if-missing:curl']);
 };

@@ -22,7 +22,7 @@ const
     async = require('async'),
     childProcess = require('child_process'),
     EBStdioJSONStreamProcess = require("../../../server/components/EBStdioJSONStreamProcess"),
-    EBTorchProcessBase = require("../../../server/components/architecture/EBTorchProcessBase"),
+    EBModelProcessBase = require("../../../server/components/architecture/EBModelProcessBase"),
     fs = require('fs'),
     math = require("mathjs"),
     path = require('path'),
@@ -31,20 +31,20 @@ const
     underscore = require('underscore');
 
 /**
- * This class is used to manage the Torch sub-process for a given architecture
+ * This class is used to manage the tensorflow sub-process for a given architecture
  */
-class EBTransformTorchProcess extends EBTorchProcessBase
+class EBTransformProcess extends EBModelProcessBase
 {
     /**
      * Creates the process object for the given EBTransformArchitecture object.
      *
-     * @param {EBTransformArchitecture} architecture The transform architecture object that we are creating the torch process for.
+     * @param {EBTransformArchitecture} architecture The transform architecture object that we are creating the tensorflow process for.
      * @param {EBArchitecturePluginBase} architecturePlugin The plugin for the architecture object
      * @param {string} [scriptFolder] Optional directory where the script files should be written
      */
     constructor(architecture, architecturePlugin, scriptFolder)
     {
-        super(architecture, architecturePlugin, scriptFolder);
+        super(architecture, architecturePlugin, scriptFolder, "transform_model_script.py");
         const self = this;
         self.architecture = architecture;
         self.architecturePlugin = architecturePlugin;
@@ -54,7 +54,29 @@ class EBTransformTorchProcess extends EBTorchProcessBase
         self.testingSet = {};
         self.numProcesses = 1;
     }
-    
+
+    /**
+     * This method initializes the TensorFlow process.
+     *
+     * @param {EBInterpretationRegistry} registry The registry for interpretations, used during initialization
+     * @returns {Promise} A promise that will resolve when the model has been initialized
+     */
+    initialize(registry)
+    {
+        const inputSchema = registry.getInterpretation('object').transformSchemaForNeuralNetwork(this.architecture.inputSchema.filterIncluded());
+        const outputSchema = registry.getInterpretation('object').transformSchemaForNeuralNetwork(this.architecture.outputSchema.filterIncluded());
+
+        return Promise.each(this.processes, (process) =>
+        {
+            // Now we handshake with the process and get version / name information
+            return process.writeAndWaitForMatchingOutput({
+                type: "initialize",
+                inputSchema: inputSchema,
+                outputSchema: outputSchema
+            }, {"type": "initialized"});
+        });
+    }
+
 
     /**
      * This method loads an object into the lua process.
@@ -181,4 +203,4 @@ class EBTransformTorchProcess extends EBTorchProcessBase
     }
 }
 
-module.exports = EBTransformTorchProcess;
+module.exports = EBTransformProcess;

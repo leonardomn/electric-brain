@@ -49,7 +49,8 @@ angular.module('eb').controller('EBMatchingArchitectureDesignArchitectureControl
     {
         if (newValue)
         {
-            reloadDiagrams();
+            // Commenting out loading diagrams until we find a way to get this to work with tensorflow
+            //reloadDiagrams();
         }
     });
 

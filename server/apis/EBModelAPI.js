@@ -550,7 +550,7 @@ class EBModelAPI extends EBAPIRoot
         const self = this;
         const gridFS = new mongodb.GridFSBucket(self.application.db, {
             chunkSizeBytes: 1024,
-            bucketName: 'EBModel.torch'
+            bucketName: 'EBModel.savedModel'
         });
 
         let resultObject = null;
@@ -570,22 +570,22 @@ class EBModelAPI extends EBAPIRoot
                 const model = new models.EBModel(modelObject);
                 const architecture = EBClassFactory.createObject(model.architecture);
                 const architecturePlugin = self.application.architectureRegistry.getPluginForArchitecture(architecture);
-                let modelProcess = architecturePlugin.getTorchProcess(architecture, self.application.config.get('overrideModelFolder'));
+                let modelProcess = architecturePlugin.getProcess(architecture, self.application.config.get('overrideModelFolder'));
                 async.series([
                     // Generate the code
                     function generateCode(next)
                     {
-                        const promise = modelProcess.generateCode(self.application.interpretationRegistry, self.application.neuralNetworkComponentDispatch);
+                        const promise = modelProcess.generateCode(self.application.interpretationRegistry, self.application.pythonComponentRegistry);
                         promise.then(() =>
                         {
                             next(null);
                         }, (err) => next(err));
                     },
-                    // Download the torch model file
+                    // Download the tensorflow model file
                     function(next)
                     {
-                        gridFS.openDownloadStreamByName(`model-${model._id}.t7`).
-                            pipe(fs.createWriteStream(path.join(modelProcess.scriptFolder, 'model.t7'))).
+                        gridFS.openDownloadStreamByName(`model-${model._id}.tfg`).
+                            pipe(fs.createWriteStream(path.join(modelProcess.scriptFolder, 'model.tfg'))).
                             on('error', function(error)
                             {
                                 return next(error);
@@ -598,7 +598,7 @@ class EBModelAPI extends EBAPIRoot
                     // Start up the process
                     function(next)
                     {
-                        const promise = modelProcess.startProcess();
+                        const promise = modelProcess.startProcess(self.application.interpretationRegistry);
                         promise.then(() =>
                         {
                             next(null);

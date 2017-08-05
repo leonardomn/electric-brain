@@ -26,8 +26,8 @@ const
     EBCustomTransformationProcess = require("../components/architecture/EBCustomTransformationProcess"),
     EBMatchingArchitecture = require("../../plugins/matching_architecture/shared/models/EBMatchingArchitecture"),
     EBSchemaDetector = require("../components/datasource/EBSchemaDetector"),
-    EBMatchingTorchProcess = require("../../plugins/matching_architecture/server/EBMatchingTorchProcess"),
-    EBTransformTorchProcess = require("../../plugins/transform_architecture/server/EBTransformTorchProcess"),
+    EBMatchingProcess = require("../../plugins/matching_architecture/server/EBMatchingProcess"),
+    EBTransformProcess = require("../../plugins/transform_architecture/server/EBTransformProcess"),
     EBTransformArchitecture = require("../../plugins/transform_architecture/shared/models/EBTransformArchitecture"),
     idUtilities = require("../utilities/id"),
     models = require('../../shared/models/models'),
@@ -462,17 +462,17 @@ class EBArchitectureAPI extends EBAPIRoot
             {
                 const architecture = EBClassFactory.createObject(architectureObject);
                 const architecturePlugin = self.application.architectureRegistry.getPluginForArchitecture(architecture);
-                let process = architecturePlugin.getTorchProcess(architecture, self.application.config.get('overrideModelFolder'));
+                let process = architecturePlugin.getProcess(architecture, self.application.config.get('overrideModelFolder'));
                 
                 async.series([
                     function generateCode(next)
                     {
-                        const promise = process.generateCode(self.application.interpretationRegistry, self.application.neuralNetworkComponentDispatch);
+                        const promise = process.generateCode(self.application.interpretationRegistry, self.application.pythonComponentRegistry);
                         promise.then(() => next(), (err) => next(err));
                     },
                     function startProcess(next)
                     {
-                        const promise = process.startProcess();
+                        const promise = process.startProcess(self.application.interpretationRegistry);
 
                         promise.then(() => next(), (err) => next(err));
                     },

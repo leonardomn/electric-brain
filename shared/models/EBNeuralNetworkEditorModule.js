@@ -18,9 +18,7 @@
 
 "use strict";
 
-const EBClassFactory = require("../components/EBClassFactory"),
-    EBTorchModule = require('./../components/architecture/EBTorchModule'),
-    EBTensorSchema = require("./EBTensorSchema");
+const EBClassFactory = require("../components/EBClassFactory");
 
 /**
  * This class represents a single NN module, as represented by the neural network editor
@@ -70,114 +68,7 @@ class EBNeuralNetworkEditorModule
         return EBNeuralNetworkEditorModule.knownLayers[this.name].moduleNamespace;
     }
 
-
-    /**
-     * This function creates the EBTorchModule object for this module.
-     *
-     * @param {EBTensorSchema} inputTensorSchema The tensor schema with the shape of the input to this module,
-     * @param {object} substitutionValues Any parameters for substitutions within the network - this allows filling in values within templates
-     */
-    createModule(inputTensorSchema, substitutionValues)
-    {
-        const layerInfo = EBNeuralNetworkEditorModule.knownLayers[this.name];
-        // See if there is a special creation function, otherwise use the generic one.
-        if (layerInfo.createModule)
-        {
-            return layerInfo.createModule.apply(this, [inputTensorSchema, substitutionValues]);
-        }
-        // Use generic create module function
-        else
-        {
-            if (!inputTensorSchema.isTensor)
-            {
-                throw new Error("Only a raw tensor is accepted as input for this module. This EBTensorSchema is describing a table!");
-            }
-
-            return new EBTorchModule(`${this.namespace}.${this.name}`, this.parameters.map((param) =>
-            {
-                return this.getParameterValue(param.name, substitutionValues);
-            }));
-        }
-    }
-
-
-
-    /**
-     * This function returns the value for the given parameter. Handles substitution and casting
-     *
-     * @param {string} parameter The name of the parameter
-     * @param {object} substitutionValues Any parameters for substitutions within the network - this allows filling in values within templates
-     */
-    getParameterValue(parameter, substitutionValues)
-    {
-        if (substitutionValues && substitutionValues[this[parameter]] !== undefined)
-        {
-            return substitutionValues[this[parameter]];
-        }
-        else
-        {
-            return Number(this[parameter]);
-        }
-    }
-
-
-    /**
-     * This function returns a tensor schema describing the output from this module
-     *
-     * @param {EBTensorSchema} inputTensorSchema The tensor schema with the shape of the input to this module
-     * @param {object} substitutionValues Any parameters for substitutions within the network - this allows filling in values within templates
-     */
-    getOutputTensorSchema(inputTensorSchema, substitutionValues)
-    {
-        const layerInfo = EBNeuralNetworkEditorModule.knownLayers[this.name];
-        // See if there is a special creation function, otherwise use the generic one.
-        if (layerInfo.getOutputTensorSchema)
-        {
-            return layerInfo.getOutputTensorSchema.apply(this, [inputTensorSchema, substitutionValues]);
-        }
-        // Use generic create module function
-        else
-        {
-            if (!inputTensorSchema.isTensor)
-            {
-                throw new Error("Only a raw tensor is accepted as input for this module. This EBTensorSchema is describing a table!");
-            }
-
-            // Return the input tensor schema unmodified.
-            return inputTensorSchema;
-        }
-    }
-
-
-    /**
-     * This function creates a neural network chain consisting of all the modules
-     *
-     * @param {[EBNeuralNetworkEditorModule]} modules A bunch of neural network editor modules
-     * @param {EBTensorSchema} inputTensorSchema The tensor schema for the input
-     * @param {object} substitutionValues Any parameters for substitutions within the network - this allows filling in values within templates
-     * @returns {object} An object with two properties, {module, outputTensorSchema}
-     */
-    static createModuleChain(modules, inputTensorSchema, substitutionValues)
-    {
-        modules = modules.map((module) => new EBNeuralNetworkEditorModule(module));
-
-        const torchModules = [];
-
-        let currentTensorSchema = inputTensorSchema;
-
-        for(let module of modules)
-        {
-            torchModules.push(module.createModule(currentTensorSchema, substitutionValues));
-            currentTensorSchema = module.getOutputTensorSchema(currentTensorSchema, substitutionValues);
-        }
-
-        return {
-            module: new EBTorchModule("nn.Sequential", [], torchModules),
-            outputTensorSchema: currentTensorSchema
-        };
-    }
-
-
+    
     /**
      * This function returns a new layer object with the default values
      *
@@ -227,276 +118,81 @@ class EBNeuralNetworkEditorModule
 
 
 EBNeuralNetworkEditorModule.knownLayers = {
-    HardTanh: {
-        name: 'HardTanh',
-        moduleNamespace: 'nn',
+    sigmoid: {
+        name: 'sigmoid',
+        fixed: true,
+        sequence: false,
+        parameters: [
+        ]
+    },
+    tanh: {
+        name: 'tanh',
         fixed: true,
         sequence: false,
             parameters: [
-            {
-                name: 'min_value',
-                defaultValue: -1
-            },
-            {
-                name: 'max_value',
-                defaultValue: 1
-            }
         ]
     },
-    HardShrink: {
-        name: 'HardShrink',
-        moduleNamespace: 'nn',
+    elu: {
+        name: 'elu',
         fixed: true,
         sequence: false,
-            parameters: [
-            {
-                name: 'lambda',
-                defaultValue: 0.5
-            }
+        parameters: [
         ]
     },
-    SoftShrink: {
-        name: 'SoftShrink',
-        moduleNamespace: 'nn',
-        fixed: true,
-        sequence: false,
-            parameters: [
-            {
-                name: 'lambda',
-                defaultValue: 0.5
-            }
-        ]
-    },
-    SoftMax: {
-        name: 'SoftMax',
-        moduleNamespace: 'nn',
+    softplus: {
+        name: 'softplus',
         fixed: true,
         sequence: false,
             parameters: []
     },
-    SoftMin: {
-        name: 'SoftMin',
-        moduleNamespace: 'nn',
+    softsign: {
+        name: 'softsign',
         fixed: true,
         sequence: false,
-            parameters: []
+        parameters: []
     },
-    SoftPlus: {
-        name: 'SoftPlus',
-        moduleNamespace: 'nn',
+    relu: {
+        name: 'relu',
         fixed: true,
         sequence: false,
-            parameters: []
+        parameters: []
     },
-    SoftSign: {
-        name: 'SoftSign',
-        moduleNamespace: 'nn',
+    relu6: {
+        name: 'relu6',
         fixed: true,
         sequence: false,
-            parameters: []
+        parameters: []
     },
-    LogSigmoid: {
-        name: 'LogSigmoid',
-        moduleNamespace: 'nn',
+    crelu: {
+        name: 'crelu',
         fixed: true,
         sequence: false,
-            parameters: []
+        parameters: []
     },
-    LogSoftMax: {
-        name: 'LogSoftMax',
-        moduleNamespace: 'nn',
-        fixed: true,
-        sequence: false,
-            parameters: []
-    },
-    Sigmoid: {
-        name: 'Sigmoid',
-        moduleNamespace: 'nn',
-        fixed: true,
-        sequence: false,
-            parameters: []
-    },
-    Tanh: {
-        name: 'Tanh',
-        moduleNamespace: 'nn',
-        fixed: true,
-        sequence: false,
-            parameters: []
-    },
-    ReLU: {
-        name: 'ReLU',
-        moduleNamespace: 'nn',
-        fixed: true,
-        sequence: false,
-            parameters: []
-    },
-    ReLU6: {
-        name: 'ReLU6',
-        moduleNamespace: 'nn',
-        fixed: true,
-        sequence: false,
-            parameters: []
-    },
-    PReLU: {
-        name: 'PReLU',
-        moduleNamespace: 'nn',
-        fixed: true,
-        sequence: false,
-            parameters: []
-    },
-    RReLU: {
-        name: 'RReLU',
-        moduleNamespace: 'nn',
-        fixed: true,
-        sequence: false,
-            parameters: [
-            {
-                name: 'l',
-                defaultValue: (1.0 / 8.0)
-            },
-            {
-                name: 'u',
-                defaultValue: (1.0 / 3.0)
-            }
-        ]
-    },
-    ELU: {
-        name: 'ELU',
-        moduleNamespace: 'nn',
-        fixed: true,
-        sequence: false,
-            parameters: [
-            {
-                name: 'alpha',
-                defaultValue: 1.0
-            }
-        ]
-    },
-    LeakyReLU: {
-        name: 'LeakyReLU',
-        moduleNamespace: 'nn',
-        fixed: true,
-        sequence: false,
-            parameters: [
-            {
-                name: 'negval',
-                defaultValue: 1.0 / 100.0
-            }
-        ]
-    },
-    SpatialSoftMax: {
-        name: 'SpatialSoftMax',
-        moduleNamespace: 'nn',
-        fixed: true,
-        sequence: false,
-            parameters: []
-    },
-    SpatialLogSoftMax: {
-        name: 'SpatialLogSoftMax',
-        moduleNamespace: 'nn',
-        fixed: true,
-        sequence: false,
-            parameters: []
-    },
-    AddConstant: {
-        name: 'AddConstant',
-        moduleNamespace: 'nn',
-        fixed: true,
-        sequence: false,
-            parameters: [
-            {
-                name: 'constant',
-                defaultValue: 1.0
-            }
-        ]
-    },
-    MulConstant: {
-        name: 'MulConstant',
-        moduleNamespace: 'nn',
-        fixed: true,
-        sequence: false,
-            parameters: [
-            {
-                name: 'constant',
-                defaultValue: 1.0
-            }
-        ]
-    },
-    Linear: {
-        name: 'Linear',
-        moduleNamespace: 'nn',
+    dropout: {
+        name: 'dropout',
         fixed: true,
         sequence: false,
         parameters: [
             {
-                name: 'outputSize',
-                defaultValue: 100
-            }
-        ],
-        createModule: function(inputTensorSchema, substitutionValues)
-        {
-            return new EBTorchModule("nn.Linear", [inputTensorSchema.tensorSize, this.getParameterValue("outputSize", substitutionValues)]);
-        },
-        getOutputTensorSchema: function(inputTensorSchema, substitutionValues)
-        {
-            return EBTensorSchema.generateDataTensorSchema(this.getParameterValue("outputSize", substitutionValues), "output");
-        }
-    },
-    SparseLinear: {
-        name: 'SparseLinear',
-        moduleNamespace: 'nn',
-        fixed: true,
-        sequence: false,
-        parameters: [
-            {
-                name: 'outputSize',
-                defaultValue: 100
-            }
-        ],
-        createModule: function(inputTensorSchema, substitutionValues)
-        {
-            return new EBTorchModule("nn.SparseLinear", [inputTensorSchema.tensorSize, this.getParameterValue("outputSize", substitutionValues)]);
-        },
-        getOutputTensorSchema: function(inputTensorSchema, substitutionValues)
-        {
-            return EBTensorSchema.generateDataTensorSchema(this.getParameterValue("outputSize", substitutionValues), "output");
-        }
-    },
-    Dropout: {
-        name: 'Dropout',
-        moduleNamespace: 'nn',
-        fixed: true,
-        sequence: false,
-        parameters: [
-            {
-                name: 'p',
+                name: 'keep_prob',
                 defaultValue: 0.4
             }
         ]
     },
-    SeqBRNN: {
-        name: 'SeqBRNN',
-        moduleNamespace: 'rnn',
-        fixed: false,
-        sequence: true,
+    dense: {
+        name: 'dense',
+        fixed: true,
+        sequence: false,
         parameters: [
             {
-                name: 'outputSize',
-                defaultValue: 100
+                name: 'units',
+                defaultValue: 300
             }
-        ],
-        createModule: function(inputTensorSchema, substitutionValues)
-        {
-            return new EBTorchModule("nn.SeqBRNN", [inputTensorSchema.tensorSize, this.getParameterValue("outputSize", substitutionValues)]);
-        },
-        getOutputTensorSchema: function(inputTensorSchema, substitutionValues)
-        {
-            return EBTensorSchema.generateDataTensorSchema(this.getParameterValue("outputSize", substitutionValues), "output");
-        }
+        ]
     },
-    SeqLSTM: {
-        name: 'SeqLSTM',
-        moduleNamespace: 'rnn',
+    bidirectional_lstm: {
+        name: 'bidirectional_lstm',
         fixed: false,
         sequence: true,
         parameters: [
@@ -504,19 +200,10 @@ EBNeuralNetworkEditorModule.knownLayers = {
                 name: 'outputSize',
                 defaultValue: 100
             }
-        ],
-        createModule: function(inputTensorSchema, substitutionValues)
-        {
-            return new EBTorchModule("nn.SeqLSTM", [inputTensorSchema.tensorSize, this.getParameterValue("outputSize", substitutionValues)]);
-        },
-        getOutputTensorSchema: function(inputTensorSchema, substitutionValues)
-        {
-            return EBTensorSchema.generateDataTensorSchema(this.getParameterValue("outputSize", substitutionValues), "output");
-        }
+        ]
     },
-    SeqGRU: {
-        name: 'SeqGRU',
-        moduleNamespace: 'rnn',
+    lstm: {
+        name: 'lstm',
         fixed: false,
         sequence: true,
         parameters: [
@@ -524,15 +211,29 @@ EBNeuralNetworkEditorModule.knownLayers = {
                 name: 'outputSize',
                 defaultValue: 100
             }
-        ],
-        createModule: function(inputTensorSchema, substitutionValues)
-        {
-            return new EBTorchModule("nn.SeqGRU", [inputTensorSchema.tensorSize, this.getParameterValue("outputSize", substitutionValues)]);
-        },
-        getOutputTensorSchema: function(inputTensorSchema, substitutionValues)
-        {
-            return EBTensorSchema.generateDataTensorSchema(this.getParameterValue("outputSize", substitutionValues), "output");
-        }
+        ]
+    },
+    bidirectional_gru: {
+        name: 'bidirectional_gru',
+        fixed: false,
+        sequence: true,
+        parameters: [
+            {
+                name: 'outputSize',
+                defaultValue: 100
+            }
+        ]
+    },
+    gru: {
+        name: 'gru',
+        fixed: false,
+        sequence: true,
+        parameters: [
+            {
+                name: 'outputSize',
+                defaultValue: 100
+            }
+        ]
     }
 };
 

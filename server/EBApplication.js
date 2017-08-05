@@ -25,7 +25,7 @@ const
     express = require("express"),
     EBApplicationBase = require('./EBApplicationBase'),
     EBDataSourcePluginDispatch = require("./components/datasource/EBDataSourcePluginDispatch"),
-    EBNeuralNetworkComponentDispatch = require("../shared/components/architecture/EBNeuralNetworkComponentDispatch"),
+    EBPythonComponentRegistry = require("../shared/components/architecture/EBPythonComponentRegistry"),
     EBInterpretationRegistry = require("./components/datasource/EBInterpretationRegistry"),
     EBArchitecturePluginRegistry = require("./components/architecture/EBArchitecturePluginRegistry"),
     flattener = require('./middleware/flattener'),

@@ -62,9 +62,9 @@ class EBAssembleNodeBundleTask
     {
         this.task = task;
 
-        const torchGridFS = new mongodb.GridFSBucket(this.application.db, {
+        const modelFileGridFS = new mongodb.GridFSBucket(this.application.db, {
             chunkSizeBytes: 1024,
-            bucketName: 'EBModel.torch'
+            bucketName: 'EBModel.savedModel'
         });
 
         const bundleGridFS = new mongodb.GridFSBucket(this.application.db, {
@@ -104,7 +104,7 @@ class EBAssembleNodeBundleTask
                             return next(err);
                         }
 
-                        this.trainingProcess = architecturePlugin.getTorchProcess(architecture, temporaryFolder);
+                        this.trainingProcess = architecturePlugin.getProcess(architecture, temporaryFolder);
                         return next(null, temporaryFolder);
                     });
                 });
@@ -127,7 +127,7 @@ class EBAssembleNodeBundleTask
         {
             return Promise.fromCallback((next) =>
             {
-                torchGridFS.openDownloadStreamByName(`model-${this.model._id}.t7`).pipe(fs.createWriteStream(path.join(this.trainingProcess.scriptFolder, 'model.t7'))).on('error', (error) =>
+                modelFileGridFS.openDownloadStreamByName(`model-${this.model._id}.tfg`).pipe(fs.createWriteStream(path.join(this.trainingProcess.scriptFolder, 'model.tfg'))).on('error', (error) =>
                 {
                     return next(error);
                 }).on('finish', () =>

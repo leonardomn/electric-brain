@@ -254,12 +254,14 @@ class EBStdioJSONStreamProcess extends EventEmitter
 
             jsonStreamProcess.process.on('close', (exitCode) =>
             {
+                console.error("close");
                 jsonStreamProcess.running = false;
                 jsonStreamProcess.emit('close', exitCode);
             });
 
             jsonStreamProcess.process.on('disconnect', () =>
             {
+                console.error("disconnect");
                 jsonStreamProcess.running = false;
                 jsonStreamProcess.emit('disconnect');
             });
@@ -271,6 +273,7 @@ class EBStdioJSONStreamProcess extends EventEmitter
 
             jsonStreamProcess.process.on('exit', () =>
             {
+                console.error("exit");
                 jsonStreamProcess.running = false;
                 jsonStreamProcess.emit('exit');
             });

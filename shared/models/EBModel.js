@@ -63,16 +63,11 @@ class EBModel
                 testingBatchSize: 4,
                 iterations: 50000,
                 maximumDataSetSize: 10000000,
-                testingSetPortion: 0.3,
-                initializationRangeBottom: -0.08,
-                initializationRangeTop: 0.08,
-                optimizationAlgorithm: 'adamax',
+                optimizationAlgorithm: 'AdamaxOptimizer',
                 optimizationParameters: {
-                    learningRate: 2e-3,
-                    beta: 0.9,
-                    beta2: 0.999,
-                    epsilon: 1e-38,
-                    weightDecay: 0
+                    learning_rate: 1e-3,
+                    beta1: 0.9,
+                    beta2: 0.999
                 }
             };
         }
