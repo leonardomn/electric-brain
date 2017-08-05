@@ -51,7 +51,7 @@ class EBTrainModelTaskBase
         this.models = application.db.collection("EBModel");
         this.gridFS = new mongodb.GridFSBucket(application.db, {
             chunkSizeBytes: 1024,
-            bucketName: 'EBModel.torch'
+            bucketName: 'EBModel.savedModel'
         });
         
         

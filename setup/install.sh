@@ -19,7 +19,6 @@ set -e
 #
 # This script is used for installation of Electric Brain.
 #
-# Portions of this script were adapted from the Torch (http://torch.ch) installation script.
 
 
 install_dependencies_darwin() {

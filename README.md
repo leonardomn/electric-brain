@@ -28,7 +28,7 @@ Tensorflow must be install separately, using Pip.
 
     user@machine:~$ sudo pip3 install tensorflow
 
-After installing Torch, you will need to manually install several Electric Brain dependencies in Lua via
+After installing Tensorflow, you will need to manually install several Electric Brain dependencies in Lua via
 luarocks:
 
     user@machine:~$ sudo luarocks install json

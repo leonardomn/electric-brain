@@ -550,7 +550,7 @@ class EBModelAPI extends EBAPIRoot
         const self = this;
         const gridFS = new mongodb.GridFSBucket(self.application.db, {
             chunkSizeBytes: 1024,
-            bucketName: 'EBModel.torch'
+            bucketName: 'EBModel.savedModel'
         });
 
         let resultObject = null;
@@ -581,7 +581,7 @@ class EBModelAPI extends EBAPIRoot
                             next(null);
                         }, (err) => next(err));
                     },
-                    // Download the torch model file
+                    // Download the tensorflow model file
                     function(next)
                     {
                         gridFS.openDownloadStreamByName(`model-${model._id}.tfg`).

@@ -58,7 +58,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
         this.modelResults = application.db.collection("EBModel_results");
         this.gridFS = new mongodb.GridFSBucket(application.db, {
             chunkSizeBytes: 1024,
-            bucketName: 'EBModel.torch'
+            bucketName: 'EBModel.savedModel'
         });
         this.testingSetPortion = 0.3;
         this.rollingAverageAccuracy = EBRollingAverage.createWithPeriod(100);

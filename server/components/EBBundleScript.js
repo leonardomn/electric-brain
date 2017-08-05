@@ -45,7 +45,7 @@ class EBBundleScript extends EBApplicationBase
      * Constructor for the EBBundleScript object. It will load the model data contained within
      * the given filename.
      *
-     * @param {string} [bundleFolder] The folder containing the torch bundle.
+     * @param {string} [bundleFolder] The folder containing the tensorflow bundle.
      */
     constructor(bundleFolder)
     {

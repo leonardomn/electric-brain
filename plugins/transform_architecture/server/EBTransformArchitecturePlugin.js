@@ -54,7 +54,7 @@ class EBTransformArchitecture extends EBArchitecturePluginBase
      * @param {EBTransformArchitecture} architecture An EBTransformArchitecture object
      * @param {string} [scriptFolder] Optional script folder for the files to go
      *
-     * @returns {EBTransformProcess} A matching torch process object
+     * @returns {EBTransformProcess} A matching tensorflow process object
      */
     getProcess(architecture, scriptFolder)
     {

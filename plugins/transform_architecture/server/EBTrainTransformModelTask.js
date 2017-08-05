@@ -57,7 +57,7 @@ class EBTrainTransformModelTask extends EBTrainModelTaskBase
         this.models = application.db.collection("EBModel");
         this.gridFS = new mongodb.GridFSBucket(application.db, {
             chunkSizeBytes: 1024,
-            bucketName: 'EBModel.torch'
+            bucketName: 'EBModel.savedModel'
         });
         this.rollingAverageAccuracy = EBRollingAverage.createWithPeriod(100);
         this.rollingAverageTrainingaccuracy = EBRollingAverage.createWithPeriod(100);
@@ -173,7 +173,7 @@ class EBTrainTransformModelTask extends EBTrainModelTaskBase
         }).then(() =>
         {
             // Save the model in its vanilla state. This just ensures that other
-            // functionality that depends on downloading the torch model file
+            // functionality that depends on downloading the tensorflow model file
             // works from the first iteration of training
             return self.saveModelFile();
         }).then(() =>
@@ -690,7 +690,7 @@ class EBTrainTransformModelTask extends EBTrainModelTaskBase
 
 
     /**
-     * This saves the trained torch model file
+     * This saves the trained tensorflow model file
      *
      * @return {Promise} Resolves a promise  after the file has been saved
      */

@@ -47,7 +47,7 @@ class EBNeuralStack
     /**
      * This method creates a transformation stream for this network. This transformation stream
      * takes objects from the database and converts them into a format that is ready to send
-     * down to Torch
+     * down to tensorflow
      *
      * @param {EBInterpretationRegistry} registry The registry for the transformation stream
      * @returns {Stream} A standard NodeJS transformation stream that you can write() to, read()
@@ -110,7 +110,7 @@ class EBNeuralStack
     
     /**
      * This method creates a transformation stream for this network. This transformation stream
-     * takes outputs from the torch code and transforms them back into a standardized format
+     * takes outputs from the tensorflow code and transforms them back into a standardized format
      *
      * @param {EBInterpretationRegistry} registry The registry for the transformation stream
      * @returns {Stream} A standard NodeJS transformation stream that you can write() to, read()

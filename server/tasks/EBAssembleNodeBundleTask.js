@@ -64,7 +64,7 @@ class EBAssembleNodeBundleTask
 
         const modelFileGridFS = new mongodb.GridFSBucket(this.application.db, {
             chunkSizeBytes: 1024,
-            bucketName: 'EBModel.torch'
+            bucketName: 'EBModel.savedModel'
         });
 
         const bundleGridFS = new mongodb.GridFSBucket(this.application.db, {

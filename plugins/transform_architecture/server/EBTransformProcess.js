@@ -31,14 +31,14 @@ const
     underscore = require('underscore');
 
 /**
- * This class is used to manage the Torch sub-process for a given architecture
+ * This class is used to manage the tensorflow sub-process for a given architecture
  */
 class EBTransformProcess extends EBModelProcessBase
 {
     /**
      * Creates the process object for the given EBTransformArchitecture object.
      *
-     * @param {EBTransformArchitecture} architecture The transform architecture object that we are creating the torch process for.
+     * @param {EBTransformArchitecture} architecture The transform architecture object that we are creating the tensorflow process for.
      * @param {EBArchitecturePluginBase} architecturePlugin The plugin for the architecture object
      * @param {string} [scriptFolder] Optional directory where the script files should be written
      */

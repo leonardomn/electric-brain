@@ -18,8 +18,7 @@
 
 "use strict";
 
-const EBClassFactory = require("../components/EBClassFactory"),
-    EBTensorSchema = require("./EBTensorSchema");
+const EBClassFactory = require("../components/EBClassFactory");
 
 /**
  * This class represents a single NN module, as represented by the neural network editor

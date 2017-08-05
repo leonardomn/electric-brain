@@ -46,7 +46,7 @@ class EBArchitecturePluginBase
      * @param {EBArchitecture} architecture An EBArchitecture object
      * @param {string} [scriptFolder] Optional script folder for the files to go
      * 
-     * @returns {EBModelProcessBase} A torch process object
+     * @returns {EBModelProcessBase} A tensorflow process object
      */
     getProcess(architecture, scriptFolder)
     {
