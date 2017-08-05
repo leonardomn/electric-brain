@@ -60,12 +60,11 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
             chunkSizeBytes: 1024,
             bucketName: 'EBModel.torch'
         });
-        this.testingSetPortion = 0.3;
+        
         this.rollingAverageAccuracy = EBRollingAverage.createWithPeriod(100);
         this.rollingAverageTrainingaccuracy = EBRollingAverage.createWithPeriod(100);
         this.rollingAverageTimeToLoad100Entries = EBRollingAverage.createWithPeriod(100);
         
-        this.numberOfObjectsToSample = 1000000;
         this.model = null;
 
         const numWorkers = 4;
@@ -117,8 +116,8 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
 
                 self.architecturePlugin = self.application.architectureRegistry.getPluginForArchitecture(self.model.architecture);
 
-                self.primaryTrainingSet = new EBTrainingSet(self.application, self.model.architecture.primaryDataSource, 0.3);
-                self.secondaryTrainingSet = new EBTrainingSet(self.application, self.model.architecture.secondaryDataSource, 0.3);
+                self.primaryTrainingSet = new EBTrainingSet(self.application, self.model.architecture.primaryDataSource, self.model.parameters.testingSetPortion);
+                self.secondaryTrainingSet = new EBTrainingSet(self.application, self.model.architecture.secondaryDataSource, self.model.parameters.testingSetPortion);
 
                 self.trainingProcess = new EBMatchingTorchProcess(self.model.architecture, self.architecturePlugin, self.application.config.get('overrideModelFolder'));
                 
@@ -175,7 +174,7 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
         }).then(() =>
         {
             // Scan the data, analyze it for input
-            return self.scanData(self.numberOfObjectsToSample);
+            return self.scanData(self.model.parameters.maximumDataSetSize);
         }).then(() =>
         {
             // Save the model in its vanilla state. This just ensures that other
@@ -249,10 +248,10 @@ class EBTrainMatchingModelTask extends EBTrainModelTaskBase
         {
             return self.application.dataSourcePluginDispatch.count(self.model.architecture.primaryDataSource).then((primaryCount) =>
             {
-                primaryObjects = Math.min(self.numberOfObjectsToSample, primaryCount);
+                primaryObjects = Math.min(self.model.parameters.maximumDataSetSize, primaryCount);
                 return self.application.dataSourcePluginDispatch.count(self.model.architecture.secondaryDataSource).then((secondaryCount) =>
                 {
-                    secondaryObjects = Math.min(self.numberOfObjectsToSample, secondaryCount);
+                    secondaryObjects = Math.min(self.model.parameters.maximumDataSetSize, secondaryCount);
                     dataScanningResults.totalObjects = primaryObjects + secondaryObjects;
                 });
             });
