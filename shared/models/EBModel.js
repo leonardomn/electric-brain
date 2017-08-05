@@ -62,6 +62,7 @@ class EBModel
                 batchSize: 16,
                 testingBatchSize: 4,
                 iterations: 50000,
+                maximumDataSetSize: 10000000,
                 optimizationAlgorithm: 'AdamaxOptimizer',
                 optimizationParameters: {
                     learning_rate: 1e-3,
@@ -162,6 +163,12 @@ class EBModel
                             type: "number"
                         },
                         "iterations": {
+                            type: "number"
+                        },
+                        "maximumDataSetSize": {
+                            type: "number"
+                        },
+                        "testingSetPortion": {
                             type: "number"
                         },
                         "initializationRangeBottom": {

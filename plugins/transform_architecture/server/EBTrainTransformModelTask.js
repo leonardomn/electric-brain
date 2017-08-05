@@ -62,9 +62,7 @@ class EBTrainTransformModelTask extends EBTrainModelTaskBase
         this.rollingAverageAccuracy = EBRollingAverage.createWithPeriod(100);
         this.rollingAverageTrainingaccuracy = EBRollingAverage.createWithPeriod(100);
         this.rollingAverageTimeToLoad100Entries = EBRollingAverage.createWithPeriod(100);
-
         
-        this.numberOfObjectsToSample = 1000000;
         this.model = null;
 
         const numWorkers = 4;
@@ -111,7 +109,7 @@ class EBTrainTransformModelTask extends EBTrainModelTaskBase
             {
                 self.model = new models.EBModel(objects[0]);
                 self.architecturePlugin = self.application.architectureRegistry.getPluginForArchitecture(self.model.architecture);
-                self.trainingSet = new EBTrainingSet(self.application, self.model.architecture.dataSource, 0.3);
+                self.trainingSet = new EBTrainingSet(self.application, self.model.architecture.dataSource, self.model.parameters.testingSetPortion);
                 self.inputTransformer = new EBNeuralTransformer(self.model.architecture.inputSchema);
                 self.outputTransformer = new EBNeuralTransformer(self.model.architecture.outputSchema);
                 self.trainingProcess = new EBTransformProcess(self.model.architecture, self.architecturePlugin, self.application.config.get('overrideModelFolder'));
@@ -169,7 +167,7 @@ class EBTrainTransformModelTask extends EBTrainModelTaskBase
         }).then(() =>
         {
             // Scan the data, analyze it for input
-            return self.scanData(self.numberOfObjectsToSample);
+            return self.scanData(this.model.parameters.maximumDataSetSize);
         }).then(() =>
         {
             // Save the model in its vanilla state. This just ensures that other
@@ -232,7 +230,7 @@ class EBTrainTransformModelTask extends EBTrainModelTaskBase
         {
             return self.application.dataSourcePluginDispatch.count(self.model.architecture.dataSource).then((count) =>
             {
-                return dataScanningResults.totalObjects = Math.min(self.numberOfObjectsToSample, count);
+                return dataScanningResults.totalObjects = Math.min(this.model.parameters.maximumDataSetSize, count);
             });
         }).then(() =>
         {
