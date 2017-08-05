@@ -62,7 +62,7 @@ class EBAssembleNodeBundleTask
     {
         this.task = task;
 
-        const torchGridFS = new mongodb.GridFSBucket(this.application.db, {
+        const modelFileGridFS = new mongodb.GridFSBucket(this.application.db, {
             chunkSizeBytes: 1024,
             bucketName: 'EBModel.torch'
         });
@@ -127,7 +127,7 @@ class EBAssembleNodeBundleTask
         {
             return Promise.fromCallback((next) =>
             {
-                torchGridFS.openDownloadStreamByName(`model-${this.model._id}.tfg`).pipe(fs.createWriteStream(path.join(this.trainingProcess.scriptFolder, 'model.tfg'))).on('error', (error) =>
+                modelFileGridFS.openDownloadStreamByName(`model-${this.model._id}.tfg`).pipe(fs.createWriteStream(path.join(this.trainingProcess.scriptFolder, 'model.tfg'))).on('error', (error) =>
                 {
                     return next(error);
                 }).on('finish', () =>

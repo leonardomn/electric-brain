@@ -24,25 +24,10 @@ set -e
 curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
 
 sudo apt update
-sudo apt install mongodb rabbitmq-server nodejs graphviz git build-essential -y
+sudo apt install mongodb rabbitmq-server nodejs graphviz git build-essential python3 python3-pip -y
 
-
-# Install torch and then clean up
-cd /tmp
-git clone https://github.com/torch/distro.git /tmp/torch --recursive
-cd /tmp/torch; bash install-deps;
-sudo PREFIX=/usr/local ./install.sh -b
-cd ..
-sudo rm -rf /tmp/torch
-
-# Torch Activate and install Lua dependencies
-/usr/local/bin/torch-activate
-sudo /usr/local/bin/luarocks install json
-sudo /usr/local/bin/luarocks install distlearn
-sudo /usr/local/bin/luarocks install ipc
-sudo /usr/local/bin/luarocks install rnn
-sudo /usr/local/bin/luarocks install underscore
-sudo /usr/local/bin/luarocks install luasocket
+# Install TensorFlow
+sudo pip3 install --upgrade tensorflow
 
 # Install Electric Brain
 sudo npm install electricbrain -g

@@ -5,21 +5,11 @@ MAINTAINER Electric Brain <info@electricbrain.io>
 
 # Install some basic system dependencies
 RUN apt-get update
-RUN apt-get install systemd mongodb rabbitmq-server gcc g++ git wget nodejs sudo vim npm graphviz libsqlite3-dev -y
+RUN apt-get install systemd mongodb rabbitmq-server gcc g++ git wget nodejs sudo vim npm graphviz libsqlite3-dev python3 python3-pip -y
 RUN ln -s /usr/bin/nodejs /usr/bin/node
 
-# Installed the Torch and dependencies
-ENV PREFIX=/usr
-RUN git clone https://github.com/torch/distro.git ~/torch --recursive
-RUN cd ~/torch; bash install-deps;
-RUN cd ~/torch; PREFIX=/usr ./install.sh
-RUN luarocks install json
-RUN luarocks install distlearn
-RUN luarocks install ipc
-RUN luarocks install rnn
-RUN luarocks install underscore
-RUN luarocks install luasocket
-RUN luarocks install lsqlite3
+# Installed the Tensorflow
+RUN pip3 install --upgrade tensorflow
 
 # Install Electric Brain itself
 RUN npm install electricbrain -g
