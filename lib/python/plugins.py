@@ -26,7 +26,7 @@ class EBNeuralNetworkComponentBase:
         self.prefix = prefix
 
     def machineVariableName(self):
-        return self.prefix + "-" + self.schema["metadata"]['variablePath'].replace("[]", "__array__").replace(" ", "")
+        return self.prefix + self.schema["metadata"]['variablePath'].replace("[]", "__array__").replace(" ", "")
 
 
 def createNeuralNetworkComponent(schema, prefix):

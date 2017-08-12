@@ -29,9 +29,9 @@ class TrainingScript:
         inputPlaceholders = self.inputComponent.get_input_placeholders(1)
         outputPlaceholders = self.outputComponent.get_output_placeholders(1)
 
-        inputOutputs, inputShapes = self.inputComponent.get_input_stack(inputPlaceholders)
+        intermediateOutputs, intermediateShapes = self.inputComponent.get_input_stack(inputPlaceholders)
 
-        outputOutputs, outputShapes = self.outputComponent.get_output_stack(inputOutputs, inputShapes)
+        outputOutputs, outputShapes = self.outputComponent.get_output_stack(intermediateOutputs, intermediateShapes, inputPlaceholders)
 
         outputLosses = self.outputComponent.get_criterion_stack(outputOutputs, outputShapes, outputPlaceholders)
 
@@ -40,7 +40,7 @@ class TrainingScript:
         self.outputPlaceholders = outputPlaceholders
         self.outputLosses = outputLosses
 
-        self.totalLoss = tf.reduce_mean(self.outputLosses)
+        self.totalLoss = tf.reduce_mean([tf.reduce_mean(loss) for loss in self.outputLosses])
 
     def reset(self, optimizationAlgorithm, optimizationParameters):
         if self.session is not None:

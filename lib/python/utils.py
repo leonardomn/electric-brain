@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import tensorflow as tf
 
 def eprint(*args, **kwargs):
     import sys
@@ -28,3 +29,6 @@ def eprint(*args, **kwargs):
     message = filename + ":" + lineNumber + "  " + " ".join([pprint.pformat(arg) for arg in args])
     print(message, file = sys.stderr)
     sys.stderr.flush()
+
+def tensorPrint(name, tensor, *args):
+    return tf.Print(tensor, [name, "shape:", tf.shape(tensor), "data:", tensor] + list(args), summarize = 100)

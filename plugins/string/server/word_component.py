@@ -121,7 +121,7 @@ class EBNeuralNetworkWordComponent(EBNeuralNetworkComponentBase):
             return ([output], [EBTensorShape(["*", 300], [EBTensorShape.Batch, EBTensorShape.Data], self.machineVariableName() )])
 
 
-    def get_output_stack(self, inputs, shapes):
+    def get_output_stack(self, intermediates, shapes, inputs):
         raise Exception("Unimplemented")
 
     def get_criterion_stack(self, outputs, outputShapes, outputPlaceholders):

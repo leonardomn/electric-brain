@@ -62,12 +62,12 @@ class EBNeuralNetworkClassificationComponent(EBNeuralNetworkComponentBase):
         embedding = tf.one_hot(input, outputSize)
         return ([embedding], [EBTensorShape(["*", outputSize], [EBTensorShape.Batch, EBTensorShape.Data], self.machineVariableName())])
 
-    def get_output_stack(self, inputs, shapes):
+    def get_output_stack(self, intermediates, shapes, inputs):
         # Output size
         outputSize = len(self.schema["enum"])
 
         # Summarize the tensors being currently activated
-        summaryNode = createSummaryModule(inputs, shapes)
+        summaryNode = createSummaryModule(intermediates, shapes)
 
         # Generate the neural network provided from the UI
         outputLayer, outputSize = generateEditorNetwork(self.schema['configuration']['component']['layers'], summaryNode, {"outputSize": outputSize})

@@ -132,5 +132,5 @@ module.exports = function(grunt)
     grunt.loadNpmTasks('grunt-zip');
 
     // Default task(s).
-    grunt.registerTask('default', ['mkdir:dev', 'dot:matchingPlugin', 'dot:transformPlugin', 'dot:frontend', 'browserify:dev', 'uglify:dev', 'copy:dev', 'if-missing:curl']);
+    grunt.registerTask('default', ['mkdir:dev', 'dot:frontend', 'browserify:dev', 'uglify:dev', 'copy:dev', 'if-missing:curl']);
 };

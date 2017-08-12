@@ -131,40 +131,6 @@ class EBTransformArchitecture extends EBArchitecture
             return false;
         }
 
-        // None of the output fields can be a binary, since this would involve generating
-        // data (currently not supported)
-        let outputBinaryFound = false;
-        self.outputSchema.walk((schema) =>
-        {
-            if (schema.configuration.included && schema.isBinary)
-            {
-                outputBinaryFound = true;
-            }
-        });
-        if (outputBinaryFound)
-        {
-            return false;
-        }
-
-        // Any arrays on the output must also exist on the input. The system
-        // Isn't going to generate arrays for you (yet!)
-        let foundOutputOnlyArray = false;
-        self.outputSchema.walk((field) =>
-        {
-            if (field.isArray && field.configuration.included)
-            {
-                // Check to see that this array also exists on the input
-                if (includedInputSchemas.indexOf(field.variablePath) === -1)
-                {
-                    foundOutputOnlyArray = true;
-                }
-            }
-        });
-        if (foundOutputOnlyArray)
-        {
-            return false;
-        }
-
         // None of our failing conditions have been hit, then this architectures schemas are indeed valid!
         // Yay!
         return true;

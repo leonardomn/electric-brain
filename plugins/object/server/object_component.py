@@ -122,7 +122,7 @@ class EBNeuralNetworkObjectComponent(plugins.EBNeuralNetworkComponentBase):
         return (outputs, shapes)
 
 
-    def get_output_stack(self, inputTensors, inputShapes):
+    def get_output_stack(self, intermediates, intermediateShapes, inputs):
         # List of outputs from each sub variable
         outputs = {}
         shapes = {}
@@ -130,7 +130,7 @@ class EBNeuralNetworkObjectComponent(plugins.EBNeuralNetworkComponentBase):
         # Create the output stack for each sub-variable in the schema
         for variableName in self.schema.propertyNames():
             subComponent = self.subComponents[variableName]
-            subOutputs, subShapes = subComponent.get_output_stack(inputTensors, inputShapes)
+            subOutputs, subShapes = subComponent.get_output_stack(intermediates, intermediateShapes, inputs)
             outputs.update(subOutputs)
             shapes.update(subShapes)
 

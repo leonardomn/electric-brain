@@ -58,9 +58,9 @@ class EBNeuralNetworkNumberComponent(EBNeuralNetworkComponentBase):
         input = placeholders[self.machineVariableName()]
         return ([input], [EBTensorShape(["*", 1], [EBTensorShape.Batch, EBTensorShape.Data], self.machineVariableName() )])
 
-    def get_output_stack(self, inputs, shapes):
+    def get_output_stack(self, intermediates, shapes, inputs):
         # Summarize the tensors being currently activated
-        summaryNode = createSummaryModule(inputs, shapes)
+        summaryNode = createSummaryModule(intermediates, shapes)
 
         # Generate the neural network provided from the UI
         outputLayer, outputSize = generateEditorNetwork(self.schema['configuration']['component']['layers'], summaryNode, {"outputSize": 1})

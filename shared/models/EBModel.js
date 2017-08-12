@@ -63,6 +63,7 @@ class EBModel
                 testingBatchSize: 4,
                 iterations: 50000,
                 maximumDataSetSize: 10000000,
+                testingSetPortion: 0.3,
                 optimizationAlgorithm: 'AdamaxOptimizer',
                 optimizationParameters: {
                     learning_rate: 1e-3,
