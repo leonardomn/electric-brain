@@ -25,7 +25,7 @@
 
 angular.module('eb').controller('EBDataSourceSelectTableController', function EBDataSourceSelectTableController($scope, $timeout, $state, EBDataSourceService, config, EBLoaderService, EBNavigationBarService)
 {
-    $scope.sampleSize = 500;
+    $scope.sampleSize = 5000;
 
     const promise = EBDataSourceService.detectDatabase($scope.dataSource.type).success(function(data)
     {

@@ -59,10 +59,10 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
                 sequence = input[sampleIndex]
                 if len(sequence) > itemIndex:
                     item.append(sequence[itemIndex])
-                    converted[self.itemExistenceVariable + ":0"][itemIndex].append(1)
+                    converted[self.itemExistenceVariable + ":0"][itemIndex].append([1])
                 else:
                     item.append(None)
-                    converted[self.itemExistenceVariable + ":0"][itemIndex].append(0)
+                    converted[self.itemExistenceVariable + ":0"][itemIndex].append([0])
 
             convertedItem = self.subComponent.convert_input_in(item)
             for key in convertedItem:
@@ -102,10 +102,10 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
                 sequence = output[sampleIndex]
                 if len(sequence) > itemIndex:
                     item.append(sequence[itemIndex])
-                    converted[self.itemExistenceVariable + ":0"][itemIndex].append(1)
+                    converted[self.itemExistenceVariable + ":0"][itemIndex].append([1])
                 else:
                     item.append(None)
-                    converted[self.itemExistenceVariable + ":0"][itemIndex].append(0)
+                    converted[self.itemExistenceVariable + ":0"][itemIndex].append([0])
 
             convertedItem = self.subComponent.convert_output_in(item)
             for key in convertedItem:
@@ -151,14 +151,14 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
 
     def get_input_placeholders(self, extraDimensions):
         placeholders = self.subComponent.get_input_placeholders(extraDimensions + 1)
-        placeholders[self.lengthVariable] = tf.placeholder(tf.int32, name = self.lengthVariable, shape = ([None] * extraDimensions) + [])
-        placeholders[self.itemExistenceVariable] = tf.placeholder(tf.int32, name = self.itemExistenceVariable, shape = ([None] * extraDimensions) + [None])
+        placeholders[self.lengthVariable] = tf.placeholder(tf.int32, name = self.lengthVariable, shape = ([None] * extraDimensions))
+        placeholders[self.itemExistenceVariable] = tf.placeholder(tf.int32, name = self.itemExistenceVariable, shape = ([None] * extraDimensions) + [None, 1])
         return placeholders
 
     def get_output_placeholders(self, extraDimensions):
         placeholders = self.subComponent.get_output_placeholders(extraDimensions + 1)
-        placeholders[self.lengthVariable] = tf.placeholder(tf.int32, name = self.lengthVariable, shape = ([None] * extraDimensions) + [])
-        placeholders[self.itemExistenceVariable] = tf.placeholder(tf.int32, name = self.itemExistenceVariable, shape = ([None] * extraDimensions) + [None])
+        placeholders[self.lengthVariable] = tf.placeholder(tf.int32, name = self.lengthVariable, shape = ([None] * extraDimensions))
+        placeholders[self.itemExistenceVariable] = tf.placeholder(tf.int32, name = self.itemExistenceVariable, shape = ([None] * extraDimensions) + [None, 1])
         return placeholders
 
     def get_input_stack(self, placeholders):
@@ -204,9 +204,9 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
         sequenceToProcess = None
         sequenceItemExists = None
         for shapeIndex in range(len(intermediateShapes)):
-            if intermediateShapes[shapeIndex].variableName == self.machineVariableName():
+            if intermediateShapes[shapeIndex].variableName == (self.machineVariableName().replace("output", "input")):
                 sequenceToProcess = intermediates[shapeIndex]
-                sequenceItemExists = inputs[self.itemExistenceVariable]
+                sequenceItemExists = inputs[self.itemExistenceVariable.replace("output", "input")]
 
         # Remove time dimension from the intermediateShapes
         shapesToProcess = [shape.popDimension() for shape in intermediateShapes]
@@ -329,7 +329,7 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
         subLosses = subLosses[:len(outputKeys)]
 
         # Get the existence variable
-        actualExistenceVariable = tf.squeeze(outputs[self.itemExistenceVariable], axis = 2)
+        actualExistenceVariable = outputs[self.itemExistenceVariable]
         expectedExistenceVariable = outputPlaceholders[self.itemExistenceVariable]
 
         def existenceSubStack(values):
@@ -337,9 +337,9 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
             return [loss, loss]
 
         # Change the expectedExistenceVariable so that its the same length as actualExistenceVariable
-        expectedExistenceVariable = tf.slice(expectedExistenceVariable, [0, 0], [cutoff, -1])
+        expectedExistenceVariable = tf.slice(expectedExistenceVariable, [0, 0, 0], [cutoff, -1, -1])
         extras = tf.maximum(0, actualLength - placeholderLength)
-        expectedExistenceVariable = tf.concat([expectedExistenceVariable, tf.zeros([extras, batchSize], dtype = tf.int32)], axis=0)
+        expectedExistenceVariable = tf.concat([expectedExistenceVariable, tf.zeros([extras, batchSize, 1], dtype = tf.int32)], axis=0)
 
         # Calculate the loss for item existence - this ensures that the neural network learns to output the right sequence length
         existenceLoss = tf.map_fn(existenceSubStack, [tf.to_float(actualExistenceVariable), tf.to_float(expectedExistenceVariable)])

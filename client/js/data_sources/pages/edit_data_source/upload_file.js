@@ -25,7 +25,7 @@
 
 angular.module('eb').controller('EBDataSourceUploadFileController', function EBDataSourceUploadFileController($scope, $timeout, $state, $stateParams, EBDataSourceService, config, EBLoaderService, EBNavigationBarService)
 {
-    $scope.sampleSize = 500;
+    $scope.sampleSize = 5000;
     $scope.allowQuotedCSVFiles = true;
     $scope.upload = function upload()
     {

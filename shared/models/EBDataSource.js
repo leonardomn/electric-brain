@@ -61,7 +61,7 @@ class EBDataSource
         // If there is new sampleSize, set a default value
         if (!self.sampleSize)
         {
-            self.sampleSize = 500;
+            self.sampleSize = 5000;
         }
     }
 
