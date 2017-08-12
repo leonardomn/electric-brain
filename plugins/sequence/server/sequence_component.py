@@ -216,11 +216,9 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
             summaryNode = createSummaryModule(intermediates, intermediateShapes)
 
             # This is a generative model - we must generate the sequence.
-            #generativeCell = tf.contrib.rnn.MultiRNNCell([
-            #    tf.contrib.rnn.BasicLSTMCell(301, state_is_tuple=True),
-            #    tf.contrib.rnn.BasicLSTMCell(301, state_is_tuple=True)], state_is_tuple=True)
-
-            generativeCell = tf.contrib.rnn.BasicLSTMCell(301, state_is_tuple=True)
+            generativeCell = tf.contrib.rnn.MultiRNNCell([
+                tf.contrib.rnn.LSTMCell(150),
+                tf.contrib.rnn.GRUCell(200)], state_is_tuple=True)
 
             # Maximum size for time dimension
             if self.schema['configuration']['component']['enforceSequenceLengthLimit']:
@@ -231,43 +229,75 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
             # Fetch batch size
             batchSize = tf.shape(summaryNode)[0]
 
-            # Starting states for each layer
-            initialState1 = tf.zeros([batchSize, 301])
-            initialState2 = tf.zeros([batchSize, 301])
+            # Create all the state vectors
+            initialStates = []
+            stateShapes = []
+            for layerStateSize in generativeCell.state_size:
+                # If layerStateSize is a tuple, then generate a state for each
+                if hasattr(layerStateSize, "__getitem__"):
+                    for stateSize in layerStateSize:
+                        initialStates.append(tf.zeros([batchSize, stateSize]))
+                        stateShapes.append(tf.TensorShape([None, stateSize]))
+                else:
+                    initialStates.append(tf.zeros([batchSize, layerStateSize]))
+                    stateShapes.append(tf.TensorShape([None, layerStateSize]))
 
             # Initial 'item exists' state
             initialItemExists = tf.ones([1, batchSize, 1])
 
             # Initial 'output' state
-            initialOutput = tf.zeros([1, batchSize, 300])
+            initialOutput = tf.zeros([1, batchSize, generativeCell.output_size])
 
             # Initial index
             initialIndex = tf.zeros([], dtype=tf.int32)
 
-            def condition(index, itemExists, lstmState1, lstmOutput):
+            # Condition for the while loop - decides when to stop generating items in the sequence
+            def condition(index, itemExists, lstmOutput, *lstmStates):
                 return tf.logical_and(tf.less(index, tf.constant(maximumTime)), tf.greater(tf.reduce_sum(tf.round(itemExists[-1])), 0))
 
-            def body(index, itemExists, lstmState1, lstmOutput):
-                output, newStates = generativeCell(summaryNode, (tf.concat([itemExists[index], lstmOutput[index]], axis = 1), lstmState1))
+            # Body of the generator
+            def body(index, itemExists, lstmOutput, *lstmStates):
+                stateIndex = 0
+                stateInputs = []
 
-                # Cleave off one piece of the outputs to act as the new continue state
-                splits = tf.split(output, [1, 300], 1)
+                # Separate lstmStates into tuples to be fed into each layer
+                for layerStateSize in generativeCell.state_size:
+                    # If layerStateSize is a tuple, then we have to construct a tuple from the lstm states
+                    if hasattr(layerStateSize, "__getitem__"):
+                        stateList = lstmStates[stateIndex:(stateIndex + len(layerStateSize))]
+                        stateInputs.append(tuple(stateList))
+                        stateIndex += len(layerStateSize)
+                    else:
+                        stateInputs.append(lstmStates[stateIndex])
+                        stateIndex += 1
+
+                output, newStates = generativeCell(summaryNode, stateInputs)
+
+                # Now deconstruct the new-states (again)
+                separatedNewStates = []
+                for layerStateIndex in range(len(generativeCell.state_size)):
+                    layerStateSize = generativeCell.state_size[layerStateIndex]
+                    if hasattr(layerStateSize, "__getitem__"):
+                        separatedNewStates.extend(newStates[layerStateIndex])
+                    else:
+                        separatedNewStates.append(newStates[layerStateIndex])
+
+                currentItemExists = tf.expand_dims(tf.layers.dense(output, 1), axis = 0)
+                currentLSTMOutput = tf.expand_dims(output, axis = 0)
+
+                newItemExists = tf.concat([itemExists, currentItemExists], axis = 0)
+                newLSTMOutput = tf.concat([lstmOutput, currentLSTMOutput], axis = 0)
+
                 newIndex = index + 1
 
-                currentItemExists = tf.expand_dims(splits[0], axis = 0)
-                currentLSTMOutput = tf.expand_dims(splits[1], axis = 0)
+                return [newIndex, newItemExists, newLSTMOutput] + separatedNewStates
 
-                newItemExists = tf.concat([itemExists, tf.expand_dims(splits[0], axis = 0)], axis = 0)
-                newLSTMOutput = tf.concat([lstmOutput, tf.expand_dims(splits[1], axis = 0)], axis = 0)
-
-                return (newIndex, newItemExists, newStates[0], newLSTMOutput)
-
-            outputs = tf.while_loop(condition, body, (initialIndex, initialItemExists, initialState1, initialOutput), shape_invariants=(tf.TensorShape([]), tf.TensorShape([None, None, 1]), tf.TensorShape([None, 301]), tf.TensorShape([None, None, 300]) ))
+            outputs = tf.while_loop(condition, body, [initialIndex, initialItemExists, initialOutput] + initialStates, shape_invariants=[tf.TensorShape([]), tf.TensorShape([None, None, 1]), tf.TensorShape([None, None, generativeCell.output_size])] + stateShapes)
 
             sequenceItemExists = outputs[1][1:]
-            sequenceToProcess = outputs[3][1:]
+            sequenceToProcess = outputs[2][1:]
 
-            shapesToProcess = [EBTensorShape(["*", 300], [EBTensorShape.Batch, EBTensorShape.Data], self.machineVariableName() )]
+            shapesToProcess = [EBTensorShape(["*", generativeCell.output_size], [EBTensorShape.Batch, EBTensorShape.Data], self.machineVariableName() )]
 
         subShapes = {}
         outputKeys = []
