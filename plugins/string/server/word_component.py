@@ -23,6 +23,7 @@ from editor import generateEditorNetwork
 import numpy
 import sqlite3
 import sys
+import sklearn
 
 class EBNeuralNetworkWordComponent(EBNeuralNetworkComponentBase):
     def __init__(self, schema, prefix):
@@ -39,6 +40,24 @@ class EBNeuralNetworkWordComponent(EBNeuralNetworkComponentBase):
 
         self.embeddingDictionary = {}
         self.currentEmbeddingIndex = 0
+
+        self.wordVectorDictionary = {}
+        self.wordTensors = []
+
+        cur = self.vectorDB.cursor()
+        index = 0
+        while True:
+            tensorBytes = cur.execute("SELECT tensor,word FROM word_vectors", []).fetchone()
+            if tensorBytes is None:
+                break
+            tensor = numpy.fromstring(tensorBytes[0])
+            word = tensorBytes[1]
+
+            self.wordVectorDictionary[word] = index
+            self.wordTensors.append(tensor)
+            index += 1
+
+        self.wordVectorTree = sklearn.neighbors.BallTree(self.wordTensors, leaf_size=100)
 
     def convert_input_in(self, input):
         cur = self.vectorDB.cursor()
