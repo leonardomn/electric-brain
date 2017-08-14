@@ -22,6 +22,7 @@ from editor import generateEditorNetwork
 from utils import eprint, tensorPrint
 import plugins
 import numpy
+import concurrent.futures
 
 class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
     def __init__(self, schema, prefix):
@@ -30,6 +31,8 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
         self.subComponent = plugins.createNeuralNetworkComponent(self.schema['items'], prefix)
         self.lengthVariable = self.machineVariableName() + "__length__"
         self.itemExistenceVariable = self.machineVariableName() + "__exists__"
+
+        self.parallelExecutor = concurrent.futures.ThreadPoolExecutor(max_workers=16)
 
     def convert_input_in(self, input):
         converted = {}
@@ -138,9 +141,12 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
                     timeObjects.append({})
                 timeObjects[index][key] = outputs[key][index]
 
+        # Parallel compute all items in the sequence - needed mostly for word-vector outputs, for which it can be expensive to compute
+        # the nearest neighbor computations
+        allBatchItems = list(self.parallelExecutor.map(lambda timeIndex: self.subComponent.convert_output_out(timeObjects[timeIndex], inputs), range(len(timeObjects)) ))
         objects = []
         for timeIndex in range(len(timeObjects)):
-            batchItems = self.subComponent.convert_output_out(timeObjects[timeIndex], inputs)
+            batchItems = allBatchItems[timeIndex]
             for batchIndex in range(len(batchItems)):
                 if len(objects) <= batchIndex:
                     objects.append([])
@@ -217,14 +223,14 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
 
             # This is a generative model - we must generate the sequence.
             generativeCell = tf.contrib.rnn.MultiRNNCell([
-                tf.contrib.rnn.LSTMCell(150),
-                tf.contrib.rnn.GRUCell(200)], state_is_tuple=True)
+                tf.contrib.rnn.LSTMCell(300),
+                tf.contrib.rnn.LSTMCell(300)], state_is_tuple=True)
 
             # Maximum size for time dimension
             if self.schema['configuration']['component']['enforceSequenceLengthLimit']:
                 maximumTime = min(self.schema['configuration']['component']['maxSequenceLength'], len(sequence))
             else:
-                maximumTime = 250 # Default to 250
+                maximumTime = 25 # Default to 25
 
             # Fetch batch size
             batchSize = tf.shape(summaryNode)[0]
@@ -271,6 +277,7 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
                         stateInputs.append(lstmStates[stateIndex])
                         stateIndex += 1
 
+                # Execute the core RNN cell
                 output, newStates = generativeCell(summaryNode, stateInputs)
 
                 # Now deconstruct the new-states (again)
@@ -308,7 +315,7 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
             return list(localOutputs.values())
 
         # Individual outputs
-        subOutputArray = tf.map_fn(subStack, [sequenceToProcess])
+        subOutputArray = tf.map_fn(subStack, [sequenceToProcess], dtype=[tf.float32, tf.float32])
 
         subOutputs = {outputKeys[index]: subOutputArray[index] for index in range(len(subOutputArray))}
 
@@ -353,7 +360,7 @@ class EBNeuralNetworkSequenceComponent(EBNeuralNetworkComponentBase):
         tensorsToMap = [truncateTensor(outputs[key]) for key in outputKeys] + [truncateTensor(outputPlaceholders[key]) for key in outputKeys]
 
         # Map both the network outputs and the actual outputs, and apply the sub-stacks to them
-        subLosses = tf.map_fn(subStack, tensorsToMap)
+        subLosses = tf.map_fn(subStack, tensorsToMap, dtype=[tf.float32] * len(outputKeys))
 
         # Remove half of the sub-losses
         subLosses = subLosses[:len(outputKeys)]

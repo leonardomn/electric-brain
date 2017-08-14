@@ -31,4 +31,4 @@ def eprint(*args, **kwargs):
     sys.stderr.flush()
 
 def tensorPrint(name, tensor, *args):
-    return tf.Print(tensor, [name, "shape:", tf.shape(tensor), "data:", tensor] + list(args), summarize = 100)
+    return tf.Print(tensor, [name, "shape:", tf.shape(tensor), "data:", tensor] + list(args), summarize = 1000)

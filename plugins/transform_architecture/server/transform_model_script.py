@@ -90,6 +90,8 @@ class TrainingScript:
 
         outputs = self.outputComponent.convert_output_out(outputs, input)
 
+        eprint(outputs)
+
         return float(totalLoss), outputs
 
     def evaluate(self, input):

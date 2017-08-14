@@ -187,7 +187,11 @@ class EBStringInterpretation extends EBInterpretationBase
         else if (schema.configuration.interpretation.mode === 'english_word')
         {
             // Ensure that the schema has a component configuration
-            schema.configuration.component = {};
+            schema.configuration = {
+                component: {
+
+                }
+            };
             
             return schema;
         }
@@ -201,7 +205,9 @@ class EBStringInterpretation extends EBInterpretationBase
                     type: "string",
                     configuration: {
                         included: true,
-                        component: {}
+                        component: {
+                            layers: schema.configuration.interpretation.stack.fixedLayers,
+                        }
                     }
                 },
                 configuration: {
@@ -262,11 +268,11 @@ class EBStringInterpretation extends EBInterpretationBase
         }
         else if(schema.configuration.interpretation.mode === 'english_word')
         {
-            return value.toString().toLowerCase();
+            return String(value).toString().toLowerCase();
         }
         else if(schema.configuration.interpretation.mode === 'english_text')
         {
-            return underscore.filter(this.wordTokenizer.tokenize(value.toString().toLowerCase()).map((word) => word.trim()), (word) => word);
+            return underscore.filter(this.wordTokenizer.tokenize(String(value).toString().toLowerCase()).map((word) => word.trim()), (word) => word);
         }
         else
         {
