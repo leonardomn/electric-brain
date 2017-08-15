@@ -24,9 +24,12 @@ the mainline package repository.
 
     user@machine:~$ sudo apt install mongodb rabbitmq-server graphviz git build-essential libsqlite3-dev python3-pip -y
 
-Tensorflow must be install separately, using Pip.
+Tensorflow and other machine learning libraries must be install separately, using Pip.
 
     user@machine:~$ sudo pip3 install tensorflow
+    user@machine:~$ sudo pip3 install numpy
+    user@machine:~$ sudo pip3 install scipy
+    user@machine:~$ sudo pip3 install sklearn
 
 After installing Tensorflow, you will need to manually install several Electric Brain dependencies in Lua via
 luarocks:

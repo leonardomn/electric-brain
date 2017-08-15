@@ -10,6 +10,9 @@ RUN ln -s /usr/bin/nodejs /usr/bin/node
 
 # Installed the Tensorflow
 RUN pip3 install --upgrade tensorflow
+RUN pip3 install --upgrade numpy
+RUN pip3 install --upgrade scipy
+RUN pip3 install --upgrade sklearn
 
 # Install Electric Brain itself
 RUN npm install electricbrain -g

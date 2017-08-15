@@ -81,6 +81,9 @@ install_dependencies_ubuntu() {
 
 install_tensorflow() {
     sudo pip3 install --upgrade tensorflow
+    sudo pip3 install --upgrade numpy
+    sudo pip3 install --upgrade scipy
+    sudo pip3 install --upgrade sklearn
 }
 
 install_electric_brain() {

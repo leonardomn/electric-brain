@@ -97,7 +97,7 @@ module.exports = function(grunt)
             }
         },
         curl: {
-            'data/english_word_vectors_tensorflow.db': 'https://storage.bhs3.cloud.ovh.net/v1/AUTH_6f85527f05c84cb68c882959fc961a42/electric-brain-downloads/english_word_vectors_tensorflow.db'
+            'data/english_word_vectors_tensorflow.db': 'https://storage.bhs3.cloud.ovh.net/v1/AUTH_c2ca2a0f9e4b4a48b4901b31926e0261/ebdownloads/english_word_vectors_tensorflow.db'
         }
     });
 
