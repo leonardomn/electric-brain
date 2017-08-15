@@ -134,16 +134,16 @@ class EBSampleDataSourceTask {
         {
             const dataSource = new models.EBDataSource(objects[0]);
 
+            // Preserve the selections of included vs not included
             if (dataSource.dataSchema)
             {
-                // Copy the configuration from that schema into this one
-                newSchema.copyConfigurationFrom(dataSource.dataSchema);
+                newSchema.copyConfigurationFrom(dataSource.dataSchema, ['included']);
             }
 
             // Set local copy
             this.dataSource.dataSchema = newSchema;
 
-            // Reset the interpretation configuration nom matter what
+            // Reset the interpretation configuration no matter what
             this.dataSource.dataSchema.walk((field) =>
             {
                 field.configuration.interpretation = this.application.interpretationRegistry.getInterpretation(field.metadata.mainInterpretation).generateDefaultConfiguration(field);

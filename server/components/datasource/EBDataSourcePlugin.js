@@ -124,42 +124,47 @@ class EBDataSourcePlugin
      */
     detectSchema(dataSource, iterator)
     {
-        const maxNumberOfObjectsToSample = dataSource.sampleSize;
-        const examplesToKeep = 10;
-        const objectsBetweenIteratorCalls = 100;
-        const exampleIndexes = randomUtilities.getRandomIntegers(maxNumberOfObjectsToSample, examplesToKeep);
+        // Get the count of objects
+        return this.count(dataSource).then((count) =>
+        {
+            const maxNumberOfObjectsToSample = Math.min(dataSource.sampleSize, count);
+            const examplesToKeep = 10;
+            const objectsBetweenIteratorCalls = 100;
 
-        const schemaDetector = new EBSchemaDetector(this.application);
-        let objectIndex = 0;
+            const exampleIndexes = randomUtilities.getRandomIntegers(maxNumberOfObjectsToSample, examplesToKeep);
 
-        return this.sample(maxNumberOfObjectsToSample, dataSource,
-            (object) =>
-            {
-                let keepForSample = false;
-                if (exampleIndexes.indexOf(objectIndex) !== -1)
+            const schemaDetector = new EBSchemaDetector(this.application);
+            let objectIndex = 0;
+
+            return this.sample(maxNumberOfObjectsToSample, dataSource,
+                (object) =>
                 {
-                    keepForSample = true;
-                }
-
-                // Accumulate the converted version of the object
-                objectIndex += 1;
-                const callIterator = (objectIndex % objectsBetweenIteratorCalls) === 0;
-                return schemaDetector.accumulateObject(object, keepForSample).then(() =>
-                {
-                    let iteratorPromise = Promise.resolve();
-                    if (callIterator)
+                    let keepForSample = false;
+                    if (exampleIndexes.indexOf(objectIndex) !== -1)
                     {
-                        iteratorPromise = iterator(schemaDetector.getSchema(), objectIndex, maxNumberOfObjectsToSample);
+                        keepForSample = true;
                     }
 
-                    return iteratorPromise;
-                });
-            }).then(() =>
-        {
-            const schema = schemaDetector.getSchema();
-            return iterator(schema, maxNumberOfObjectsToSample, maxNumberOfObjectsToSample).then(() =>
+                    // Accumulate the converted version of the object
+                    objectIndex += 1;
+                    const callIterator = (objectIndex % objectsBetweenIteratorCalls) === 0;
+                    return schemaDetector.accumulateObject(object, keepForSample).then(() =>
+                    {
+                        let iteratorPromise = Promise.resolve();
+                        if (callIterator)
+                        {
+                            iteratorPromise = iterator(schemaDetector.getSchema(), objectIndex, maxNumberOfObjectsToSample);
+                        }
+
+                        return iteratorPromise;
+                    });
+                }).then(() =>
             {
-                return schema;
+                const schema = schemaDetector.getSchema();
+                return iterator(schema, maxNumberOfObjectsToSample, maxNumberOfObjectsToSample).then(() =>
+                {
+                    return schema;
+                });
             });
         });
     }

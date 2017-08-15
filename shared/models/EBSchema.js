@@ -1606,11 +1606,12 @@ class EBSchema
 
     /**
      * This is a convenience method, allowing you to easily copy over all configuration from one schema over to another, presumably
-     * similar schema. All fields which are common to both schemas will get their configuration transferred.
+     * similar schema. All fields which are common to both schemas will get their configuration transferred (unless variables is provided)
      *
      * @param {EBSchema} schema This is the schema object from which to copy configuration
+     * @param {[string]} variables Which variables within the configuration to copy over. If not provided, all variables get copied
      */
-    copyConfigurationFrom(schema)
+    copyConfigurationFrom(schema, variables)
     {
         // First, we map the other schemas fields
         const fields = {};
@@ -1624,7 +1625,17 @@ class EBSchema
         {
             if (fields[subSchema.variablePath])
             {
-                subSchema.configuration = fields[subSchema.variablePath].configuration;
+                if (!variables)
+                {
+                    subSchema.configuration = fields[subSchema.variablePath].configuration;
+                }
+                else
+                {
+                    variables.forEach((variableName) =>
+                    {
+                        subSchema.configuration[variableName] = fields[subSchema.variablePath].configuration[variableName];
+                    });
+                }
             }
         });
     }

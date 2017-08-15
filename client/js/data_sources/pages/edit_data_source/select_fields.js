@@ -43,8 +43,8 @@ angular.module('eb').controller('EBDataSourceSelectFieldsController', function E
                 {
                     if ($scope.dataSource.dataSchema)
                     {
-                        // Copy the configuration from that schema into this one
-                        dataSource.dataSchema.copyConfigurationFrom($scope.dataSource.dataSchema);
+                        // Copy over the selections of included/not included, so they don't get lost
+                        dataSource.dataSchema.copyConfigurationFrom($scope.dataSource.dataSchema, ['included']);
                     }
                     
                     // Replace ours with the updated one
